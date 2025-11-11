@@ -117,7 +117,7 @@
 // }
 import { useState, useEffect } from "react";
 
-export default function ProfileSidebar({ theme, journalDates = [], selectedMonth, selectedYear }) {
+export default function ProfileSidebar({ theme, journalDates = [], selectedMonth, selectedYear, user }) {
   const [affirmation, setAffirmation] = useState("I am grounded, calm, and present.");
 
   useEffect(() => {
@@ -156,17 +156,19 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
 
   return (
     <aside className="flex flex-col gap-4">
-      {/* 🧍 Profile box */}
       <div className="p-4 text-center bg-white dark:bg-[#151515] rounded-[18px] shadow-soft">
         <div className="w-[120px] h-[120px] mx-auto mb-3 rounded-[20px] overflow-hidden">
           <img
-            src="https://i.pinimg.com/1200x/ba/98/b4/ba98b4160f7af525982f94b633b2a2b2.jpg"
+            src={
+              user?.avatarURL ||
+              "https://i.pinimg.com/1200x/ba/98/b4/ba98b4160f7af525982f94b633b2a2b2.jpg"
+            }
             alt="User avatar"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
           />
         </div>
         <div className="text-[26px] font-semibold text-[#7A916C] dark:text-[#EBDDBF]">
-          Riya
+          {user?.displayName || "Riya"}
         </div>
       </div>
 

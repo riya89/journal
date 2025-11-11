@@ -56,7 +56,7 @@ import { useEffect, useState } from "react";
 import ProfileSidebar from "./ProfileSidebar";
 import JournalGrid from "./JournalGrid";
 
-export default function Layout({ theme, onCardClick, selectedMonth, selectedYear }) {
+export default function Layout({ theme, onCardClick, selectedMonth, selectedYear, user }) {
   const [journalDates, setJournalDates] = useState([]);
 
   useEffect(() => {
@@ -85,6 +85,7 @@ export default function Layout({ theme, onCardClick, selectedMonth, selectedYear
         journalDates={journalDates}
         selectedMonth={selectedMonth} // 👈 added
         selectedYear={selectedYear}   // 👈 added
+        user={user} 
       />
       <JournalGrid
         theme={theme}
