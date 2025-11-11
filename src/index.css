@@ -138,5 +138,32 @@ body {
 .animate-bookOpen {
   animation: bookOpen 0.5s ease forwards;
 }
+@keyframes flameFlicker {
+  0% {
+    transform: scaleY(1) translateY(0);
+    opacity: 1;
+    filter: brightness(1);
+  }
+  25% {
+    transform: scaleY(1.05) translateY(-1px);
+    opacity: 0.9;
+    filter: brightness(1.1);
+  }
+  50% {
+    transform: scaleY(0.95) translateY(1px);
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+  75% {
+    transform: scaleY(1.1) translateY(-1px);
+    opacity: 0.85;
+    filter: brightness(0.9);
+  }
+  100% {
+    transform: scaleY(1) translateY(0);
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
 
 
