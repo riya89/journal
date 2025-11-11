@@ -549,29 +549,42 @@ router.post("/add", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to save journal" });
   }
 });
-
 // 📖 Fetch journal entry for a specific date
 router.get("/:date", verifyToken, async (req, res) => {
   try {
     const { date } = req.params;
-    const journalRef = db
-      .collection("users")
-      .doc(req.uid)
-      .collection("journals")
-      .doc(date);
+    const userRef = db.collection("users").doc(req.uid);
+    const journalRef = userRef.collection("journals").doc(date);
 
     const doc = await journalRef.get();
 
-    // ✅ If journal exists, return it with its saved prompts
+    // ✅ If journal exists — return it directly
     if (doc.exists) {
       console.log(`📖 Returning existing journal for ${date}`);
       return res.json(doc.data());
     }
 
-    // 🆕 No journal yet → Generate NEW unique prompts for this date
-    console.log(`🆕 Creating new journal for ${date}`);
-    const prompts = await generateNewPrompts();
-    
+    // 🆕 No journal yet → Check if prompts already generated for today globally
+    const promptCacheRef = db.collection("dailyPrompts").doc(date);
+    const promptCache = await promptCacheRef.get();
+
+    let prompts;
+    if (promptCache.exists) {
+      // ✅ Reuse today's prompts to keep consistent daily reflections
+      prompts = promptCache.data().prompts;
+      console.log(`♻️ Using cached prompts for ${date}`);
+    } else {
+      // 🧠 Generate new ones and store globally
+      prompts = await generateNewPrompts();
+      await promptCacheRef.set({
+        date,
+        prompts,
+        createdAt: new Date(),
+      });
+      console.log(`✨ New prompts generated and cached for ${date}`);
+    }
+
+    // Return unsaved journal object (don’t save yet)
     const newJournal = {
       title: "",
       content: "",
@@ -579,19 +592,15 @@ router.get("/:date", verifyToken, async (req, res) => {
       date,
       prompts,
       answers: ["", ""],
-      createdAt: new Date(),
     };
 
-    // ✅ Save the new journal with its unique prompts
-    await journalRef.set(newJournal);
-    
-    console.log(`✅ New journal created with prompts:`, prompts);
-    res.json(newJournal);
+    return res.json(newJournal);
   } catch (err) {
     console.error("Error fetching journal:", err);
     res.status(500).json({ error: "Failed to fetch journal" });
   }
 });
+
 
 // 🧪 TEST ENDPOINT - Remove after testing
 router.get("/test/gemini", async (req, res) => {
@@ -603,5 +612,34 @@ router.get("/test/gemini", async (req, res) => {
     apiKeyExists: !!process.env.GEMINI_API_KEY,
   });
 });
+
+// 📅 Fetch all dates where user has journal entries (non-empty only)
+router.get("/dates/all", verifyToken, async (req, res) => {
+  try {
+    const userRef = db.collection("users").doc(req.uid);
+    const journalsRef = userRef.collection("journals");
+
+    const snapshot = await journalsRef.get();
+
+    // Filter only those with actual content or mood/title filled
+    const filledDates = snapshot.docs
+      .filter(doc => {
+        const d = doc.data();
+        return (
+          (d.title && d.title.trim() !== "") ||
+          (d.content && d.content.trim() !== "") ||
+          (d.mood && d.mood.trim() !== "") ||
+          (d.answers && d.answers.some(a => a && a.trim() !== ""))
+        );
+      })
+      .map(doc => doc.id);
+
+    res.json({ dates: filledDates });
+  } catch (err) {
+    console.error("Error fetching journal dates:", err);
+    res.status(500).json({ error: "Failed to fetch journal dates" });
+  }
+});
+
 
 export default router;
