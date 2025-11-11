@@ -641,5 +641,31 @@ router.get("/dates/all", verifyToken, async (req, res) => {
   }
 });
 
+// 🔹 Update Avatar
+router.post("/avatar", verifyToken, async (req, res) => {
+  const { avatarURL } = req.body;
+  if (!avatarURL) return res.status(400).json({ error: "Missing avatarURL" });
+
+  try {
+    const userRef = db.collection("users").doc(req.uid);
+    await userRef.set({ avatarURL }, { merge: true });
+    res.json({ success: true, avatarURL });
+  } catch (err) {
+    console.error("Error updating avatar:", err);
+    res.status(500).json({ error: "Failed to update avatar" });
+  }
+});
+
+// 🔹 Fetch Avatar (on login)
+router.get("/avatar", verifyToken, async (req, res) => {
+  try {
+    const userDoc = await db.collection("users").doc(req.uid).get();
+    const avatarURL = userDoc.data()?.avatarURL || null;
+    res.json({ avatarURL });
+  } catch (err) {
+    console.error("Error fetching avatar:", err);
+    res.status(500).json({ error: "Failed to fetch avatar" });
+  }
+});
 
 export default router;
