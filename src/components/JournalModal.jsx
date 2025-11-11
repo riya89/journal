@@ -991,10 +991,10 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
     localStorage.getItem("soundEnabled") === "true"
   );
 
-  useEffect(() => {
-    if (!isOpen || !selectedDate) return;
-    fetchJournal();
-  }, [isOpen, selectedDate]);
+useEffect(() => {
+  if (isOpen && selectedDate) fetchJournal();
+}, [isOpen, selectedDate]);
+
 
   // ✅ Fetch journal entry (backend will auto-create prompts if new)
   const fetchJournal = async () => {
