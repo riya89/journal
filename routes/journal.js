@@ -526,22 +526,34 @@ Make them emotionally engaging and different from common prompts. Focus on self-
 
 // 📝 Save or update journal entry
 router.post("/add", verifyToken, async (req, res) => {
-  const { title, content, mood, date, prompts = [], answers = [] } = req.body;
+  // const { title, content, mood, date, prompts = [], answers = [] } = req.body;
+  const { title, content, mood, date, prompts = [], answers = [], photoURL = null } = req.body;
   if (!date) return res.status(400).json({ error: "Missing date field" });
 
   try {
     const userRef = db.collection("users").doc(req.uid);
     const journalRef = userRef.collection("journals").doc(date);
 
+    // await journalRef.set({
+    //   title,
+    //   content,
+    //   mood,
+    //   date,
+    //   prompts,
+    //   answers,
+    //   updatedAt: new Date(),
+    // });
     await journalRef.set({
-      title,
-      content,
-      mood,
-      date,
-      prompts,
-      answers,
-      updatedAt: new Date(),
-    });
+  title,
+  content,
+  mood,
+  date,
+  prompts,
+  answers,
+  photoURL,  // ← ADD THIS LINE
+  updatedAt: new Date(),
+});
+
 
     res.json({ message: "Journal saved successfully ✅", date });
   } catch (err) {
@@ -585,14 +597,23 @@ router.get("/:date", verifyToken, async (req, res) => {
     }
 
     // Return unsaved journal object (don’t save yet)
+    // const newJournal = {
+    //   title: "",
+    //   content: "",
+    //   mood: "",
+    //   date,
+    //   prompts,
+    //   answers: ["", ""],
+    // };
     const newJournal = {
-      title: "",
-      content: "",
-      mood: "",
-      date,
-      prompts,
-      answers: ["", ""],
-    };
+  title: "",
+  content: "",
+  mood: "",
+  date,
+  prompts,
+  answers: ["", ""],
+  photoURL: null,  // ← ADD THIS LINE
+};
 
     return res.json(newJournal);
   } catch (err) {
