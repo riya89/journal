@@ -165,5 +165,17 @@ body {
     filter: brightness(1);
   }
 }
+@keyframes swayTree {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(1.5deg);
+  }
+}
+
+.animate-sway {
+  animation: swayTree 3.5s ease-in-out infinite alternate;
+}
 
 
