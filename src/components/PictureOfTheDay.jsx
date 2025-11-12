@@ -30,12 +30,12 @@ export default function PictureOfTheDay({ theme, photoURL, onPhotoChange, select
       return;
     }
 
-    // Use FileReader to generate preview URL
+    // Use FileReader to generate preview URL (base64)
     const reader = new FileReader();
     reader.onload = (e) => {
-      const url = e.target.result;
+      const url = e.target.result; // This is base64 data URL
       setPreviewURL(url);
-      onPhotoChange(url);
+      onPhotoChange(url, file); // Pass both URL and file
     };
     reader.onerror = () => {
       alert('Failed to read file. Please try again.');
@@ -119,12 +119,21 @@ export default function PictureOfTheDay({ theme, photoURL, onPhotoChange, select
     // Draw video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // Convert canvas to blob and generate preview URL
+    // Convert canvas to blob, then to base64 for persistence
     canvas.toBlob((blob) => {
       if (blob) {
-        const url = URL.createObjectURL(blob);
-        setPreviewURL(url);
-        onPhotoChange(url);
+        // Create a File object from the blob
+        const file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        // Convert to base64 data URL for persistence
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const url = e.target.result; // This is base64 data URL
+          setPreviewURL(url);
+          onPhotoChange(url, file); // Pass both URL and file
+        };
+        reader.readAsDataURL(file);
+        
         handleCancelCapture();
       }
     }, 'image/jpeg', 0.95);
@@ -232,9 +241,10 @@ export default function PictureOfTheDay({ theme, photoURL, onPhotoChange, select
             />
             {/* Remove button - appears on hover */}
             <button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent lightbox from opening
                 setPreviewURL(null);
-                onPhotoChange(null);
+                onPhotoChange(null, null); // Pass null for both URL and file
               }}
               className={`
                 absolute top-2 right-2 w-6 h-6 rounded-full
