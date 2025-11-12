@@ -803,6 +803,7 @@
 //   );
 // }
 import { useEffect, useRef, useState } from "react";
+import PictureOfTheDay from "./PictureOfTheDay";
 
 export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
   const [title, setTitle] = useState("");
@@ -813,6 +814,15 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // 📷 Photo state management
+  const [photoURL, setPhotoURL] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+
+  const handlePhotoChange = (url, file) => {
+    setPhotoURL(url);
+    setPhotoFile(file);
+  };
 
   // 🎤 Voice-to-Text
   const [isRecording, setIsRecording] = useState(false);
@@ -985,6 +995,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
         setMood(data.mood || "");
         setPrompts(data.prompts || []);
         setAnswers(data.answers || ["", ""]);
+        setPhotoURL(data.photoURL || null);
       }
     } catch (err) {
       console.error("❌ Failed to load journal:", err);
@@ -1000,7 +1011,26 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
     }
     setSaving(true);
     const token = localStorage.getItem("token");
+    
     try {
+      // Convert photo to base64 if it exists
+      let photoData = photoURL;
+      
+      if (photoFile) {
+        try {
+          const reader = new FileReader();
+          photoData = await new Promise((resolve, reject) => {
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(photoFile);
+          });
+        } catch (photoErr) {
+          console.error("❌ Failed to convert photo:", photoErr);
+          alert("Failed to process photo. Saving without photo.");
+          photoData = null;
+        }
+      }
+
       const res = await fetch("http://localhost:8000/journal/add", {
         method: "POST",
         headers: {
@@ -1014,6 +1044,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
           answers,
           prompts,
           date: selectedDate,
+          photoURL: photoData,
         }),
       });
       await res.json();
@@ -1034,14 +1065,15 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
       onClick={onClose}
       className="fixed inset-0 bg-[rgba(0,0,0,0.6)] backdrop-blur-sm flex justify-center items-center z-[200]"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`relative flex w-[850px] h-[620px] rounded-md overflow-hidden shadow-2xl transition-all duration-500 ${
-          theme === "dark"
-            ? "bg-[#2b241c] border border-[#3a2e20]"
-            : "bg-gradient-to-r from-[#fffdf7_48%] to-[#fef8e6_52%] border-2 border-[#f1e9cf]"
-        }`}
-      >
+      <div className="relative" onClick={(e) => e.stopPropagation()}>
+        {/* Book Container */}
+        <div
+          className={`relative flex w-[850px] h-[620px] rounded-md overflow-hidden shadow-2xl transition-all duration-500 ${
+            theme === "dark"
+              ? "bg-[#2b241c] border border-[#3a2e20]"
+              : "bg-gradient-to-r from-[#fffdf7_48%] to-[#fef8e6_52%] border-2 border-[#f1e9cf]"
+          }`}
+        >
         {/* Book spine */}
         <div className="absolute left-1/2 top-0 bottom-0 w-[4px] bg-[rgba(0,0,0,0.3)] -translate-x-1/2 z-10"></div>
 
@@ -1202,7 +1234,17 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
               className="w-full bg-transparent outline-none resize-none text-[16px] leading-relaxed"
             />
           )}
+
+          </div>
         </div>
+
+        {/* 📷 Picture of the Day - Outside book container to avoid clipping */}
+        <PictureOfTheDay
+          theme={theme}
+          photoURL={photoURL}
+          onPhotoChange={handlePhotoChange}
+          selectedDate={selectedDate}
+        />
       </div>
     </div>
   );
