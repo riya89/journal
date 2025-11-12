@@ -667,5 +667,41 @@ router.get("/avatar", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch avatar" });
   }
 });
+router.get("/dates/month/:yearMonth", verifyToken, async (req, res) => {
+  try {
+    const { yearMonth } = req.params; // Format: "2025-11"
+    const userRef = db.collection("users").doc(req.uid);
+    const journalsRef = userRef.collection("journals");
 
+    const snapshot = await journalsRef.get();
+
+    // Filter dates that match the year-month and have content
+    const monthDates = snapshot.docs
+      .filter(doc => {
+        const d = doc.data();
+        const docDate = doc.id; // Format: "2025-11-12"
+        const docYearMonth = docDate.substring(0, 7); // Extract "2025-11"
+        
+        const hasContent = (
+          (d.title && d.title.trim() !== "") ||
+          (d.content && d.content.trim() !== "") ||
+          (d.mood && d.mood.trim() !== "") ||
+          (d.answers && d.answers.some(a => a && a.trim() !== ""))
+        );
+
+        return docYearMonth === yearMonth && hasContent;
+      })
+      .map(doc => ({
+        date: doc.id,
+        day: parseInt(doc.id.split('-')[2]), // Extract day number (1-31)
+        mood: doc.data().mood || "",
+        title: doc.data().title || ""
+      }));
+
+    res.json({ dates: monthDates });
+  } catch (err) {
+    console.error("Error fetching monthly journal dates:", err);
+    res.status(500).json({ error: "Failed to fetch journal dates" });
+  }
+});
 export default router;
