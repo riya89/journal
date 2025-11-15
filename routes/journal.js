@@ -725,4 +725,106 @@ router.get("/dates/month/:yearMonth", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch journal dates" });
   }
 });
+// -----------------------------------------
+// 🤖 AI ASSISTANT — Gemini reply
+// -----------------------------------------
+router.post("/assistant/reply", verifyToken, async (req, res) => {
+  const { message } = req.body;
+
+  if (!message || !message.trim()) {
+    return res.status(400).json({ reply: "I'm here, tell me what's on your mind 🌿" });
+  }
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `
+You are a soft-spoken, gentle emotional companion.
+Respond in under 2 sentences.
+Tone: calming, validating, grounding.
+User said: "${message}"
+
+Reply like:
+- “I’m here with you…”
+- “That sounds heavy…”
+- “You’re doing the best you can.”
+
+Avoid:
+- Questions unless needed
+- Long paragraphs
+- Overly formal tone
+`
+                }
+              ]
+            }
+          ]
+        })
+      }
+    );
+
+    const data = await response.json();
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
+      "I'm here with you. Tell me more 🌿";
+
+    res.json({ reply });
+  } catch (err) {
+    console.error("AI Assistant Error:", err);
+    res.json({ reply: "I'm here for you… even if my mind is a little foggy right now 🌫️" });
+  }
+});
+
+// -----------------------------------------
+// 🔊 AI ASSISTANT — ElevenLabs TTS
+// -----------------------------------------
+router.post("/assistant/speak", verifyToken, async (req, res) => {
+  const { text } = req.body;
+
+  if (!text) {
+    return res.status(400).json({ error: "Missing text" });
+  }
+
+  try {
+    const ttsRes = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${process.env.ELEVENLABS_VOICE_ID}`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": process.env.ELEVEN_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_multilingual_v2",   // Best free-tier friendly model
+          voice_settings: {
+            stability: 0.45,                    // Soft + gentle
+            similarity_boost: 0.85,             // More emotional closeness
+            style: 0.3,
+            use_speaker_boost: true
+          }
+        }),
+      }
+    );
+
+    if (!ttsRes.ok) {
+      console.error("❌ ElevenLabs Error:", await ttsRes.text());
+      return res.status(500).json({ error: "Failed to generate speech" });
+    }
+
+    const audioBuffer = await ttsRes.arrayBuffer();
+    res.set("Content-Type", "audio/mpeg");
+    res.send(Buffer.from(audioBuffer));
+  } catch (err) {
+    console.error("TTS Error:", err);
+    res.status(500).json({ error: "Could not generate TTS audio" });
+  }
+});
+
 export default router;
