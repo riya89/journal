@@ -1,0 +1,10 @@
+application "hello-world" {
+  sql_database "journaldb" {}
+
+  service "hello-service" {
+    visibility = "public"
+    domain {
+      cname = "hello-service"
+    }
+  }
+}
