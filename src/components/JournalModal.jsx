@@ -805,10 +805,12 @@
 import { useEffect, useRef, useState } from "react";
 import PictureOfTheDay from "./PictureOfTheDay";
 
-export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
+export default function JournalModal({ isOpen, onClose, theme, selectedDate , user}) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [mood, setMood] = useState("");
+  // const [mood, setMood] = useState("");
+  const [mood, setMood] = useState(3); // default middle mood
+
   const [prompts, setPrompts] = useState([]);
   const [answers, setAnswers] = useState(["", ""]);
   const [loading, setLoading] = useState(false);
@@ -1004,59 +1006,128 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
     }
   };
 
-  const handleSave = async () => {
-    if (!title.trim() && !content.trim() && !answers.some(a => a.trim())) {
-      alert("Write something first 💭");
-      return;
-    }
-    setSaving(true);
-    const token = localStorage.getItem("token");
+  // const handleSave = async () => {
+  //   if (!title.trim() && !content.trim() && !answers.some(a => a.trim())) {
+  //     alert("Write something first 💭");
+  //     return;
+  //   }
+  //   setSaving(true);
+  //   const token = localStorage.getItem("token");
     
-    try {
-      // Convert photo to base64 if it exists
-      let photoData = photoURL;
+  //   try {
+  //     // Convert photo to base64 if it exists
+  //     let photoData = photoURL;
       
-      if (photoFile) {
-        try {
-          const reader = new FileReader();
-          photoData = await new Promise((resolve, reject) => {
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(photoFile);
-          });
-        } catch (photoErr) {
-          console.error("❌ Failed to convert photo:", photoErr);
-          alert("Failed to process photo. Saving without photo.");
-          photoData = null;
-        }
-      }
+  //     if (photoFile) {
+  //       try {
+  //         const reader = new FileReader();
+  //         photoData = await new Promise((resolve, reject) => {
+  //           reader.onload = () => resolve(reader.result);
+  //           reader.onerror = reject;
+  //           reader.readAsDataURL(photoFile);
+  //         });
+  //       } catch (photoErr) {
+  //         console.error("❌ Failed to convert photo:", photoErr);
+  //         alert("Failed to process photo. Saving without photo.");
+  //         photoData = null;
+  //       }
+  //     }
 
-      const res = await fetch("http://localhost:8000/journal/add", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          title,
-          content,
-          mood,
-          answers,
-          prompts,
-          date: selectedDate,
-          photoURL: photoData,
-        }),
+  //     const res = await fetch("http://localhost:8000/journal/add", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //       body: JSON.stringify({
+  //         title,
+  //         content,
+  //         mood,
+  //         answers,
+  //         prompts,
+  //         date: selectedDate,
+  //         photoURL: photoData,
+  //       }),
+  //     });
+  //     await res.json();
+  //     setSaving(false);
+  //     setSaved(true);
+  //     setTimeout(() => setSaved(false), 2000);
+  //   } catch (err) {
+  //     console.error("❌ Failed to save journal:", err);
+  //     alert("Could not save entry. Please try again.");
+  //     setSaving(false);
+  //   }
+  // };
+const handleSave = async () => {
+  if (!title.trim() && !content.trim() && !answers.some(a => a.trim())) {
+    alert("Write something first 💭");
+    return;
+  }
+
+  setSaving(true);
+  const token = localStorage.getItem("token");
+
+  try {
+    // Convert photo to base64
+    let photoData = photoURL;
+    if (photoFile) {
+      photoData = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(photoFile);
       });
-      await res.json();
-      setSaving(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      console.error("❌ Failed to save journal:", err);
-      alert("Could not save entry. Please try again.");
-      setSaving(false);
     }
-  };
+
+    // 1️⃣ Save to your NODE backend
+    const res = await fetch("http://localhost:8000/journal/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        title,
+        content,
+        mood,
+        answers,
+        prompts,
+        date: selectedDate,
+        photoURL: photoData,
+      }),
+    });
+
+    await res.json();
+
+    // 2️⃣ Sync to RAINDROP analytics backend
+    await fetch("http://localhost:8000/raindrop/sync", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    uid: user.uid,
+    date: selectedDate,
+    title,
+    content,
+    mood,
+    ai_chat: ""
+  })
+});
+
+
+
+    // UI success
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  } catch (err) {
+    console.error("❌ Failed to save journal:", err);
+    alert("Could not save entry. Please try again.");
+    setSaving(false);
+  }
+};
 
   if (!isOpen) return null;
 
@@ -1141,7 +1212,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
             className="w-full p-2 bg-transparent border-b outline-none"
           />
 
-          <h2 className="text-[22px] mt-8 mb-3 font-semibold">Mood</h2>
+          {/* <h2 className="text-[22px] mt-8 mb-3 font-semibold">Mood</h2>
           <input
             type="text"
             value={mood}
@@ -1151,7 +1222,29 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate }) {
             }}
             placeholder="Peaceful 🌿"
             className="w-full p-2 bg-transparent border-b outline-none"
-          />
+          /> */}
+<h2 className="text-[22px] mb-3 font-semibold">Mood</h2>
+
+<div className="flex items-center gap-4 mb-6">
+  {/* Slider */}
+  <input
+    type="range"
+    min="0"
+    max="5"
+    value={mood}
+    onChange={(e) => setMood(Number(e.target.value))}
+    className="
+      w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer 
+      accent-pink-400 dark:accent-pink-300
+    "
+  />
+
+  {/* Mood Number Display */}
+  <span className="text-lg font-semibold text-pink-500">
+    {mood}
+  </span>
+</div>
+
 
           {/* Save Button */}
           <div className="flex justify-end mt-6 mb-4">

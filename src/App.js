@@ -269,7 +269,8 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import GrowthGarden from "./pages/GrowthGarden";
 import AvatarSelectModal from "./components/AvatarSelectModal";
-
+import AIAssistant from "./pages/AIAssistant"; // 👈 add this at top
+import MoodDashboard from "./pages/MoodDashboard";
 export default function App() {
   const [user, setUser] = useState(null);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -379,6 +380,14 @@ export default function App() {
     path="/growth-garden" 
     element={<GrowthGarden theme={theme} />} // ✅ Pass theme prop
   />
+  <Route path="/ai-assistant" element={<AIAssistant theme={theme} />} />
+  <Route
+  path="/mood-dashboard"
+  element={<MoodDashboard user={user} theme={theme} setTheme={setTheme} />}
+/>
+
 </Routes>
+
+
   );
 }

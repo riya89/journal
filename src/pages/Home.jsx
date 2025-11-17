@@ -273,16 +273,65 @@ export default function Home({ user, setUser, theme, setTheme }) {
     Growth Garden 🌿
   </p>
 </div>
+{/* 🤖 AI Assistant Floating Icon */}
+<div
+  className="fixed bottom-[80px] left-[60px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center"
+  onClick={() => navigate("/ai-assistant")}
+>
+  <div
+    className={`w-[70px] h-[70px] rounded-full shadow-lg flex items-center justify-center animate-floatSlow ${
+      theme === "dark" ? "bg-[#3b3127]" : "bg-[#FFF3E6]"
+    }`}
+  >
+    <span className="text-3xl">💬</span>
+  </div>
+  <p
+    className={`text-center text-sm font-medium mt-1 tracking-wide ${
+      theme === "dark" ? "text-[#EBDDBF]" : "text-[#7A916C]"
+    }`}
+  >
+    AI Friend 💖
+  </p>
+</div>
+
+{/* 📊 Mood Dashboard Icon */}
+<div
+  className="fixed bottom-[160px] right-[60px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center"
+  onClick={() => navigate("/mood-dashboard")}
+>
+  <div
+    className={`w-[70px] h-[70px] rounded-2xl shadow-lg flex items-center justify-center animate-floatSlow ${
+      theme === "dark" ? "bg-[#3b3127]" : "bg-[#FFF3E6]"
+    }`}
+  >
+    <span className="text-3xl">📊</span>
+  </div>
+  <p
+    className={`text-center text-sm font-medium mt-1 tracking-wide ${
+      theme === "dark" ? "text-[#EBDDBF]" : "text-[#7A916C]"
+    }`}
+  >
+    Mood Dashboard
+  </p>
+</div>
 
 
       {/* 📖 Journal Modal */}
       {showModal && (
+        // <JournalModal
+        //   isOpen={showModal}
+        //   onClose={() => setShowModal(false)}
+        //   theme={theme}
+        //   selectedDate={selectedDate}
+        // />
         <JournalModal
-          isOpen={showModal}
-          onClose={() => setShowModal(false)}
-          theme={theme}
-          selectedDate={selectedDate}
-        />
+  isOpen={showModal}
+  onClose={() => setShowModal(false)}
+  theme={theme}
+  selectedDate={selectedDate}
+  user={user}          // ✅ Add this
+/>
+
       )}
     </main>
   );
