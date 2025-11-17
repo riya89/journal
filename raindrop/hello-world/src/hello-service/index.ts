@@ -317,49 +317,6 @@ export default class extends Service<Env> {
   // -----------------------------------------
   // 1️⃣ INSERT ENTRY INTO SQL
   // -----------------------------------------
-  // async syncJournal(request: Request): Promise<Response> {
-  //   try {
-  //     const rawBody: unknown = await request.json();
-
-  //     if (
-  //       typeof rawBody !== "object" ||
-  //       rawBody === null ||
-  //       !("uid" in rawBody) ||
-  //       !("date" in rawBody)
-  //     ) {
-  //       return this.json({ error: "uid and date required" }, 400);
-  //     }
-
-  //     const body = rawBody as {
-  //       uid: string;
-  //       date: string;
-  //       title?: string;
-  //       content?: string;
-  //     };
-
-  //     const uid = body.uid;
-  //     const date = body.date;
-  //     const id = crypto.randomUUID();
-
-  //     const stmt = this.env.JOURNALDB.prepare(
-  //       "INSERT INTO journal_entries (id, uid, entry_date, title, content) VALUES (?, ?, ?, ?, ?)"
-  //     );
-
-  //     await stmt.bind(id, uid, date, body.title || null, body.content || null).run();
-
-  //     return this.json({ 
-  //       status: "synced", 
-  //       id, 
-  //       uid, 
-  //       date,
-  //       title: body.title || null,
-  //       content: body.content || null
-  //     });
-  //   } catch (e) {
-  //     console.error("SYNC ERROR:", e);
-  //     return this.json({ error: "sync failed", details: String(e) }, 500);
-  //   }
-  // }
 async syncJournal(request: Request): Promise<Response> {
   try {
     const rawBody: unknown = await request.json();

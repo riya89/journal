@@ -1,4 +1,4 @@
-globalThis.__RAINDROP_GIT_COMMIT_SHA = "c91729fa10b26cf4fe3d2f4d9cd10fdf3e695259"; 
+globalThis.__RAINDROP_GIT_COMMIT_SHA = "f479c4bcaf9f9af8a1add6192ec9bb9a2cdfcf74"; 
 
 // node_modules/@liquidmetal-ai/raindrop-framework/dist/core/cors.js
 var matchOrigin = (request, env, config) => {
@@ -187,43 +187,6 @@ var hello_service_default = class extends Service {
   // -----------------------------------------
   // 1️⃣ INSERT ENTRY INTO SQL
   // -----------------------------------------
-  // async syncJournal(request: Request): Promise<Response> {
-  //   try {
-  //     const rawBody: unknown = await request.json();
-  //     if (
-  //       typeof rawBody !== "object" ||
-  //       rawBody === null ||
-  //       !("uid" in rawBody) ||
-  //       !("date" in rawBody)
-  //     ) {
-  //       return this.json({ error: "uid and date required" }, 400);
-  //     }
-  //     const body = rawBody as {
-  //       uid: string;
-  //       date: string;
-  //       title?: string;
-  //       content?: string;
-  //     };
-  //     const uid = body.uid;
-  //     const date = body.date;
-  //     const id = crypto.randomUUID();
-  //     const stmt = this.env.JOURNALDB.prepare(
-  //       "INSERT INTO journal_entries (id, uid, entry_date, title, content) VALUES (?, ?, ?, ?, ?)"
-  //     );
-  //     await stmt.bind(id, uid, date, body.title || null, body.content || null).run();
-  //     return this.json({ 
-  //       status: "synced", 
-  //       id, 
-  //       uid, 
-  //       date,
-  //       title: body.title || null,
-  //       content: body.content || null
-  //     });
-  //   } catch (e) {
-  //     console.error("SYNC ERROR:", e);
-  //     return this.json({ error: "sync failed", details: String(e) }, 500);
-  //   }
-  // }
   async syncJournal(request) {
     try {
       const rawBody = await request.json();
