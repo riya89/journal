@@ -137,12 +137,12 @@ export default function JournalGrid({ theme, onCardClick, selectedMonth, selecte
             className="bg-white dark:bg-[#151515] rounded-[10px] shadow-soft cursor-pointer transition-transform hover:-translate-y-[2px] hover:shadow-md flex flex-col items-center"
             style={{
               width: '100%',
-              maxWidth: '132px',
-              height: '132px',
+              maxWidth: '125px',
+              height: '125px',
               padding: '2px',
             }}
           >
-            <div className="w-full h-[95px] rounded-[10px] overflow-hidden">
+            <div className="w-full h-[90px] rounded-[10px] overflow-hidden">
               <img
                 src={arr[i % arr.length]}
                 alt=""

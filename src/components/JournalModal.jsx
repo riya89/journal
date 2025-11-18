@@ -802,14 +802,16 @@
 //     </div>
 //   );
 // }
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import PictureOfTheDay from "./PictureOfTheDay";
+import tornPageCornerRight from "../assets/journalmodal.png";
+import tornPageCornerLeft from "../assets/journalmodal1.png";
 
 export default function JournalModal({ isOpen, onClose, theme, selectedDate , user}) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   // const [mood, setMood] = useState("");
-  const [mood, setMood] = useState(3); // default middle mood
+  const [mood, setMood] = useState(0); // default starting mood
 
   const [prompts, setPrompts] = useState([]);
   const [answers, setAnswers] = useState(["", ""]);
@@ -932,7 +934,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   const getBgmSrc = () =>
     theme === "dark" ? "/sounds/bgm1.mp3" : "/sounds/bgm2.mp3";
 
-  const startBgm = () => {
+  const startBgm = useCallback(() => {
     const newSrc = getBgmSrc();
     if (!bgmRef.current || bgmRef.current.src !== window.location.origin + newSrc) {
       if (bgmRef.current) {
@@ -946,7 +948,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
     } else if (bgmRef.current.paused) {
       bgmRef.current.play().catch(() => {});
     }
-  };
+  });
 
   const stopBgm = () => {
     if (bgmRef.current) {
@@ -959,11 +961,11 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
     if (isOpen && bgmEnabled) startBgm();
     else stopBgm();
     return () => stopBgm();
-  }, [isOpen, bgmEnabled]);
+  }, [isOpen, bgmEnabled, startBgm]);
 
   useEffect(() => {
     if (isOpen && bgmEnabled) startBgm();
-  }, [theme]);
+  }, [bgmEnabled, isOpen, startBgm, theme]);
 
   useEffect(() => {
     localStorage.setItem("bgmVolume", String(bgmVolume));
@@ -979,10 +981,6 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   };
 
   // --- Fetch Journal ---
-  useEffect(() => {
-    if (isOpen && selectedDate) fetchJournal();
-  }, [isOpen, selectedDate]);
-
   const fetchJournal = async () => {
     setLoading(true);
     const token = localStorage.getItem("token");
@@ -994,7 +992,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
       if (data) {
         setTitle(data.title || "");
         setContent(data.content || "");
-        setMood(data.mood || "");
+        setMood(data.mood !== undefined && data.mood !== null && data.mood !== "" ? data.mood : 0);
         setPrompts(data.prompts || []);
         setAnswers(data.answers || ["", ""]);
         setPhotoURL(data.photoURL || null);
@@ -1005,6 +1003,11 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && selectedDate) fetchJournal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, selectedDate]);
 
   // const handleSave = async () => {
   //   if (!title.trim() && !content.trim() && !answers.some(a => a.trim())) {
@@ -1137,16 +1140,67 @@ const handleSave = async () => {
       className="fixed inset-0 bg-[rgba(0,0,0,0.6)] backdrop-blur-sm flex justify-center items-center z-[200]"
     >
       <div className="relative" onClick={(e) => e.stopPropagation()}>
-        {/* Book Container */}
+        {/* Book Container with Vintage Paper Texture */}
         <div
-          className={`relative flex w-[850px] h-[620px] rounded-md overflow-hidden shadow-2xl transition-all duration-500 ${
-            theme === "dark"
-              ? "bg-[#2b241c] border border-[#3a2e20]"
-              : "bg-gradient-to-r from-[#fffdf7_48%] to-[#fef8e6_52%] border-2 border-[#f1e9cf]"
-          }`}
+          className="relative flex w-[850px] h-[620px] rounded-md overflow-hidden shadow-2xl transition-all duration-500"
+          style={{
+            background: theme === 'dark'
+              ? 'linear-gradient(135deg, #2a2520 0%, #1f1a15 50%, #2a2520 100%)'
+              : 'linear-gradient(135deg, #f4ead5 0%, #e8dcc4 48%, #f4ead5 52%, #e8dcc4 100%)',
+            boxShadow: theme === 'dark'
+              ? '0 20px 60px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 0 0 1px rgba(139, 115, 85, 0.3)'
+              : '0 20px 60px rgba(101, 67, 33, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 0 0 2px rgba(139, 115, 85, 0.2)',
+            border: theme === 'dark'
+              ? '2px solid rgba(139, 115, 85, 0.4)'
+              : '3px solid rgba(139, 115, 85, 0.3)',
+          }}
         >
-        {/* Book spine */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-[4px] bg-[rgba(0,0,0,0.3)] -translate-x-1/2 z-10"></div>
+          {/* Parchment texture overlay */}
+          <div 
+            className="absolute inset-0 pointer-events-none z-[1]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+              opacity: theme === 'dark' ? 0.12 : 0.06,
+              mixBlendMode: 'multiply',
+            }}
+          />
+          
+          {/* Aged paper spots/stains */}
+          <div 
+            className="absolute inset-0 pointer-events-none z-[1]"
+            style={{
+              background: theme === 'dark'
+                ? 'radial-gradient(circle at 20% 30%, rgba(101, 67, 33, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(101, 67, 33, 0.1) 0%, transparent 40%)'
+                : 'radial-gradient(circle at 20% 30%, rgba(139, 115, 85, 0.08) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(139, 115, 85, 0.06) 0%, transparent 40%)',
+            }}
+          />
+
+          {/* Torn/burnt edge effect */}
+          <div 
+            className="absolute inset-0 pointer-events-none z-[2]"
+            style={{
+              background: theme === 'dark'
+                ? 'radial-gradient(circle at 3px 3px, transparent 2px, rgba(42, 37, 32, 0.6) 2px)'
+                : 'radial-gradient(circle at 3px 3px, transparent 2px, rgba(244, 234, 213, 0.6) 2px)',
+              backgroundSize: '6px 6px',
+              opacity: 0.4,
+              maskImage: 'linear-gradient(to right, black 2%, transparent 3%, transparent 97%, black 98%), linear-gradient(to bottom, black 2%, transparent 3%, transparent 97%, black 98%)',
+              maskComposite: 'intersect',
+            }}
+          />
+
+        {/* Book spine with vintage look */}
+        <div 
+          className="absolute left-1/2 top-0 bottom-0 w-[6px] -translate-x-1/2 z-10"
+          style={{
+            background: theme === 'dark'
+              ? 'linear-gradient(to right, rgba(0,0,0,0.5), rgba(0,0,0,0.3), rgba(0,0,0,0.5))'
+              : 'linear-gradient(to right, rgba(101,67,33,0.4), rgba(101,67,33,0.2), rgba(101,67,33,0.4))',
+            boxShadow: theme === 'dark'
+              ? '0 0 10px rgba(0,0,0,0.5), inset 0 0 3px rgba(0,0,0,0.8)'
+              : '0 0 10px rgba(101,67,33,0.3), inset 0 0 3px rgba(101,67,33,0.4)',
+          }}
+        />
 
         {/* LEFT PAGE */}
         <div
@@ -1233,14 +1287,22 @@ const handleSave = async () => {
     max="5"
     value={mood}
     onChange={(e) => setMood(Number(e.target.value))}
-    className="
-      w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer 
-      accent-pink-400 dark:accent-pink-300
-    "
+    className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+    style={{
+      background: theme === 'dark'
+        ? 'linear-gradient(to right, #3a2e20 0%, #EBDDBF 100%)'
+        : 'linear-gradient(to right, #E6F0D1 0%, #7A916C 100%)',
+      accentColor: theme === 'dark' ? '#EBDDBF' : '#7A916C',
+    }}
   />
 
   {/* Mood Number Display */}
-  <span className="text-lg font-semibold text-pink-500">
+  <span 
+    className="text-lg font-semibold min-w-[20px] text-center"
+    style={{
+      color: theme === 'dark' ? '#EBDDBF' : '#7A916C',
+    }}
+  >
     {mood}
   </span>
 </div>
@@ -1331,13 +1393,45 @@ const handleSave = async () => {
           </div>
         </div>
 
-        {/* 📷 Picture of the Day - Outside book container to avoid clipping */}
-        <PictureOfTheDay
-          theme={theme}
-          photoURL={photoURL}
-          onPhotoChange={handlePhotoChange}
-          selectedDate={selectedDate}
+        {/* 🎨 Torn Page Corner - Right Bottom */}
+        <img 
+          src={tornPageCornerRight}
+          alt=""
+          className="absolute bottom-0 right-0 pointer-events-none"
+          style={{
+            width: 'auto',
+            height: 'auto',
+            maxWidth: '200px',
+            maxHeight: '200px',
+            opacity: theme === 'dark' ? 0.6 : 0.8,
+            zIndex: 1,
+          }}
         />
+
+        {/* 🎨 Torn Page Corner - Top Left */}
+        <img 
+          src={tornPageCornerLeft}
+          alt=""
+          className="absolute top-0 left-0 pointer-events-none"
+          style={{
+            width: 'auto',
+            height: 'auto',
+            maxWidth: '170px',
+            maxHeight: '170px',
+            opacity: theme === 'dark' ? 0.6 : 0.8,
+            zIndex: 1,
+          }}
+        />
+
+        {/* 📷 Picture of the Day - Above torn corner with higher z-index */}
+        <div style={{ position: 'relative', zIndex: 10 }}>
+          <PictureOfTheDay
+            theme={theme}
+            photoURL={photoURL}
+            onPhotoChange={handlePhotoChange}
+            selectedDate={selectedDate}
+          />
+        </div>
       </div>
     </div>
   );

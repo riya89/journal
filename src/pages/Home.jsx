@@ -204,12 +204,16 @@
 //   );
 // }
 import { useNavigate } from "react-router-dom";
-import tree from "../assets/plant1.png"; 
+import tree from "../assets/plant1.png";
+import chatbox from "../assets/chatbox.png";
+import moodboard from "../assets/moodboard.png";
 import { useState } from "react";
 import Header from "../components/Header";
 import Layout from "../components/Layout";
 import JournalModal from "../components/JournalModal";
 import FlowerMeadow from "../components/FlowerMeadow";
+import FloatingParticles from "../components/FloatingParticles";
+import FloatingGhosts from "../components/FloatingGhosts";
 
 export default function Home({ user, setUser, theme, setTheme }) {
   const navigate = useNavigate();
@@ -225,6 +229,12 @@ export default function Home({ user, setUser, theme, setTheme }) {
 
   return (
     <main className="app transition-all duration-500 relative" data-theme={theme}>
+      {/* ✨ Floating Dust Particles Background */}
+      <FloatingParticles theme={theme} />
+      
+      {/* 👻 Cute Floating Ghosts */}
+      <FloatingGhosts theme={theme} />
+
       {/* 🕰 Header */}
       <Header
         theme={theme}
@@ -253,65 +263,66 @@ export default function Home({ user, setUser, theme, setTheme }) {
       {/* 🌸 Animated Flowers */}
       <FlowerMeadow theme={theme} />
 
-      {/* 🌳 Growth Garden Tree */}
+      {/* 🤖 AI Assistant Floating Icon - Left */}
 <div
-  className="fixed bottom-[80px] right-[60px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center"
-  onClick={() => navigate("/growth-garden")}
->
-  <img
-    src={tree}
-    alt="growth garden"
-    className="w-[90px] h-auto drop-shadow-lg animate-sway block leading-none mb-0 pb-0"
-    style={{ display: "block", marginBottom: "-4px" }} // <-- removes that hidden gap
-  />
-  <p
-    className={`text-center text-sm font-medium opacity-90 group-hover:opacity-100 tracking-wide ${
-      theme === "dark" ? "text-[#EBDDBF]" : "text-[#7A916C]"
-    }`}
-    style={{ lineHeight: "1" }} // keeps the label snug
-  >
-    Growth Garden 🌿
-  </p>
-</div>
-{/* 🤖 AI Assistant Floating Icon */}
-<div
-  className="fixed bottom-[80px] left-[60px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center"
+  className="fixed bottom-[70px] right-[300px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
   onClick={() => navigate("/ai-assistant")}
 >
-  <div
-    className={`w-[70px] h-[70px] rounded-full shadow-lg flex items-center justify-center animate-floatSlow ${
-      theme === "dark" ? "bg-[#3b3127]" : "bg-[#FFF3E6]"
-    }`}
-  >
-    <span className="text-3xl">💬</span>
+  <div className="w-[100px] h-[100px] flex items-end justify-center">
+    <img
+      src={chatbox}
+      alt="AI Friend"
+      className="max-w-[80px] max-h-[80px] w-auto h-auto drop-shadow-lg object-contain"
+    />
   </div>
   <p
     className={`text-center text-sm font-medium mt-1 tracking-wide ${
       theme === "dark" ? "text-[#EBDDBF]" : "text-[#7A916C]"
     }`}
   >
-    AI Friend 💖
+    AI Friend
   </p>
 </div>
 
-{/* 📊 Mood Dashboard Icon */}
+{/* 📊 Mood Dashboard Icon - Center */}
 <div
-  className="fixed bottom-[160px] right-[60px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center"
+  className="fixed bottom-[70px] right-[190px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
   onClick={() => navigate("/mood-dashboard")}
 >
-  <div
-    className={`w-[70px] h-[70px] rounded-2xl shadow-lg flex items-center justify-center animate-floatSlow ${
-      theme === "dark" ? "bg-[#3b3127]" : "bg-[#FFF3E6]"
-    }`}
-  >
-    <span className="text-3xl">📊</span>
+  <div className="w-[100px] h-[100px] flex items-end justify-center">
+    <img
+      src={moodboard}
+      alt="Mood Dashboard"
+      className="max-w-[80px] max-h-[80px] w-auto h-auto drop-shadow-lg object-contain"
+    />
   </div>
   <p
     className={`text-center text-sm font-medium mt-1 tracking-wide ${
       theme === "dark" ? "text-[#EBDDBF]" : "text-[#7A916C]"
     }`}
   >
-    Mood Dashboard
+    Moodboard
+  </p>
+</div>
+
+{/* 🌳 Growth Garden Tree - Right */}
+<div
+  className="fixed bottom-[70px] right-[60px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
+  onClick={() => navigate("/growth-garden")}
+>
+  <div className="w-[100px] h-[100px] flex items-end justify-center">
+    <img
+      src={tree}
+      alt="growth garden"
+      className="max-w-[100px] max-h-[100px] w-auto h-auto drop-shadow-lg animate-sway object-contain"
+    />
+  </div>
+  <p
+    className={`text-center text-sm font-medium mt-1 tracking-wide ${
+      theme === "dark" ? "text-[#EBDDBF]" : "text-[#7A916C]"
+    }`}
+  >
+    Growth Garden 
   </p>
 </div>
 

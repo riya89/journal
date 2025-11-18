@@ -4,9 +4,11 @@ import "./index.css";
 import App from "./App";
 import { BrowserRouter } from "react-router-dom";
 
-const saved = localStorage.getItem("theme");
+const saved = localStorage.getItem("theme") || "light"; // default to light
 if (saved === "dark") {
-  document.documentElement.classList.add("dark"); // ensures dark from first paint
+  document.documentElement.classList.add("dark");
+} else {
+  document.documentElement.classList.remove("dark");
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

@@ -644,20 +644,85 @@ export default function AIAssistant({ theme }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const chatEndRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   // 📌 Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // 🎤 Setup Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      console.warn("Speech recognition not supported in this browser");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      console.log("🎤 Listening...");
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      console.log("🎤 Heard:", transcript);
+      setInput(transcript);
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("🎤 Speech recognition error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      console.log("🎤 Stopped listening");
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  // 🎤 Toggle voice input
+  const toggleVoiceInput = () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported in your browser");
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
+    }
+  };
+
   // -------------------------------------------------
-  // 🔊 ElevenLabs + Backend AI reply
+  // 🔊 Streaming AI reply with SIMULTANEOUS text and voice
   // -------------------------------------------------
   const sendToBackend = async (userText) => {
     try {
       const token = await auth.currentUser.getIdToken();
+
+      // Add empty AI message that we'll update
+      const aiMessageIndex = messages.length + 1;
+      setMessages((prev) => [...prev, { sender: "ai", text: "", streaming: true }]);
 
       // 1️⃣ Fetch AI text reply
       const replyRes = await fetch("http://localhost:8000/journal/assistant/reply", {
@@ -670,31 +735,80 @@ export default function AIAssistant({ theme }) {
       });
 
       const replyData = await replyRes.json();
-      const aiReply = replyData.reply || "I'm here with you 🌿";
+      const fullText = replyData.reply || "I'm here with you 🌿";
 
-      // Add AI text bubble
-      setMessages((prev) => [...prev, { sender: "ai", text: aiReply }]);
+      // 2️⃣ Start voice generation IMMEDIATELY (parallel with text animation)
+      // Don't await - let it run in parallel
+      speakStreaming(fullText, token);
 
-      // 2️⃣ Fetch TTS audio
-      speak(aiReply, token);
+      // 3️⃣ Wait 2 seconds for audio to start generating
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // 4️⃣ Now animate text word-by-word (should sync with audio)
+      const words = fullText.split(' ');
+      
+      // Show first word
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        newMessages[aiMessageIndex] = { 
+          sender: "ai", 
+          text: words[0], 
+          streaming: true 
+        };
+        return newMessages;
+      });
+
+      // Then show rest of words
+      for (let i = 1; i < words.length; i++) {
+        const currentText = words.slice(0, i + 1).join(' ');
+        
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          newMessages[aiMessageIndex] = { 
+            sender: "ai", 
+            text: currentText, 
+            streaming: i < words.length - 1 
+          };
+          return newMessages;
+        });
+
+        // Slower animation to match speech pace - 1100ms per word
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      // Mark streaming as complete
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        newMessages[aiMessageIndex] = { sender: "ai", text: fullText, streaming: false };
+        return newMessages;
+      });
 
     } catch (e) {
       console.error("Backend error:", e);
 
       const fallback = "I'm here with you 🌿 I'm listening.";
-      setMessages((prev) => [...prev, { sender: "ai", text: fallback }]);
-      speak(fallback);
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1] = { sender: "ai", text: fallback, streaming: false };
+        return newMessages;
+      });
+      
+      const token = await auth.currentUser.getIdToken();
+      speakStreaming(fallback, token);
     }
   };
 
   // -------------------------------------------------
-  // 🔈 ElevenLabs TTS
+  // 🔈 ElevenLabs Streaming TTS - Starts playing immediately
   // -------------------------------------------------
-  const speak = async (text, token) => {
+  const speakStreaming = async (text, token) => {
     try {
       setIsSpeaking(true);
 
-      const res = await fetch("http://localhost:8000/journal/assistant/speak", {
+      console.log("🔊 Starting TTS for:", text);
+
+      // Try streaming endpoint first
+      let res = await fetch("http://localhost:8000/journal/assistant/speak-stream", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -703,14 +817,44 @@ export default function AIAssistant({ theme }) {
         body: JSON.stringify({ text }),
       });
 
+      // Fallback to regular endpoint if streaming fails
+      if (!res.ok) {
+        console.warn("⚠️ Streaming endpoint failed, using regular endpoint");
+        res = await fetch("http://localhost:8000/journal/assistant/speak", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ text }),
+        });
+      }
+
+      if (!res.ok) {
+        throw new Error("TTS failed");
+      }
+
+      // Create audio from response
       const blob = await res.blob();
       const audioURL = URL.createObjectURL(blob);
       const audio = new Audio(audioURL);
 
-      audio.onended = () => setIsSpeaking(false);
-      audio.play();
+      console.log("✅ Audio ready, playing...");
+
+      audio.onended = () => {
+        console.log("🔇 Audio ended");
+        setIsSpeaking(false);
+      };
+      audio.onerror = (e) => {
+        console.error("❌ Audio playback error:", e);
+        setIsSpeaking(false);
+      };
+      
+      // Start playing immediately
+      await audio.play();
+      
     } catch (err) {
-      console.error("TTS Error:", err);
+      console.error("TTS Streaming Error:", err);
       setIsSpeaking(false);
     }
   };
@@ -800,6 +944,9 @@ export default function AIAssistant({ theme }) {
               }`}
             >
               {msg.text}
+              {msg.streaming && (
+                <span className="inline-block w-2 h-4 ml-1 bg-current animate-pulse"></span>
+              )}
             </div>
           </div>
         ))}
@@ -824,6 +971,22 @@ export default function AIAssistant({ theme }) {
                 : "bg-white text-[#6c7a5b] placeholder-[#6c7a5b]/40"
             }`}
           />
+          
+          {/* Microphone Button */}
+          <button
+            onClick={toggleVoiceInput}
+            className={`px-4 py-3 rounded-xl font-semibold shadow-md transition-all ${
+              isListening
+                ? "bg-red-500 text-white animate-pulse"
+                : theme === "dark"
+                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3a28]"
+                : "bg-[#E6F0D1] text-[#6c7a5b] hover:bg-[#d8e8c8]"
+            }`}
+            title={isListening ? "Stop listening" : "Start voice input"}
+          >
+            {isListening ? "🔴" : "🎤"}
+          </button>
+
           <button
             onClick={sendMessage}
             className={`px-6 py-3 rounded-xl font-semibold shadow-md ${

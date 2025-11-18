@@ -1,7 +1,7 @@
 import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../lib/firebase";
 
-export default function Login({ onLoginSuccess }) {
+export default function Login({ onLoginSuccess, theme }) {
   const handleGoogleLogin = async () => {
   try {
     const userCred = await signInWithPopup(auth, provider);
@@ -34,23 +34,39 @@ export default function Login({ onLoginSuccess }) {
 
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-[#FFFBEA] overflow-hidden">
+    <div className={`relative min-h-screen flex items-center justify-center overflow-hidden ${
+      theme === 'dark' ? 'bg-[#1a1410]' : 'bg-[#FFFBEA]'
+    }`}>
       {/* Background Image */}
       <img
         src="https://i.pinimg.com/736x/34/8d/95/348d9515bbee54e866009b8b2926aaf2.jpg"
         alt="background"
-        className="absolute inset-0 w-full h-full object-cover opacity-70"
+        className={`absolute inset-0 w-full h-full object-cover ${
+          theme === 'dark' ? 'opacity-30' : 'opacity-40'
+        }`}
       />
 
       {/* Cutout Shape Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#FFFBEA]/90 via-[#F8EAC9]/85 to-[#F6DFC4]/90 mix-blend-lighten"></div>
+      <div className={`absolute inset-0 ${
+        theme === 'dark' 
+          ? 'bg-gradient-to-br from-[#1a1410]/90 via-[#2b241c]/85 to-[#3a2e20]/90 mix-blend-darken'
+          : 'bg-gradient-to-br from-[#E6F0D1]/40 via-[#FFFBEA]/50 to-[#F3EFE2]/40'
+      }`}></div>
 
       {/* Main Content */}
-      <div className="relative z-10 text-center px-6 py-10 bg-white/60 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.1)] max-w-lg mx-auto">
-        <h1 className="text-4xl font-bold text-[#7A916C] mb-4 font-['Shantell_Sans']">
+      <div className={`relative z-10 text-center px-6 py-10 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] max-w-lg mx-auto ${
+        theme === 'dark'
+          ? 'bg-[#2b241c]/60 border border-[#5b4a3d]/30'
+          : 'bg-white/70 border border-[#7A916C]/20'
+      }`}>
+        <h1 className={`text-4xl font-bold mb-4 font-['Shantell_Sans'] ${
+          theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#7A916C]'
+        }`}>
           My Journal
         </h1>
-        <p className="text-[#6E7C5B] text-lg mb-8 font-['Shantell_Sans']">
+        <p className={`text-lg mb-8 font-['Shantell_Sans'] ${
+          theme === 'dark' ? 'text-[#EBDDBF]/80' : 'text-[#6c7a5b]'
+        }`}>
           Find peace in your pages 🌿<br />
           Start your day with calm reflection.
         </p>
@@ -58,27 +74,39 @@ export default function Login({ onLoginSuccess }) {
         {/* Google Sign-In Button */}
         <button
           onClick={handleGoogleLogin}
-          className="flex items-center justify-center gap-3 bg-white border border-[#A6B19C] rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all duration-300 mx-auto"
+          className={`flex items-center justify-center gap-3 rounded-full px-6 py-3 shadow-md hover:shadow-lg transition-all duration-300 mx-auto ${
+            theme === 'dark'
+              ? 'bg-[#3a2e20] border border-[#5b4a3d] hover:bg-[#4a3a28]'
+              : 'bg-[#7A916C] border border-[#6c7a5b] hover:bg-[#6c7a5b]'
+          }`}
         >
           <img
             src="https://www.svgrepo.com/show/475656/google-color.svg"
             alt="Google"
             className="w-6 h-6"
           />
-          <span className="text-[#565D56] font-semibold text-lg">
+          <span className={`font-semibold text-lg ${
+            theme === 'dark' ? 'text-[#EBDDBF]' : 'text-white'
+          }`}>
             Continue with Google
           </span>
         </button>
 
         {/* Footer Text */}
-        <p className="mt-8 text-sm text-[#8A957C] font-['Shantell_Sans']">
-          Crafted with ☀️ and calm • Riya’s Journal
+        <p className={`mt-8 text-sm font-['Shantell_Sans'] ${
+          theme === 'dark' ? 'text-[#EBDDBF]/60' : 'text-[#6c7a5b]/70'
+        }`}>
+          Crafted with 🌙 and calm • Riya’s Journal
         </p>
       </div>
 
       {/* Floating shapes for soft movement */}
-      <div className="absolute -top-10 left-10 w-40 h-40 bg-[#E6F0D1]/70 rounded-full blur-3xl animate-[float1_8s_ease-in-out_infinite]" />
-      <div className="absolute bottom-0 right-0 w-60 h-60 bg-[#F8EAC9]/70 rounded-full blur-3xl animate-[float2_10s_ease-in-out_infinite]" />
+      <div className={`absolute -top-10 left-10 w-40 h-40 rounded-full blur-3xl animate-[float1_8s_ease-in-out_infinite] ${
+        theme === 'dark' ? 'bg-[#3a2e20]/50' : 'bg-[#7A916C]/30'
+      }`} />
+      <div className={`absolute bottom-0 right-0 w-60 h-60 rounded-full blur-3xl animate-[float2_10s_ease-in-out_infinite] ${
+        theme === 'dark' ? 'bg-[#4a3a28]/50' : 'bg-[#94A786]/30'
+      }`} />
 
       <style>
         {`

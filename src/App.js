@@ -276,11 +276,20 @@ export default function App() {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const [avatarChecked, setAvatarChecked] = useState(false); // Track if we've checked for avatar
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const parsed = JSON.parse(storedUser);
+      setUser(parsed);
+      
+      // If user has avatar in localStorage, mark as checked to prevent re-checking
+      if (parsed.avatarURL) {
+        console.log("✅ User has avatar in localStorage, skipping backend check");
+        setAvatarChecked(true);
+        setShowAvatarModal(false);
+      }
     }
     setLoading(false);
   }, []);
@@ -288,51 +297,98 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
 
+    console.log("🔄 useEffect triggered - user:", user.uid, "avatarChecked:", avatarChecked, "hasAvatar:", !!user.avatarURL);
+
+    // ✅ If user already has avatarURL in localStorage, don't check again
+    if (user.avatarURL) {
+      console.log("✅ User already has avatar in state, skipping check");
+      setShowAvatarModal(false);
+      setAvatarChecked(true);
+      return;
+    }
+
+    // ✅ If we've already checked for this user, don't check again
+    if (avatarChecked) {
+      console.log("✅ Already checked avatar for this user, skipping");
+      return;
+    }
+
     const checkAvatar = async () => {
+      console.log("🔍 Checking avatar from backend...");
       try {
         const token = localStorage.getItem("token");
-        if (!token) return;
+        if (!token) {
+          console.log("❌ No token found");
+          setAvatarChecked(true);
+          return;
+        }
 
         const res = await fetch("http://localhost:8000/journal/avatar", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
+        
+        console.log("🔍 useEffect Avatar API Response:", data);
+        
+        // Backend returns photoURL, not avatarURL
+        const avatarUrl = data.avatarURL || data.photoURL;
 
-        if (data.avatarURL) {
-          const updatedUser = { ...user, avatarURL: data.avatarURL };
+        if (avatarUrl) {
+          console.log("✅ Found avatar in backend, updating user");
+          const updatedUser = { ...user, avatarURL: avatarUrl };
           setUser(updatedUser);
           localStorage.setItem("user", JSON.stringify(updatedUser));
           setShowAvatarModal(false);
         } else {
+          console.log("🎨 No avatar found, showing modal");
+          // Only show modal if backend confirms no avatar exists
           setShowAvatarModal(true);
         }
+        setAvatarChecked(true);
       } catch (err) {
         console.error("❌ Failed to fetch avatar:", err);
-        setShowAvatarModal(true);
+        // Don't show modal on error - user might already have avatar
+        setShowAvatarModal(false);
+        setAvatarChecked(true);
       }
     };
 
     checkAvatar();
-  }, [user?.uid]);
+  }, [user, avatarChecked]);
 
   const handleAvatarSelect = async (url) => {
     try {
       const token = localStorage.getItem("token");
+      console.log("💾 Saving avatar:", url);
+      
       const res = await fetch("http://localhost:8000/journal/avatar", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ avatarURL: url }),
+        body: JSON.stringify({ 
+          avatarURL: url, 
+          photoURL: url,
+          avatar: url // Try this too
+        }),
       });
 
       const data = await res.json();
+      console.log("💾 Save avatar response:", data);
+      
+      // Always update user state even if backend doesn't confirm success
+      // This prevents modal from showing again in same session
+      const updatedUser = { ...user, avatarURL: url };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      setShowAvatarModal(false);
+      setAvatarChecked(true);
+      
       if (data.success) {
-        const updatedUser = { ...user, avatarURL: url };
-        setUser(updatedUser);
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-        setShowAvatarModal(false);
+        console.log("✅ Avatar saved successfully to backend");
+      } else {
+        console.warn("⚠️ Backend returned success: false, but avatar saved locally");
       }
     } catch (err) {
       console.error("❌ Failed to save avatar:", err);
@@ -343,15 +399,69 @@ export default function App() {
     try {
       const token = await firebaseUser.getIdToken();
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(firebaseUser));
-      setUser(firebaseUser);
+      
+      // Reset avatar check flag for new login
+      setAvatarChecked(false);
+      
+      // Check if user has avatar before setting user state
+      const res = await fetch("http://localhost:8000/journal/avatar", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      
+      console.log("🔍 Avatar API Response:", data);
+      
+      // Check if response is actually a journal entry (wrong endpoint)
+      let avatarUrl = null;
+      if (data.date === 'avatar' || (data.title !== undefined && data.content !== undefined)) {
+        console.warn("⚠️ Backend returned journal entry instead of avatar! Wrong endpoint being called.");
+        console.warn("⚠️ Check if there's a route like /journal/:date that's catching /journal/avatar");
+        // Treat as no avatar
+        avatarUrl = null;
+      } else {
+        // Backend returns photoURL or avatarURL
+        avatarUrl = data.avatarURL || data.photoURL;
+      }
+      console.log("🔍 Has avatar?", !!avatarUrl);
+      
+      // Add avatarURL to user object if it exists
+      const userWithAvatar = avatarUrl 
+        ? { ...firebaseUser, avatarURL: avatarUrl }
+        : firebaseUser;
+      
+      console.log("🔍 User with avatar:", userWithAvatar);
+      
+      localStorage.setItem("user", JSON.stringify(userWithAvatar));
+      setUser(userWithAvatar);
+      
+      // If user has avatar, mark as checked. If not, show modal
+      if (avatarUrl) {
+        console.log("✅ User has avatar, hiding modal");
+        setAvatarChecked(true);
+        setShowAvatarModal(false);
+      } else {
+        console.log("🎨 New user, showing avatar modal");
+        // New user without avatar - show the modal
+        setShowAvatarModal(true);
+        setAvatarChecked(true);
+      }
     } catch (err) {
       console.error("❌ Login error:", err);
+      // Still set user even if avatar fetch fails
+      localStorage.setItem("user", JSON.stringify(firebaseUser));
+      setUser(firebaseUser);
+      setAvatarChecked(false); // Let useEffect try to check
     }
   };
 
+  // Sync theme with DOM
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    document.body.dataset.theme = theme;
   }, [theme]);
 
   if (loading) {
@@ -363,7 +473,7 @@ export default function App() {
   }
 
   if (!user) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
+    return <Login onLoginSuccess={handleLoginSuccess} theme={theme} />;
   }
 
   if (showAvatarModal && !user.avatarURL) {

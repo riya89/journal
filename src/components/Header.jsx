@@ -828,17 +828,6 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("theme", next);
-    document.body.dataset.theme = next;
-  };
-
   const baseYear = new Date().getFullYear();
   const years = [baseYear, baseYear + 1, baseYear + 2];
   const months = Array.from({ length: 12 }, (_, i) =>
@@ -883,6 +872,26 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
             )}
           </select>
 
+          {/* Theme Toggle Button */}
+          <button
+            onClick={() => {
+              const next = theme === "dark" ? "light" : "dark";
+              setTheme(next);
+              localStorage.setItem("theme", next);
+              document.body.dataset.theme = next;
+              // Toggle dark class on html element for Tailwind
+              if (next === "dark") {
+                document.documentElement.classList.add("dark");
+              } else {
+                document.documentElement.classList.remove("dark");
+              }
+            }}
+            className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 transition-all hover:scale-110"
+            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+
           <button
             className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 relative"
             onClick={() => setMenuOpen((p) => !p)}
@@ -908,14 +917,6 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
               </button>
             </div>
           )}
-
-          <button
-            onClick={toggleTheme}
-            className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10"
-            title="Toggle theme"
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
         </div>
       </div>
 

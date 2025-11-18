@@ -119,9 +119,35 @@ import { useState, useEffect } from "react";
 
 export default function ProfileSidebar({ theme, journalDates = [], selectedMonth, selectedYear, user }) {
   const [affirmation, setAffirmation] = useState("I am grounded, calm, and present.");
+  const [loadingAffirmation, setLoadingAffirmation] = useState(true);
 
+  // 🌸 Fetch daily affirmation from API
   useEffect(() => {
-    setAffirmation("I am grounded, calm, and present.");
+    const fetchAffirmation = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setLoadingAffirmation(false);
+          return;
+        }
+
+        const res = await fetch("http://localhost:8000/journal/affirmation/daily", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setAffirmation(data.affirmation);
+        }
+      } catch (err) {
+        console.error("Failed to fetch affirmation:", err);
+        // Keep default affirmation on error
+      } finally {
+        setLoadingAffirmation(false);
+      }
+    };
+
+    fetchAffirmation();
   }, []);
 
   // ✅ Use selected month/year if passed from props, else fallback to today
@@ -155,9 +181,9 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
   };
 
   return (
-    <aside className="flex flex-col gap-4">
-      <div className="p-4 text-center bg-white dark:bg-[#151515] rounded-[18px] shadow-soft">
-        <div className="w-[120px] h-[120px] mx-auto mb-3 rounded-[20px] overflow-hidden">
+    <aside className="flex flex-col gap-3">
+      <div className="p-3 text-center bg-white dark:bg-[#151515] rounded-[16px] shadow-soft">
+        <div className="w-[90px] h-[90px] mx-auto mb-2 rounded-[16px] overflow-hidden">
           <img
             src={
               user?.avatarURL ||
@@ -167,45 +193,49 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
             className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
           />
         </div>
-        <div className="text-[26px] font-semibold text-[#7A916C] dark:text-[#EBDDBF]">
+        <div className="text-[20px] font-semibold text-[#7A916C] dark:text-[#EBDDBF]">
           {user?.displayName || "Riya"}
         </div>
       </div>
 
       {/* 🌿 Affirmation Box */}
-      <div className="bg-[#E6F0D1] dark:bg-[#3a2e20] text-[#7A916C] dark:text-[#EBDDBF] rounded-[16px] shadow-soft p-4 flex flex-col">
-        <h4 className="text-lg font-semibold mb-2">Affirmation of the day..</h4>
-        <p className="leading-relaxed text-[15px]">{affirmation}</p>
+      <div className="bg-[#E6F0D1] dark:bg-[#3a2e20] text-[#7A916C] dark:text-[#EBDDBF] rounded-[14px] shadow-soft p-3 flex flex-col">
+        <h4 className="text-[15px] font-semibold mb-1.5">Affirmation of the day..</h4>
+        {loadingAffirmation ? (
+          <p className="leading-relaxed text-[13px] opacity-60 animate-pulse">Loading...</p>
+        ) : (
+          <p className="leading-relaxed text-[13px]">{affirmation}</p>
+        )}
       </div>
 
       {/* 📅 Calendar */}
       <div
-        className={`rounded-[16px] shadow-soft p-4 ${
+        className={`rounded-[14px] shadow-soft p-3 ${
           theme === "dark"
             ? "bg-[#2b241c] text-[#EBDDBF]"
             : "bg-white text-[#7A916C]"
         }`}
       >
         {/* 🗓 Month-Year Heading */}
-        <div className="text-center font-semibold text-lg mb-2">
+        <div className="text-center font-semibold text-[16px] mb-1.5">
           {new Date(year, month).toLocaleString("default", { month: "long" })} {year}
         </div>
 
         {/* Days of week */}
-        <div className="grid grid-cols-7 text-center text-[13px] font-medium opacity-70 mb-1">
+        <div className="grid grid-cols-7 text-center text-[11px] font-medium opacity-70 mb-1">
           {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
             <div key={d}>{d}</div>
           ))}
         </div>
 
         {/* Days */}
-        <div className="grid grid-cols-7 gap-[6px] text-center">
+        <div className="grid grid-cols-7 gap-[4px] text-center">
           {days.map((day, i) =>
             day ? (
               <div
                 key={i}
                 className={`
-                  relative py-[6px] rounded-[8px] cursor-default text-[14px]
+                  relative py-[4px] rounded-[6px] cursor-default text-[12px]
                   transition-all duration-300
                   ${
                     isToday(day)
@@ -224,7 +254,7 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
 
                 {/* 🔹 Small dot for journal entry */}
                 {hasJournal(day) && !isToday(day) && (
-                  <div className="absolute -bottom-[3px] left-1/2 -translate-x-1/2 w-[5px] h-[5px] rounded-full bg-[#7A916C] dark:bg-[#EBDDBF]/90 shadow-[0_0_6px_rgba(123,145,108,0.6)]"></div>
+                  <div className="absolute -bottom-[2px] left-1/2 -translate-x-1/2 w-[4px] h-[4px] rounded-full bg-[#7A916C] dark:bg-[#EBDDBF]/90 shadow-[0_0_4px_rgba(123,145,108,0.6)]"></div>
                 )}
               </div>
             ) : (
