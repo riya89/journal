@@ -1,7 +1,25 @@
 import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../lib/firebase";
+import { Sun, Moon } from "lucide-react";
+import { useState, useEffect } from "react";
 
-export default function Login({ onLoginSuccess, theme }) {
+export default function Login({ onLoginSuccess, theme: initialTheme }) {
+  const [theme, setTheme] = useState(initialTheme || localStorage.getItem("theme") || "light");
+
+  // Sync theme with localStorage and DOM
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    document.body.dataset.theme = theme;
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === "dark" ? "light" : "dark");
+  };
   const handleGoogleLogin = async () => {
   try {
     const userCred = await signInWithPopup(auth, provider);
@@ -52,6 +70,19 @@ export default function Login({ onLoginSuccess, theme }) {
           ? 'bg-gradient-to-br from-[#1a1410]/90 via-[#2b241c]/85 to-[#3a2e20]/90 mix-blend-darken'
           : 'bg-gradient-to-br from-[#E6F0D1]/40 via-[#FFFBEA]/50 to-[#F3EFE2]/40'
       }`}></div>
+
+      {/* Theme Toggle Button */}
+      <button
+        onClick={toggleTheme}
+        className={`absolute top-6 right-6 z-20 p-3 rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110 ${
+          theme === 'dark'
+            ? 'bg-[#2b241c]/60 border border-[#5b4a3d]/30 text-[#EBDDBF]'
+            : 'bg-white/70 border border-[#7A916C]/20 text-[#7A916C]'
+        }`}
+        aria-label="Toggle theme"
+      >
+        {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
+      </button>
 
       {/* Main Content */}
       <div className={`relative z-10 text-center px-6 py-10 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] max-w-lg mx-auto ${

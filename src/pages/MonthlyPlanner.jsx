@@ -1,0 +1,755 @@
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { TASK_CATEGORIES } from "../constants/taskCategories";
+import DopamineGraph from "../components/DopamineGraph";
+import TaskModal from "../components/TaskModal";
+import TemplatesModal from "../components/TemplatesModal";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+// Sortable Task Row Component
+function SortableTaskRow({ task, theme, daysInMonth, yearMonth, completions, exceptions, handleToggleTask, handleEditTask, handleDeleteTask }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: task.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: isDragging ? 'grabbing' : 'default',
+    zIndex: isDragging ? 1000 : 'auto',
+    position: 'relative',
+  };
+
+  const category = TASK_CATEGORIES[task.category];
+
+  // Helper function to check if task applies to a specific date
+  const taskAppliesOnDate = (date) => {
+    if (!task.isRecurring) {
+      // Non-recurring tasks apply to all dates in their month
+      return true;
+    }
+    
+    // For recurring tasks, check applicableDates array
+    if (!task.applicableDates || !Array.isArray(task.applicableDates)) {
+      return false;
+    }
+    
+    // Check if date is in applicableDates
+    if (!task.applicableDates.includes(date)) {
+      return false;
+    }
+    
+    // Check for exceptions
+    const taskExceptions = exceptions?.[task.id];
+    if (taskExceptions && taskExceptions[date]) {
+      const exception = taskExceptions[date];
+      // If exception marks this occurrence as deleted, don't show it
+      if (exception.isDeleted) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={{
+        ...style,
+        backgroundColor:
+          theme === "dark"
+            ? `${category.darkColor}15`
+            : `${category.color}10`,
+      }}
+      className={isDragging ? 'shadow-2xl' : ''}
+    >
+      <td
+        className="sticky left-0 z-10 p-3 font-medium"
+        style={{
+          backgroundColor:
+            theme === "dark"
+              ? `${category.darkColor}20`
+              : `${category.color}15`,
+        }}
+      >
+        <div className="flex items-center gap-2">
+          {/* Drag Handle */}
+          <button
+            {...attributes}
+            {...listeners}
+            className={`cursor-grab active:cursor-grabbing opacity-0 hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity ${
+              theme === "dark" ? "text-[#EBDDBF]" : "text-[#7A916C]"
+            }`}
+            style={{ touchAction: "none" }}
+            aria-label="Drag to reorder"
+          >
+            <span className="text-lg">⋮⋮</span>
+          </button>
+          <span className="mr-2">{category.icon}</span>
+          <span>{task.name}</span>
+          {task.timeEstimate && (
+            <span className="text-sm text-gray-500 ml-2">
+              ({formatTime(task.timeEstimate)})
+            </span>
+          )}
+          {task.isRecurring && (
+            <span className="text-sm text-gray-500 ml-1" title="Recurring task">
+              🔁
+            </span>
+          )}
+        </div>
+      </td>
+      {Array.from({ length: daysInMonth }, (_, day) => {
+        const date = `${yearMonth}-${String(day + 1).padStart(2, "0")}`;
+        const appliesOnDate = taskAppliesOnDate(date);
+        const isCompleted = completions[date]?.includes(task.id);
+        
+        return (
+          <td key={day} className="p-3 text-center">
+            {appliesOnDate ? (
+              <input
+                type="checkbox"
+                checked={isCompleted}
+                onChange={() => handleToggleTask(task.id, day + 1)}
+                className="w-5 h-5 cursor-pointer"
+                style={{ accentColor: category.color }}
+              />
+            ) : (
+              <span className="text-gray-400">-</span>
+            )}
+          </td>
+        );
+      })}
+      <td className="p-3 text-center">
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => handleEditTask(task)}
+            className={`px-2 py-1 rounded transition ${
+              theme === "dark"
+                ? "text-[#EBDDBF] hover:bg-[#3a2e20]"
+                : "text-[#7A916C] hover:bg-gray-200"
+            }`}
+            title="Edit task"
+          >
+            ✏️
+          </button>
+          <button
+            onClick={() => handleDeleteTask(task.id)}
+            className="text-red-500 hover:text-red-700 font-bold"
+            title="Delete task"
+          >
+            ✕
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// Helper function to format time
+function formatTime(minutes) {
+  if (!minutes) return "";
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}m`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+}
+
+// Helper function to calculate daily total time
+function calculateDailyTotal(tasks, date) {
+  return tasks.reduce((total, task) => {
+    // Check if task applies to this date
+    if (task.isRecurring && task.applicableDates) {
+      // For recurring tasks, check if date is in applicableDates
+      if (task.applicableDates.includes(date)) {
+        return total + (task.timeEstimate || 0);
+      }
+    } else if (!task.isRecurring) {
+      // For non-recurring tasks, they apply to all dates in their month
+      return total + (task.timeEstimate || 0);
+    }
+    return total;
+  }, 0);
+}
+
+// Helper function to get color for daily total
+function getTotalColor(totalMinutes, theme) {
+  if (totalMinutes === 0) return "";
+  
+  const hours = totalMinutes / 60;
+  
+  if (hours <= 6) {
+    // Green for 0-6 hours
+    return theme === "dark" ? "text-green-400" : "text-green-600";
+  } else if (hours <= 8) {
+    // Yellow for 6-8 hours
+    return theme === "dark" ? "text-yellow-400" : "text-yellow-600";
+  } else {
+    // Red for 8+ hours
+    return theme === "dark" ? "text-red-400" : "text-red-600";
+  }
+}
+
+export default function MonthlyPlanner({ theme }) {
+  const navigate = useNavigate();
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [tasks, setTasks] = useState([]);
+  const [completions, setCompletions] = useState({});
+  const [exceptions, setExceptions] = useState({});
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [deletingTask, setDeletingTask] = useState(null);
+  const [deleteDate, setDeleteDate] = useState(null);
+  const [dailyStats, setDailyStats] = useState([]);
+
+  const yearMonth = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
+  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+
+  // Set up drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Fetch planner data
+  const fetchPlannerData = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`http://localhost:8000/journal/planner/${yearMonth}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      console.log("📋 Fetched planner data:", data);
+      setTasks(data.tasks || []);
+      setCompletions(data.completions || {});
+      setExceptions(data.exceptions || {});
+    } catch (err) {
+      console.error("Failed to fetch planner:", err);
+    }
+  }, [yearMonth]);
+
+  const fetchStats = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`http://localhost:8000/journal/planner/stats/${yearMonth}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setDailyStats(data.dailyStats || []);
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
+    }
+  }, [yearMonth]);
+
+  // Fetch data when month/year changes
+  useEffect(() => {
+    fetchPlannerData();
+    fetchStats();
+  }, [fetchPlannerData, fetchStats]);
+
+  const handleAddTask = async (taskData) => {
+    const token = localStorage.getItem("token");
+    try {
+      // Always use POST endpoint - backend handles create vs update based on taskId presence
+      const endpoint = "http://localhost:8000/journal/planner/task";
+      
+      // Add taskId to body if editing
+      const requestBody = editingTask
+        ? { ...taskData, taskId: editingTask.id }
+        : taskData;
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        // Show success toast notification
+        showToast("Task saved successfully!", "success");
+        
+        // Refresh planner data to get updated tasks and affected dates
+        await fetchPlannerData();
+        await fetchStats();
+        
+        // Close modal and reset editing state
+        setShowAddModal(false);
+        setEditingTask(null);
+      } else {
+        showToast("Failed to save task. Please try again.", "error");
+      }
+    } catch (err) {
+      console.error("Failed to save task:", err);
+      showToast("Failed to save task. Please try again.", "error");
+    }
+  };
+
+  // Toast notification helper
+  const showToast = (message, type = "info") => {
+    // Simple toast implementation - you can enhance this with a toast library
+    const toast = document.createElement("div");
+    toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-opacity ${
+      type === "success"
+        ? "bg-green-500 text-white"
+        : type === "error"
+        ? "bg-red-500 text-white"
+        : "bg-blue-500 text-white"
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+  };
+
+  const handleToggleTask = async (taskId, day) => {
+    const date = `${yearMonth}-${String(day).padStart(2, "0")}`;
+    const isCompleted = completions[date]?.includes(taskId);
+
+    const token = localStorage.getItem("token");
+    try {
+      await fetch("http://localhost:8000/journal/planner/toggle", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          yearMonth,
+          taskId,
+          date,
+          completed: !isCompleted,
+        }),
+      });
+
+      // Update local state
+      const newCompletions = { ...completions };
+      if (!newCompletions[date]) {
+        newCompletions[date] = [];
+      }
+
+      if (isCompleted) {
+        newCompletions[date] = newCompletions[date].filter((id) => id !== taskId);
+      } else {
+        newCompletions[date].push(taskId);
+      }
+
+      setCompletions(newCompletions);
+      fetchStats(); // Refresh graph
+    } catch (err) {
+      console.error("Failed to toggle task:", err);
+    }
+  };
+
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setShowAddModal(true);
+  };
+
+  const handleDeleteTask = (taskId, date = null) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    setDeletingTask(task);
+    setDeleteDate(date);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async (deleteScope) => {
+    if (!deletingTask) return;
+
+    // For recurring tasks, if "single occurrence" is selected but no date is provided,
+    // we need a date. Since delete is triggered from Actions column without date context,
+    // we'll show an error message for single occurrence without a date.
+    if (deletingTask.isRecurring && deleteScope === "single" && !deleteDate) {
+      showToast("Please delete from a specific date cell, or choose 'Delete all occurrences'", "error");
+      setShowDeleteModal(false);
+      setDeletingTask(null);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+      // Build the URL with query parameters
+      let url = `http://localhost:8000/journal/planner/task/${yearMonth}/${deletingTask.id}`;
+      const params = new URLSearchParams();
+      
+      if (deletingTask.isRecurring) {
+        params.append("scope", deleteScope);
+        if (deleteScope === "single" && deleteDate) {
+          params.append("date", deleteDate);
+        }
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        showToast("Task deleted successfully!", "success");
+        
+        // Refresh planner data to reflect changes
+        await fetchPlannerData();
+        await fetchStats();
+      } else {
+        showToast("Failed to delete task. Please try again.", "error");
+      }
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+      showToast("Failed to delete task. Please try again.", "error");
+    } finally {
+      setShowDeleteModal(false);
+      setDeletingTask(null);
+      setDeleteDate(null);
+    }
+  };
+
+  // Handle edit template from TemplatesModal
+  const handleEditTemplate = (template) => {
+    setEditingTask(template);
+    setShowTemplatesModal(false);
+    setShowAddModal(true);
+  };
+
+  // Handle delete template from TemplatesModal
+  const handleDeleteTemplate = async (templateId) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`http://localhost:8000/journal/planner/task/${yearMonth}/${templateId}?scope=all`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
+        showToast("Template deleted successfully!", "success");
+        // Refresh planner data to reflect changes
+        await fetchPlannerData();
+        await fetchStats();
+      } else {
+        showToast("Failed to delete template. Please try again.", "error");
+      }
+    } catch (err) {
+      console.error("Failed to delete template:", err);
+      showToast("Failed to delete template. Please try again.", "error");
+      throw err; // Re-throw to let TemplatesModal handle it
+    }
+  };
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = tasks.findIndex((t) => t.id === active.id);
+    const newIndex = tasks.findIndex((t) => t.id === over.id);
+
+    // Optimistically update local state
+    const newTasks = arrayMove(tasks, oldIndex, newIndex);
+    setTasks(newTasks);
+
+    // Calculate new sortOrder values for all affected tasks
+    const taskOrders = newTasks.map((task, index) => ({
+      taskId: task.id,
+      sortOrder: index,
+    }));
+
+    // Persist to backend
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch("http://localhost:8000/journal/planner/task/reorder", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          yearMonth,
+          taskOrders,
+        }),
+      });
+
+      const data = await res.json();
+      
+      if (!data.success) {
+        // Revert on failure
+        setTasks(tasks);
+        showToast("Failed to reorder tasks. Please try again.", "error");
+      }
+    } catch (err) {
+      console.error("Failed to reorder tasks:", err);
+      // Revert on error
+      setTasks(tasks);
+      showToast("Failed to reorder tasks. Please try again.", "error");
+    }
+  };
+
+  return (
+    <div
+      className={`min-h-screen p-8 transition-colors duration-500 ${
+        theme === "dark" ? "bg-[#1a1410] text-[#EBDDBF]" : "bg-[#FFFBEA] text-[#7A916C]"
+      }`}
+    >
+      {/* Header */}
+      <div className="max-w-7xl mx-auto mb-8">
+        {/* Back Button */}
+        <button
+          onClick={() => navigate("/")}
+          className={`mb-4 flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+            theme === "dark"
+              ? "bg-[#2b241c] text-[#EBDDBF] hover:bg-[#3a2e20]"
+              : "bg-white text-[#7A916C] hover:bg-gray-100"
+          }`}
+        >
+          <span className="text-xl">←</span>
+          <span>Back to Home</span>
+        </button>
+
+        <h1 className="text-4xl font-bold mb-4">📅 Monthly Planner</h1>
+        
+        {/* Month/Year Selector */}
+        <div className="flex gap-4 items-center">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            className={`px-4 py-2 rounded-lg ${
+              theme === "dark"
+                ? "bg-[#2b241c] text-[#EBDDBF]"
+                : "bg-white text-[#7A916C]"
+            }`}
+          >
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i} value={i}>
+                {new Date(2024, i).toLocaleString("default", { month: "long" })}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className={`px-4 py-2 rounded-lg ${
+              theme === "dark"
+                ? "bg-[#2b241c] text-[#EBDDBF]"
+                : "bg-white text-[#7A916C]"
+            }`}
+          >
+            {[2024, 2025, 2026].map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className={`px-6 py-2 rounded-lg font-semibold transition ${
+              theme === "dark"
+                ? "bg-[#EBDDBF] text-[#2b241c] hover:bg-[#EBDDBF]/90"
+                : "bg-[#7A916C] text-white hover:bg-[#6c7a5b]"
+            }`}
+          >
+            + Add Task
+          </button>
+
+          <button
+            onClick={() => setShowTemplatesModal(true)}
+            className={`px-6 py-2 rounded-lg font-semibold transition ${
+              theme === "dark"
+                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3e30]"
+                : "bg-gray-200 text-[#7A916C] hover:bg-gray-300"
+            }`}
+          >
+            📋 View Templates
+          </button>
+        </div>
+      </div>
+
+      {/* Planner Grid */}
+      <div className="max-w-7xl mx-auto mb-12 overflow-x-auto">
+        <div className="min-w-max">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th
+                  className={`sticky left-0 z-10 p-3 text-left font-semibold ${
+                    theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                  }`}
+                >
+                  Task
+                </th>
+                {Array.from({ length: daysInMonth }, (_, i) => (
+                  <th
+                    key={i}
+                    className={`p-3 text-center font-semibold ${
+                      theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                    }`}
+                  >
+                    {i + 1}
+                  </th>
+                ))}
+                <th
+                  className={`p-3 text-center font-semibold ${
+                    theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                  }`}
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="group">
+              <SortableContext
+                items={tasks.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {tasks.map((task) => (
+                  <SortableTaskRow
+                    key={task.id}
+                    task={task}
+                    theme={theme}
+                    daysInMonth={daysInMonth}
+                    yearMonth={yearMonth}
+                    completions={completions}
+                    exceptions={exceptions}
+                    handleToggleTask={handleToggleTask}
+                    handleEditTask={handleEditTask}
+                    handleDeleteTask={handleDeleteTask}
+                  />
+                ))}
+              </SortableContext>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td
+                  className={`sticky left-0 z-10 p-3 font-semibold ${
+                    theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                  }`}
+                >
+                  Total Time
+                </td>
+                {Array.from({ length: daysInMonth }, (_, day) => {
+                  const date = `${yearMonth}-${String(day + 1).padStart(2, "0")}`;
+                  const dailyTotal = calculateDailyTotal(tasks, date);
+                  const colorClass = getTotalColor(dailyTotal, theme);
+                  return (
+                    <td
+                      key={day}
+                      className={`p-3 text-center font-semibold ${
+                        theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                      } ${colorClass}`}
+                    >
+                      {dailyTotal > 0 ? formatTime(dailyTotal) : "-"}
+                    </td>
+                  );
+                })}
+                <td
+                  className={`p-3 text-center ${
+                    theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                  }`}
+                />
+              </tr>
+            </tfoot>
+          </table>
+
+          {tasks.length === 0 && (
+            <div className="text-center py-12 opacity-60">
+              No tasks yet. Click "+ Add Task" to get started!
+            </div>
+          )}
+          </DndContext>
+        </div>
+      </div>
+
+      {/* Dopamine Graph */}
+      <div className="max-w-7xl mx-auto mb-12">
+        <DopamineGraph dailyStats={dailyStats} theme={theme} />
+      </div>
+      
+      {/* Task Modal */}
+      <TaskModal
+        isOpen={showAddModal}
+        onClose={() => {
+          setShowAddModal(false);
+          setEditingTask(null);
+        }}
+        onSave={handleAddTask}
+        theme={theme}
+        editingTask={editingTask}
+        yearMonth={yearMonth}
+      />
+
+      {/* Templates Modal */}
+      <TemplatesModal
+        isOpen={showTemplatesModal}
+        onClose={() => setShowTemplatesModal(false)}
+        theme={theme}
+        onEdit={handleEditTemplate}
+        onDelete={handleDeleteTemplate}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingTask(null);
+          setDeleteDate(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        theme={theme}
+        taskName={deletingTask?.name || ""}
+        isRecurring={deletingTask?.isRecurring || false}
+      />
+    </div>
+  );
+}

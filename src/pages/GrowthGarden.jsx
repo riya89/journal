@@ -1230,6 +1230,9 @@ import F3N from "../assets/F3N.png";
 import F4N from "../assets/F4N.png";
 import F5N from "../assets/F5N.png";
 import { DAY_FLOWER_SPOTS, NIGHT_FLOWER_SPOTS } from "./FlowerSpots";
+import FloatingParticles from "../components/FloatingParticles";
+import FloatingGhosts from "../components/FloatingGhosts";
+import Fireflies from "../components/Fireflies";
 
 const lightFlowers = [F1, F2, F3, F4, F5];
 const darkFlowers = [F1N, F2N, F3N, F4N, F5N];
@@ -1409,6 +1412,11 @@ export default function GrowthGarden({ theme = "light" }) {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-gradient-to-b from-sky-200 to-sky-100 dark:from-slate-900 dark:to-slate-800">
+      {/* ✨ Floating Particles & Ghosts */}
+      <FloatingParticles theme={theme} />
+      <FloatingGhosts theme={theme} />
+      <Fireflies theme={theme} />
+
       {/* 🌿 Background */}
       <img
         src={theme === "dark" ? nightGarden : dayGarden}
@@ -1427,7 +1435,7 @@ export default function GrowthGarden({ theme = "light" }) {
         }`}
       >
         <ArrowLeft size={20} />
-        <span className="font-medium">Back</span>
+        <span className="font-medium"></span>
       </motion.button>
 
       {/* 🌸 Title + Month Nav */}

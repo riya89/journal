@@ -269,10 +269,13 @@ import Login from "./pages/Login";
 import Home from "./pages/Home";
 import GrowthGarden from "./pages/GrowthGarden";
 import AvatarSelectModal from "./components/AvatarSelectModal";
+import WelcomeModal from "./components/WelcomeModal";
 import AIAssistant from "./pages/AIAssistant"; // 👈 add this at top
 import MoodDashboard from "./pages/MoodDashboard";
+import MonthlyPlanner from "./pages/MonthlyPlanner";
 export default function App() {
   const [user, setUser] = useState(null);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
@@ -436,13 +439,14 @@ export default function App() {
       
       // If user has avatar, mark as checked. If not, show modal
       if (avatarUrl) {
-        console.log("✅ User has avatar, hiding modal");
+        console.log("✅ User has avatar, hiding modals");
         setAvatarChecked(true);
+        setShowWelcomeModal(false);
         setShowAvatarModal(false);
       } else {
-        console.log("🎨 New user, showing avatar modal");
-        // New user without avatar - show the modal
-        setShowAvatarModal(true);
+        console.log("🎨 New user, showing welcome modal first");
+        // New user without avatar - show welcome modal first, then avatar modal
+        setShowWelcomeModal(true);
         setAvatarChecked(true);
       }
     } catch (err) {
@@ -476,6 +480,19 @@ export default function App() {
     return <Login onLoginSuccess={handleLoginSuccess} theme={theme} />;
   }
 
+  // Show welcome modal first for new users
+  if (showWelcomeModal && !user.avatarURL) {
+    return (
+      <WelcomeModal 
+        theme={theme} 
+        onComplete={() => {
+          setShowWelcomeModal(false);
+          setShowAvatarModal(true);
+        }} 
+      />
+    );
+  }
+
   if (showAvatarModal && !user.avatarURL) {
     return <AvatarSelectModal theme={theme} onSelect={handleAvatarSelect} />;
   }
@@ -495,7 +512,10 @@ export default function App() {
   path="/mood-dashboard"
   element={<MoodDashboard user={user} theme={theme} setTheme={setTheme} />}
 />
-
+  <Route
+    path="/monthly-planner"
+    element={<MonthlyPlanner theme={theme} />}
+  />
 </Routes>
 
 

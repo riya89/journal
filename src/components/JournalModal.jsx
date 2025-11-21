@@ -828,6 +828,15 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
     setPhotoFile(file);
   };
 
+  // 🔊 Play book opening sound when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const bookOpenSound = new Audio("/sounds/book-open.mp3");
+      bookOpenSound.volume = 0.3;
+      bookOpenSound.play().catch(() => {});
+    }
+  }, [isOpen]);
+
   // 🎤 Voice-to-Text
   const [isRecording, setIsRecording] = useState(false);
   const [tempTranscript, setTempTranscript] = useState("");
@@ -903,17 +912,38 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
     }
   };
 
-  // 🔉 Typing sounds
+  // 🔉 Typing sounds - Pre-load audio pool to prevent BGM interruption
   const [soundEnabled, setSoundEnabled] = useState(
     localStorage.getItem("soundEnabled") === "true"
   );
+  const typeSoundsRef = useRef([]);
+
+  // Pre-load typing sounds once
+  useEffect(() => {
+    const sounds = ["/sounds/type1.mp3", "/sounds/type2.mp3", "/sounds/type3.mp3"];
+    typeSoundsRef.current = sounds.map(src => {
+      const audio = new Audio(src);
+      audio.volume = theme === "dark" ? 0.12 : 0.18;
+      audio.preload = "auto";
+      return audio;
+    });
+  }, [theme]);
 
   const playTypeSound = () => {
-    if (!soundEnabled) return;
-    const sounds = ["/sounds/type1.mp3", "/sounds/type2.mp3", "/sounds/type3.mp3"];
-    const sound = new Audio(sounds[Math.floor(Math.random() * sounds.length)]);
-    sound.volume = theme === "dark" ? 0.12 : 0.18;
-    sound.play().catch(() => {});
+    if (!soundEnabled || typeSoundsRef.current.length === 0) return;
+    
+    // Pick a random pre-loaded sound
+    const sound = typeSoundsRef.current[Math.floor(Math.random() * typeSoundsRef.current.length)];
+    
+    // Clone and play to allow overlapping sounds without stopping BGM
+    const clone = sound.cloneNode();
+    clone.volume = theme === "dark" ? 0.12 : 0.18;
+    clone.play().catch(() => {});
+    
+    // Clean up clone after it finishes
+    clone.onended = () => {
+      clone.remove();
+    };
   };
 
   const handleSoundToggle = () => {
@@ -931,37 +961,69 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   );
   const bgmRef = useRef(null);
 
-  const getBgmSrc = () =>
-    theme === "dark" ? "/sounds/bgm1.mp3" : "/sounds/bgm2.mp3";
+  const pauseListenerRef = useRef(null);
 
   const startBgm = useCallback(() => {
-    const newSrc = getBgmSrc();
+    const newSrc = theme === "dark" ? "/sounds/bgm1.mp3" : "/sounds/bgm2.mp3";
+    
     if (!bgmRef.current || bgmRef.current.src !== window.location.origin + newSrc) {
       if (bgmRef.current) {
+        // Remove old pause listener
+        if (pauseListenerRef.current) {
+          bgmRef.current.removeEventListener('pause', pauseListenerRef.current);
+        }
         bgmRef.current.pause();
         bgmRef.current.currentTime = 0;
       }
+      
       bgmRef.current = new Audio(newSrc);
       bgmRef.current.loop = true;
       bgmRef.current.volume = bgmVolume;
+      bgmRef.current.preservesPitch = true;
+      
+      // Create and store pause listener
+      pauseListenerRef.current = () => {
+        // Only resume if modal is open and BGM is enabled
+        if (isOpen && bgmEnabled && bgmRef.current && !bgmRef.current.ended) {
+          setTimeout(() => {
+            if (bgmRef.current && bgmRef.current.paused && isOpen && bgmEnabled) {
+              bgmRef.current.play().catch(() => {});
+            }
+          }, 50);
+        }
+      };
+      
+      bgmRef.current.addEventListener('pause', pauseListenerRef.current);
       bgmRef.current.play().catch(() => {});
-    } else if (bgmRef.current.paused) {
+    } else if (bgmRef.current.paused && isOpen) {
       bgmRef.current.play().catch(() => {});
     }
-  });
+  }, [bgmEnabled, bgmVolume, theme, isOpen]);
 
-  const stopBgm = () => {
+  const stopBgm = useCallback(() => {
     if (bgmRef.current) {
+      // Remove pause listener to prevent auto-resume
+      if (pauseListenerRef.current) {
+        bgmRef.current.removeEventListener('pause', pauseListenerRef.current);
+        pauseListenerRef.current = null;
+      }
       bgmRef.current.pause();
       bgmRef.current.currentTime = 0;
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (isOpen && bgmEnabled) startBgm();
-    else stopBgm();
-    return () => stopBgm();
-  }, [isOpen, bgmEnabled, startBgm]);
+    if (isOpen && bgmEnabled) {
+      startBgm();
+    } else {
+      stopBgm();
+    }
+    
+    // Cleanup when modal closes
+    return () => {
+      stopBgm();
+    };
+  }, [isOpen, bgmEnabled, startBgm, stopBgm]);
 
   useEffect(() => {
     if (isOpen && bgmEnabled) startBgm();
@@ -1139,10 +1201,11 @@ const handleSave = async () => {
       onClick={onClose}
       className="fixed inset-0 bg-[rgba(0,0,0,0.6)] backdrop-blur-sm flex justify-center items-center z-[200]"
     >
-      <div className="relative" onClick={(e) => e.stopPropagation()}>
+      <div className="relative animate-bookFadeIn" onClick={(e) => e.stopPropagation()}>
         {/* Book Container with Vintage Paper Texture */}
         <div
-          className="relative flex w-[850px] h-[620px] rounded-md overflow-hidden shadow-2xl transition-all duration-500"
+          className="relative flex w-[850px] h-[620px] rounded-md overflow-hidden shadow-2xl"
+          style={{ perspective: '2000px' }}
           style={{
             background: theme === 'dark'
               ? 'linear-gradient(135deg, #2a2520 0%, #1f1a15 50%, #2a2520 100%)'
@@ -1204,7 +1267,7 @@ const handleSave = async () => {
 
         {/* LEFT PAGE */}
         <div
-          className={`flex-1 p-10 pr-8 border-r overflow-y-auto font-['Shantell_Sans'] leading-relaxed ${
+          className={`flex-1 p-10 pr-8 border-r overflow-y-auto font-['Shantell_Sans'] leading-relaxed animate-bookOpenLeft ${
             theme === "dark" ? "text-[#EBDDBF]" : "text-[#6c7a5b]"
           }`}
         >
@@ -1352,7 +1415,7 @@ const handleSave = async () => {
 
         {/* RIGHT PAGE */}
         <div
-          className={`flex-1 p-10 pl-8 overflow-y-auto font-['Shantell_Sans'] leading-relaxed ${
+          className={`flex-1 p-10 pl-8 overflow-y-auto font-['Shantell_Sans'] leading-relaxed animate-bookOpenRight ${
             theme === "dark" ? "text-[#EBDDBF]" : "text-[#6c7a5b]"
           }`}
         >

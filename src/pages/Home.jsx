@@ -214,6 +214,8 @@ import JournalModal from "../components/JournalModal";
 import FlowerMeadow from "../components/FlowerMeadow";
 import FloatingParticles from "../components/FloatingParticles";
 import FloatingGhosts from "../components/FloatingGhosts";
+import Fireflies from "../components/Fireflies";
+import CornerSpider from "../components/CornerSpider";
 
 export default function Home({ user, setUser, theme, setTheme }) {
   const navigate = useNavigate();
@@ -234,6 +236,10 @@ export default function Home({ user, setUser, theme, setTheme }) {
       
       {/* 👻 Cute Floating Ghosts */}
       <FloatingGhosts theme={theme} />
+      <Fireflies theme={theme} />
+      
+      {/* 🕷️ Corner Spider */}
+      <CornerSpider theme={theme} />
 
       {/* 🕰 Header */}
       <Header
@@ -262,6 +268,25 @@ export default function Home({ user, setUser, theme, setTheme }) {
 
       {/* 🌸 Animated Flowers */}
       <FlowerMeadow theme={theme} />
+
+      {/* 📋 Monthly Planner Icon - Far Left */}
+<div
+  className="fixed bottom-[70px] right-[410px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
+  onClick={() => navigate("/monthly-planner")}
+>
+  <div className="w-[100px] h-[100px] flex items-end justify-center">
+    <div className={`text-6xl drop-shadow-lg ${theme === "dark" ? "opacity-90" : "opacity-100"}`}>
+      📋
+    </div>
+  </div>
+  <p
+    className={`text-center text-sm font-medium mt-1 tracking-wide ${
+      theme === "dark" ? "text-[#EBDDBF]" : "text-[#7A916C]"
+    }`}
+  >
+    Planner
+  </p>
+</div>
 
       {/* 🤖 AI Assistant Floating Icon - Left */}
 <div

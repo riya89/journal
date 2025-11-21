@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import petalImg from '../assets/petal.png';
+import ghostImg from '../assets/ghost.png';
 
 export default function FloatingParticles({ theme }) {
   const canvasRef = useRef(null);
@@ -10,6 +12,14 @@ export default function FloatingParticles({ theme }) {
     const ctx = canvas.getContext('2d');
     let animationFrameId;
     let particles = [];
+    let particleImage = new Image();
+    let imageLoaded = false;
+
+    // Load the appropriate image based on theme
+    particleImage.src = theme === 'dark' ? ghostImg : petalImg;
+    particleImage.onload = () => {
+      imageLoaded = true;
+    };
 
     // Set canvas size
     const resizeCanvas = () => {
@@ -28,12 +38,16 @@ export default function FloatingParticles({ theme }) {
       reset() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 2.5 + 0.8; // 0.8 to 3.3px (slightly larger)
-        this.speedX = (Math.random() - 0.5) * 0.3; // Slow horizontal drift
-        this.speedY = -Math.random() * 0.5 - 0.2; // Slow upward float
-        this.opacity = Math.random() * 0.6 + 0.5; // 0.5 to 1.1 (brighter)
+        // Increase petal size by 15% in light theme
+        const baseSize = theme === 'dark' ? 20 : 23; // 15% larger for petals
+        this.size = Math.random() * 20 + baseSize; // 23-43px for petals, 20-40px for ghosts
+        this.speedX = (Math.random() - 0.5) * 0.4; // Slow horizontal drift
+        this.speedY = -Math.random() * 0.6 - 0.3; // Slow upward float
+        this.opacity = Math.random() * 0.5 + 0.4; // 0.4 to 0.9
         this.pulseSpeed = Math.random() * 0.02 + 0.01;
         this.pulsePhase = Math.random() * Math.PI * 2;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.02;
       }
 
       update() {
@@ -43,43 +57,45 @@ export default function FloatingParticles({ theme }) {
 
         // Pulse effect
         this.pulsePhase += this.pulseSpeed;
+        
+        // Rotation
+        this.rotation += this.rotationSpeed;
 
         // Reset if out of bounds
-        if (this.y < -10) {
-          this.y = canvas.height + 10;
+        if (this.y < -50) {
+          this.y = canvas.height + 50;
           this.x = Math.random() * canvas.width;
         }
-        if (this.x < -10) this.x = canvas.width + 10;
-        if (this.x > canvas.width + 10) this.x = -10;
+        if (this.x < -50) this.x = canvas.width + 50;
+        if (this.x > canvas.width + 50) this.x = -50;
       }
 
       draw() {
+        if (!imageLoaded) return;
+        
         const pulseFactor = Math.sin(this.pulsePhase) * 0.3 + 0.7; // 0.4 to 1.0
         const currentOpacity = this.opacity * pulseFactor;
         
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.globalAlpha = currentOpacity;
         
-        // Color based on theme
-        if (theme === 'dark') {
-          // Warm golden glow for dark mode - brighter
-          ctx.fillStyle = `rgba(235, 221, 191, ${currentOpacity})`;
-          ctx.shadowBlur = 15;
-          ctx.shadowColor = `rgba(235, 221, 191, ${currentOpacity})`;
-        } else {
-          // Soft green glow for light mode - brighter
-          ctx.fillStyle = `rgba(122, 145, 108, ${currentOpacity})`;
-          ctx.shadowBlur = 12;
-          ctx.shadowColor = `rgba(122, 145, 108, ${currentOpacity * 0.9})`;
-        }
+        // Draw the image centered
+        ctx.drawImage(
+          particleImage,
+          -this.size / 2,
+          -this.size / 2,
+          this.size,
+          this.size
+        );
         
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.restore();
       }
     }
 
-    // Create particles (increased for more magical effect)
-    const particleCount = 60;
+    // Create particles - more petals in light theme, fewer in dark (handled by FloatingGhosts)
+    const particleCount = theme === 'dark' ? 0 : 100; // Only show petals in light theme
     for (let i = 0; i < particleCount; i++) {
       particles.push(new Particle());
     }

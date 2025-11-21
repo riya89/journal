@@ -638,6 +638,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase"; // ⬅️ IMPORTANT: import Firebase
+import FloatingParticles from "../components/FloatingParticles";
+import FloatingGhosts from "../components/FloatingGhosts";
+import Fireflies from "../components/Fireflies";
 
 export default function AIAssistant({ theme }) {
   const navigate = useNavigate();
@@ -888,6 +891,11 @@ export default function AIAssistant({ theme }) {
           : "bg-[#FFFBEA] text-[#6c7a5b]"
       }`}
     >
+      {/* ✨ Floating Particles & Ghosts */}
+      <FloatingParticles theme={theme} />
+      <FloatingGhosts theme={theme} />
+      <Fireflies theme={theme} />
+
       {/* BACK BUTTON */}
       <button
         onClick={() => navigate("/")}
@@ -897,7 +905,7 @@ export default function AIAssistant({ theme }) {
             : "bg-white text-[#6c7a5b] hover:bg-[#f4f0d8]"
         }`}
       >
-        ← Home
+        ←
       </button>
 
       {/* ⭐ ORB */}

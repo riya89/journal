@@ -6,11 +6,14 @@ export default function FloatingGhosts({ theme }) {
   const ghostsRef = useRef([]);
 
   useEffect(() => {
+    // Only show ghosts in dark theme
+    if (theme !== 'dark') return;
+    
     const container = containerRef.current;
     if (!container) return;
 
     // Create ghost elements
-    const ghostCount = 5; // Fewer ghosts for subtlety
+    const ghostCount = 10; // Increased count for more atmosphere
     const ghosts = [];
 
     for (let i = 0; i < ghostCount; i++) {
@@ -33,12 +36,12 @@ export default function FloatingGhosts({ theme }) {
         position: absolute;
         left: ${startX}px;
         top: ${startY}px;
-        width: 40px;
-        height: 40px;
-        opacity: ${theme === 'dark' ? 0.4 : 0.3};
+        width: 35px;
+        height: 35px;
+        opacity: 0.3;
         pointer-events: none;
         animation: floatGhost ${duration}s ease-in-out ${delay}s infinite;
-        filter: ${theme === 'dark' ? 'brightness(1.2)' : 'brightness(0.9)'};
+        filter: brightness(1.1);
         transform-origin: center;
       `;
       

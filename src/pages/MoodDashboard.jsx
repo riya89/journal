@@ -418,6 +418,9 @@ import "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import FlowerMeadow from "../components/FlowerMeadow";
+import FloatingParticles from "../components/FloatingParticles";
+import FloatingGhosts from "../components/FloatingGhosts";
+import Fireflies from "../components/Fireflies";
 export default function MoodDashboard({ user, theme }) {
   const navigate = useNavigate();
 
@@ -497,9 +500,13 @@ export default function MoodDashboard({ user, theme }) {
   return (
     <main
   className="min-h-screen py-10 px-4 flex flex-col items-center gap-8
-             transition-all duration-500 pb-40"
+             transition-all duration-500 pb-40 relative"
   data-theme={theme}
 >
+  {/* ✨ Floating Particles & Ghosts */}
+  <FloatingParticles theme={theme} />
+  <FloatingGhosts theme={theme} />
+  <Fireflies theme={theme} />
 
   {/* BACK BUTTON */}
   <button
@@ -507,7 +514,7 @@ export default function MoodDashboard({ user, theme }) {
     className="absolute top-6 left-6 px-4 py-2 rounded-xl shadow-sm
                bg-white/40 dark:bg-black/20 backdrop-blur text-sm"
   >
-    ← Back
+    ← Home
   </button>
 
   {/* TITLE */}
