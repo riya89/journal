@@ -55,6 +55,7 @@
 import { useEffect, useState } from "react";
 import ProfileSidebar from "./ProfileSidebar";
 import JournalGrid from "./JournalGrid";
+import { apiGet } from "../utils/api";
 
 export default function Layout({ theme, onCardClick, selectedMonth, selectedYear, user }) {
   const [journalDates, setJournalDates] = useState([]);
@@ -65,9 +66,7 @@ export default function Layout({ theme, onCardClick, selectedMonth, selectedYear
       if (!token) return;
 
       try {
-        const res = await fetch("http://localhost:8000/journal/dates/all", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiGet("http://localhost:8000/journal/dates/all");
         const data = await res.json();
         setJournalDates(data.dates || []);
       } catch (err) {

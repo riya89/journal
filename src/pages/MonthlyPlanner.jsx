@@ -21,6 +21,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { apiGet, apiPost, apiPut, apiDelete } from "../utils/api";
 
 // Sortable Task Row Component
 function SortableTaskRow({ task, theme, daysInMonth, yearMonth, completions, exceptions, handleToggleTask, handleEditTask, handleDeleteTask }) {
@@ -242,11 +243,8 @@ export default function MonthlyPlanner({ theme }) {
 
   // Fetch planner data
   const fetchPlannerData = useCallback(async () => {
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:8000/journal/planner/${yearMonth}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet(`http://localhost:8000/journal/planner/${yearMonth}`);
       const data = await res.json();
       console.log("📋 Fetched planner data:", data);
       setTasks(data.tasks || []);
@@ -258,11 +256,8 @@ export default function MonthlyPlanner({ theme }) {
   }, [yearMonth]);
 
   const fetchStats = useCallback(async () => {
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:8000/journal/planner/stats/${yearMonth}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet(`http://localhost:8000/journal/planner/stats/${yearMonth}`);
       const data = await res.json();
       setDailyStats(data.dailyStats || []);
     } catch (err) {
@@ -277,7 +272,6 @@ export default function MonthlyPlanner({ theme }) {
   }, [fetchPlannerData, fetchStats]);
 
   const handleAddTask = async (taskData) => {
-    const token = localStorage.getItem("token");
     try {
       // Always use POST endpoint - backend handles create vs update based on taskId presence
       const endpoint = "http://localhost:8000/journal/planner/task";
@@ -287,14 +281,7 @@ export default function MonthlyPlanner({ theme }) {
         ? { ...taskData, taskId: editingTask.id }
         : taskData;
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const res = await apiPost(endpoint, requestBody);
       const data = await res.json();
       
       if (data.success) {
@@ -341,20 +328,12 @@ export default function MonthlyPlanner({ theme }) {
     const date = `${yearMonth}-${String(day).padStart(2, "0")}`;
     const isCompleted = completions[date]?.includes(taskId);
 
-    const token = localStorage.getItem("token");
     try {
-      await fetch("http://localhost:8000/journal/planner/toggle", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          yearMonth,
-          taskId,
-          date,
-          completed: !isCompleted,
-        }),
+      await apiPost("http://localhost:8000/journal/planner/toggle", {
+        yearMonth,
+        taskId,
+        date,
+        completed: !isCompleted,
       });
 
       // Update local state
@@ -403,7 +382,6 @@ export default function MonthlyPlanner({ theme }) {
       return;
     }
 
-    const token = localStorage.getItem("token");
     try {
       // Build the URL with query parameters
       let url = `http://localhost:8000/journal/planner/task/${yearMonth}/${deletingTask.id}`;
@@ -420,10 +398,7 @@ export default function MonthlyPlanner({ theme }) {
         url += `?${params.toString()}`;
       }
 
-      const res = await fetch(url, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiDelete(url);
 
       const data = await res.json();
 
@@ -455,12 +430,8 @@ export default function MonthlyPlanner({ theme }) {
 
   // Handle delete template from TemplatesModal
   const handleDeleteTemplate = async (templateId) => {
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:8000/journal/planner/task/${yearMonth}/${templateId}?scope=all`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiDelete(`http://localhost:8000/journal/planner/task/${yearMonth}/${templateId}?scope=all`);
 
       const data = await res.json();
       
@@ -500,18 +471,10 @@ export default function MonthlyPlanner({ theme }) {
     }));
 
     // Persist to backend
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch("http://localhost:8000/journal/planner/task/reorder", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          yearMonth,
-          taskOrders,
-        }),
+      const res = await apiPut("http://localhost:8000/journal/planner/task/reorder", {
+        yearMonth,
+        taskOrders,
       });
 
       const data = await res.json();

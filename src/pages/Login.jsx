@@ -2,8 +2,10 @@ import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../lib/firebase";
 import { Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Login({ onLoginSuccess, theme: initialTheme }) {
+  const { login } = useAuth();
   const [theme, setTheme] = useState(initialTheme || localStorage.getItem("theme") || "light");
 
   // Sync theme with localStorage and DOM
@@ -21,34 +23,33 @@ export default function Login({ onLoginSuccess, theme: initialTheme }) {
     setTheme(prev => prev === "dark" ? "light" : "dark");
   };
   const handleGoogleLogin = async () => {
-  try {
-    const userCred = await signInWithPopup(auth, provider);
-    const token = await userCred.user.getIdToken();
+    try {
+      const userCred = await signInWithPopup(auth, provider);
+      
+      // Send to backend to store user info
+      const token = await userCred.user.getIdToken();
+      await fetch("http://localhost:8000/auth/saveUser", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          uid: userCred.user.uid,
+          email: userCred.user.email,
+          name: userCred.user.displayName,
+          photo: userCred.user.photoURL,
+        }),
+      });
 
-    // ✅ Save to localStorage for later authenticated API calls
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userCred.user));
-
-    // ✅ Send to backend to store user info
-    await fetch("http://localhost:8000/auth/saveUser", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        uid: userCred.user.uid,
-        email: userCred.user.email,
-        name: userCred.user.displayName,
-        photo: userCred.user.photoURL,
-      }),
-    });
-
-    onLoginSuccess?.(userCred.user);
-  } catch (err) {
-    console.error("Google login failed:", err);
-  }
-};
+      // Use AuthContext login method to handle token and user storage
+      await login(userCred.user);
+      
+      onLoginSuccess?.(userCred.user);
+    } catch (err) {
+      console.error("Google login failed:", err);
+    }
+  };
 
 
   return (

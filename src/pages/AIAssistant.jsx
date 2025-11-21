@@ -641,6 +641,7 @@ import { auth } from "../lib/firebase"; // ⬅️ IMPORTANT: import Firebase
 import FloatingParticles from "../components/FloatingParticles";
 import FloatingGhosts from "../components/FloatingGhosts";
 import Fireflies from "../components/Fireflies";
+import { apiPost } from "../utils/api";
 
 export default function AIAssistant({ theme }) {
   const navigate = useNavigate();
@@ -728,14 +729,7 @@ export default function AIAssistant({ theme }) {
       setMessages((prev) => [...prev, { sender: "ai", text: "", streaming: true }]);
 
       // 1️⃣ Fetch AI text reply
-      const replyRes = await fetch("http://localhost:8000/journal/assistant/reply", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message: userText }),
-      });
+      const replyRes = await apiPost("http://localhost:8000/journal/assistant/reply", { message: userText });
 
       const replyData = await replyRes.json();
       const fullText = replyData.reply || "I'm here with you 🌿";
@@ -811,26 +805,12 @@ export default function AIAssistant({ theme }) {
       console.log("🔊 Starting TTS for:", text);
 
       // Try streaming endpoint first
-      let res = await fetch("http://localhost:8000/journal/assistant/speak-stream", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text }),
-      });
+      let res = await apiPost("http://localhost:8000/journal/assistant/speak-stream", { text });
 
       // Fallback to regular endpoint if streaming fails
       if (!res.ok) {
         console.warn("⚠️ Streaming endpoint failed, using regular endpoint");
-        res = await fetch("http://localhost:8000/journal/assistant/speak", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ text }),
-        });
+        res = await apiPost("http://localhost:8000/journal/assistant/speak", { text });
       }
 
       if (!res.ok) {

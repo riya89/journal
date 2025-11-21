@@ -421,6 +421,7 @@ import FlowerMeadow from "../components/FlowerMeadow";
 import FloatingParticles from "../components/FloatingParticles";
 import FloatingGhosts from "../components/FloatingGhosts";
 import Fireflies from "../components/Fireflies";
+import { apiGet } from "../utils/api";
 export default function MoodDashboard({ user, theme }) {
   const navigate = useNavigate();
 
@@ -441,12 +442,12 @@ export default function MoodDashboard({ user, theme }) {
     if (!user) return;
 
     // Badges
-    fetch(`${BASE}/badges?uid=${user.uid}`)
+    apiGet(`${BASE}/badges?uid=${user.uid}`)
       .then((r) => r.json())
       .then((d) => setBadges(d.badges || []));
 
     // Streaks
-    fetch(`${BASE}/streaks?uid=${user.uid}`)
+    apiGet(`${BASE}/streaks?uid=${user.uid}`)
       .then((r) => r.json())
       .then((d) => {
         setStreaks({
@@ -458,12 +459,12 @@ export default function MoodDashboard({ user, theme }) {
       });
 
     // Mood
-    fetch(`${BASE}/mood?uid=${user.uid}`)
+    apiGet(`${BASE}/mood?uid=${user.uid}`)
       .then((r) => r.json())
       .then((d) => setMoodData(normalizeMood(d.moodData || [])));
 
     // Insights
-    fetch(`${BASE}/insights?uid=${user.uid}`)
+    apiGet(`${BASE}/insights?uid=${user.uid}`)
       .then((r) => r.json())
       .then((d) => {
         let parsed = [];

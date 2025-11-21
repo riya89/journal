@@ -1233,6 +1233,7 @@ import { DAY_FLOWER_SPOTS, NIGHT_FLOWER_SPOTS } from "./FlowerSpots";
 import FloatingParticles from "../components/FloatingParticles";
 import FloatingGhosts from "../components/FloatingGhosts";
 import Fireflies from "../components/Fireflies";
+import { apiGet } from "../utils/api";
 
 const lightFlowers = [F1, F2, F3, F4, F5];
 const darkFlowers = [F1N, F2N, F3N, F4N, F5N];
@@ -1259,17 +1260,15 @@ export default function GrowthGarden({ theme = "light" }) {
 
   useEffect(() => {
     fetchJournalDates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear, currentMonth, theme]);
 
   const fetchJournalDates = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
       const yearMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`;
 
-      const res = await fetch(`http://localhost:8000/journal/dates/month/${yearMonth}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet(`http://localhost:8000/journal/dates/month/${yearMonth}`);
 
       const data = await res.json();
 

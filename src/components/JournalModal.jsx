@@ -806,6 +806,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import PictureOfTheDay from "./PictureOfTheDay";
 import tornPageCornerRight from "../assets/journalmodal.png";
 import tornPageCornerLeft from "../assets/journalmodal1.png";
+import { apiGet, apiPost } from "../utils/api";
 
 export default function JournalModal({ isOpen, onClose, theme, selectedDate , user}) {
   const [title, setTitle] = useState("");
@@ -1045,11 +1046,8 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   // --- Fetch Journal ---
   const fetchJournal = async () => {
     setLoading(true);
-    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:8000/journal/${selectedDate}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await apiGet(`http://localhost:8000/journal/${selectedDate}`);
       const data = await res.json();
       if (data) {
         setTitle(data.title || "");
@@ -1131,7 +1129,6 @@ const handleSave = async () => {
   }
 
   setSaving(true);
-  const token = localStorage.getItem("token");
 
   try {
     // Convert photo to base64
@@ -1146,40 +1143,27 @@ const handleSave = async () => {
     }
 
     // 1️⃣ Save to your NODE backend
-    const res = await fetch("http://localhost:8000/journal/add", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        title,
-        content,
-        mood,
-        answers,
-        prompts,
-        date: selectedDate,
-        photoURL: photoData,
-      }),
+    const res = await apiPost("http://localhost:8000/journal/add", {
+      title,
+      content,
+      mood,
+      answers,
+      prompts,
+      date: selectedDate,
+      photoURL: photoData,
     });
 
     await res.json();
 
     // 2️⃣ Sync to RAINDROP analytics backend
-    await fetch("http://localhost:8000/raindrop/sync", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    uid: user.uid,
-    date: selectedDate,
-    title,
-    content,
-    mood,
-    ai_chat: ""
-  })
-});
+    await apiPost("http://localhost:8000/raindrop/sync", {
+      uid: user.uid,
+      date: selectedDate,
+      title,
+      content,
+      mood,
+      ai_chat: ""
+    });
 
 
 
@@ -1205,8 +1189,8 @@ const handleSave = async () => {
         {/* Book Container with Vintage Paper Texture */}
         <div
           className="relative flex w-[850px] h-[620px] rounded-md overflow-hidden shadow-2xl"
-          style={{ perspective: '2000px' }}
           style={{
+            perspective: '2000px',
             background: theme === 'dark'
               ? 'linear-gradient(135deg, #2a2520 0%, #1f1a15 50%, #2a2520 100%)'
               : 'linear-gradient(135deg, #f4ead5 0%, #e8dcc4 48%, #f4ead5 52%, #e8dcc4 100%)',

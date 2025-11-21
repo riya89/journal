@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { TASK_CATEGORIES } from "../constants/taskCategories";
+import { apiGet } from "../utils/api";
 
 export default function TemplatesModal({
   isOpen,
@@ -22,13 +23,8 @@ export default function TemplatesModal({
   // Fetch templates from API
   const fetchTemplates = async () => {
     setIsLoading(true);
-    const token = localStorage.getItem("token");
     try {
-      const response = await fetch("http://localhost:8000/journal/planner/templates", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiGet("http://localhost:8000/journal/planner/templates");
 
       if (!response.ok) {
         throw new Error("Failed to fetch templates");

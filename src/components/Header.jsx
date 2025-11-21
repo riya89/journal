@@ -808,8 +808,11 @@
 //   );
 // }
 import { useEffect, useState } from "react";
+import { apiPost } from "../utils/api";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Header({ theme, setTheme, user, setUser, onLogout, selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }) {
+  const { logout } = useAuth();
   const [time, setTime] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -924,7 +927,7 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
         <ProfileModal
           user={user}
           theme={theme}
-          onLogout={onLogout}
+          logout={logout}
           onClose={() => setShowProfile(false)}
           setUser={setUser}
         />
@@ -934,7 +937,7 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
 }
 
 /* ========== PROFILE MODAL ========== */
-function ProfileModal({ user, theme, onLogout, onClose, setUser }) {
+function ProfileModal({ user, theme, logout, onClose, setUser }) {
   const [avatar, setAvatar] = useState(
     user?.avatarURL ||
       "https://i.pinimg.com/1200x/ba/98/b4/ba98b4160f7af525982f94b633b2a2b2.jpg"
@@ -954,15 +957,7 @@ function ProfileModal({ user, theme, onLogout, onClose, setUser }) {
   const handleAvatarPick = async (url) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:8000/journal/avatar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ avatarURL: url }),
-      });
+      const res = await apiPost("http://localhost:8000/journal/avatar", { avatarURL: url });
 
       const data = await res.json();
       if (data.success) {
@@ -1039,10 +1034,7 @@ function ProfileModal({ user, theme, onLogout, onClose, setUser }) {
         </div>
 
         <button
-          onClick={() => {
-            localStorage.clear();
-            onLogout();
-          }}
+          onClick={logout}
           className="mt-6 px-5 py-2 bg-[#E6F0D1] dark:bg-[#3a2e20] rounded-xl text-[#6c7a5b] dark:text-[#EBDDBF] font-semibold shadow-md hover:scale-[1.02] transition"
         >
           Logout
