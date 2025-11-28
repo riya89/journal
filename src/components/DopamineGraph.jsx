@@ -1,7 +1,7 @@
 export default function DopamineGraph({ dailyStats, theme }) {
   if (!dailyStats || dailyStats.length === 0) {
     return (
-      <div className="text-center py-12 opacity-60">
+      <div className={`text-center py-12 opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>
         Complete some tasks to see your progress!
       </div>
     );
@@ -25,8 +25,8 @@ export default function DopamineGraph({ dailyStats, theme }) {
         theme === "dark" ? "bg-[#2b241c]" : "bg-white"
       }`}
     >
-      <h2 className="text-2xl font-bold mb-4">📊 Dopamine Tracker</h2>
-      <p className="text-sm opacity-70 mb-6">
+      <h2 className={`text-2xl font-bold mb-4 ${theme === "dark" ? "font-spooky-header" : ""}`}> Dopamine Tracker</h2>
+      <p className={`text-sm opacity-70 mb-6 ${theme === "dark" ? "font-gothic-body" : ""}`}>
         Track your daily task completion and build momentum!
       </p>
 
@@ -129,22 +129,22 @@ export default function DopamineGraph({ dailyStats, theme }) {
       {/* Stats Summary */}
       <div className="mt-6 grid grid-cols-3 gap-4 text-center">
         <div>
-          <div className="text-2xl font-bold">
+          <div className={`text-2xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>
             {dailyStats.reduce((sum, s) => sum + s.completed, 0)}
           </div>
-          <div className="text-sm opacity-70">Total Completed</div>
+          <div className={`text-sm opacity-70 ${theme === "dark" ? "font-gothic-body" : ""}`}>Total Completed</div>
         </div>
         <div>
-          <div className="text-2xl font-bold">
+          <div className={`text-2xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>
             {dailyStats.filter((s) => s.completed === s.planned && s.planned > 0).length}
           </div>
-          <div className="text-sm opacity-70">Perfect Days</div>
+          <div className={`text-sm opacity-70 ${theme === "dark" ? "font-gothic-body" : ""}`}>Perfect Days</div>
         </div>
         <div>
-          <div className="text-2xl font-bold">
+          <div className={`text-2xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>
             {dailyStats.filter((s) => s.completed > 0).length}
           </div>
-          <div className="text-sm opacity-70">Active Days</div>
+          <div className={`text-sm opacity-70 ${theme === "dark" ? "font-gothic-body" : ""}`}>Active Days</div>
         </div>
       </div>
     </div>

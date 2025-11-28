@@ -72,9 +72,10 @@ This feature enhances the AI Assistant conversational experience by improving th
 #### Acceptance Criteria
 
 1. IF the Voice Input System fails, THEN THE AI Assistant System SHALL display an error message and fall back to text-only input
-2. IF the TTS System fails, THEN THE AI Assistant System SHALL display the text response without voice output
+2. IF the ElevenLabs TTS System fails, THEN THE AI Assistant System SHALL automatically fall back to browser's built-in speech synthesis
 3. IF the Gemini API fails, THEN THE AI Assistant System SHALL display a friendly error message and allow retry
 4. THE AI Assistant System SHALL log errors without exposing technical details to the user
+5. WHEN TTS fallback occurs, THE AI Assistant System SHALL display a subtle notification indicating voice quality may be reduced
 
 ### Requirement 7
 

@@ -125,31 +125,39 @@ export default function JournalGrid({ theme, onCardClick, selectedMonth, selecte
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
   return (
-    <section className="grid grid-cols-7 gap-[8px] justify-center items-center w-[94%] mx-auto mb-[80px]">
+    <section className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3 md:gap-[8px] w-full max-w-[1200px] mx-auto px-3 sm:px-4 mb-12 sm:mb-16 md:mb-[80px]">
       {Array.from({ length: daysInMonth }).map((_, i) => {
         const day = i + 1;
         const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        
+        // Check if date is in the future
+        const cardDate = new Date(selectedYear, selectedMonth, day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const isFuture = cardDate > today;
 
         return (
           <div
             key={day}
-            onClick={() => onCardClick(dateStr)}
-            className="bg-white dark:bg-[#151515] rounded-[10px] shadow-soft cursor-pointer transition-transform hover:-translate-y-[2px] hover:shadow-md flex flex-col items-center"
-            style={{
-              width: '100%',
-              maxWidth: '125px',
-              height: '125px',
-              padding: '2px',
-            }}
+            onClick={() => !isFuture && onCardClick(dateStr)}
+            className={`bg-white dark:bg-[#151515] rounded-lg sm:rounded-[10px] shadow-soft flex flex-col w-full transition-all
+              ${isFuture 
+                ? 'cursor-not-allowed' 
+                : 'cursor-pointer hover:-translate-y-[2px] hover:shadow-md'
+              }`}
+            title={isFuture ? "Future dates cannot be accessed" : "Click to open journal"}
           >
-            <div className="w-full h-[90px] rounded-[10px] overflow-hidden">
+            {/* Image container with fixed aspect ratio */}
+            <div className="w-full aspect-[4/3] rounded-t-lg sm:rounded-t-[10px] overflow-hidden">
               <img
                 src={arr[i % arr.length]}
                 alt=""
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="text-center text-[11px] mt-[3px] font-medium text-[#7A916C] dark:text-[#EBDDBF]">
+            
+            {/* Date label */}
+            <div className={`text-center text-[9px] sm:text-[10px] md:text-[11px] py-1.5 sm:py-2 font-medium text-[#7A916C] dark:text-[#EBDDBF] ${theme === "dark" ? "font-gothic-body" : ""}`}>
               {ord(day)} {new Date(selectedYear, selectedMonth).toLocaleString("default", { month: "short" })}
             </div>
           </div>

@@ -1,7 +1,8 @@
 import { useState } from "react";
 
-export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, theme, taskName, isRecurring }) {
-  const [deleteScope, setDeleteScope] = useState("single");
+export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, theme, taskName, isRecurring, hasDateContext }) {
+  // Default to "single" if we have date context, otherwise "month"
+  const [deleteScope, setDeleteScope] = useState(hasDateContext ? "single" : "month");
 
   if (!isOpen) return null;
 
@@ -11,7 +12,7 @@ export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, theme, 
   };
 
   const handleCancel = () => {
-    setDeleteScope("single"); // Reset to default
+    setDeleteScope(hasDateContext ? "single" : "month"); // Reset to default
     onClose();
   };
 
@@ -42,9 +43,50 @@ export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, theme, 
         {/* Delete Scope Options (only for recurring tasks) */}
         {isRecurring && (
           <div className="mb-6 space-y-3">
+            {hasDateContext !== false && (
+              <label
+                className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition ${
+                  deleteScope === "single"
+                    ? theme === "dark"
+                      ? "bg-[#3a2e20] border-2 border-[#EBDDBF]"
+                      : "bg-[#E6F0D1] border-2 border-[#7A916C]"
+                    : theme === "dark"
+                    ? "bg-[#1a1410] border-2 border-transparent hover:bg-[#3a2e20]"
+                    : "bg-gray-50 border-2 border-transparent hover:bg-gray-100"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="deleteScope"
+                  value="single"
+                  checked={deleteScope === "single"}
+                  onChange={(e) => setDeleteScope(e.target.value)}
+                  className="mt-1"
+                  style={{
+                    accentColor: theme === "dark" ? "#EBDDBF" : "#7A916C",
+                  }}
+                />
+                <div className="flex-1">
+                  <div className="font-semibold">Delete this occurrence only</div>
+                  <div className="text-sm opacity-70">
+                    Remove this task from the current date only
+                  </div>
+                </div>
+              </label>
+            )}
+            {hasDateContext === false && (
+              <div className={`p-3 rounded-lg ${
+                theme === "dark" ? "bg-[#3a2e20]/50" : "bg-gray-100"
+              }`}>
+                <p className="text-sm opacity-70">
+                  💡 To delete a single occurrence, hover over a specific date cell and click the ✕ button that appears.
+                </p>
+              </div>
+            )}
+
             <label
               className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer transition ${
-                deleteScope === "single"
+                deleteScope === "month"
                   ? theme === "dark"
                     ? "bg-[#3a2e20] border-2 border-[#EBDDBF]"
                     : "bg-[#E6F0D1] border-2 border-[#7A916C]"
@@ -56,8 +98,8 @@ export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, theme, 
               <input
                 type="radio"
                 name="deleteScope"
-                value="single"
-                checked={deleteScope === "single"}
+                value="month"
+                checked={deleteScope === "month"}
                 onChange={(e) => setDeleteScope(e.target.value)}
                 className="mt-1"
                 style={{
@@ -65,9 +107,9 @@ export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, theme, 
                 }}
               />
               <div className="flex-1">
-                <div className="font-semibold">Delete this occurrence only</div>
+                <div className="font-semibold">Delete all occurrences in this month</div>
                 <div className="text-sm opacity-70">
-                  Remove this task from the current date only
+                  Remove all instances of this task from the current month only
                 </div>
               </div>
             </label>
@@ -97,7 +139,7 @@ export default function DeleteConfirmModal({ isOpen, onClose, onConfirm, theme, 
               <div className="flex-1">
                 <div className="font-semibold">Delete all occurrences</div>
                 <div className="text-sm opacity-70">
-                  Remove this recurring task template and all its occurrences
+                  Remove this recurring task permanently from all months
                 </div>
               </div>
             </label>

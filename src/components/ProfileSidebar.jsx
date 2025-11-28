@@ -192,18 +192,18 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
             className="w-full h-full object-cover transition-all duration-300 hover:scale-105"
           />
         </div>
-        <div className="text-[20px] font-semibold text-[#7A916C] dark:text-[#EBDDBF]">
+        <div className={`text-[20px] font-semibold text-[#7A916C] dark:text-[#EBDDBF] ${theme === "dark" ? "font-gothic-body" : ""}`}>
           {user?.displayName || "Riya"}
         </div>
       </div>
 
       {/* 🌿 Affirmation Box */}
       <div className="bg-[#E6F0D1] dark:bg-[#3a2e20] text-[#7A916C] dark:text-[#EBDDBF] rounded-[14px] shadow-soft p-3 flex flex-col">
-        <h4 className="text-[15px] font-semibold mb-1.5">Affirmation of the day..</h4>
+        <h4 className={`text-[15px] font-semibold mb-1.5 ${theme === "dark" ? "font-spooky-header" : ""}`}>Affirmation of the day..</h4>
         {loadingAffirmation ? (
           <p className="leading-relaxed text-[13px] opacity-60 animate-pulse">Loading...</p>
         ) : (
-          <p className="leading-relaxed text-[13px]">{affirmation}</p>
+          <p className={`leading-relaxed text-[13px] ${theme === "dark" ? "font-gothic-body" : ""}`}>{affirmation}</p>
         )}
       </div>
 
@@ -216,12 +216,12 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
         }`}
       >
         {/* 🗓 Month-Year Heading */}
-        <div className="text-center font-semibold text-[16px] mb-1.5">
+        <div className={`text-center font-semibold text-[16px] mb-1.5 ${theme === "dark" ? "font-spooky-header" : ""}`}>
           {new Date(year, month).toLocaleString("default", { month: "long" })} {year}
         </div>
 
         {/* Days of week */}
-        <div className="grid grid-cols-7 text-center text-[11px] font-medium opacity-70 mb-1">
+        <div className={`grid grid-cols-7 text-center text-[11px] font-medium opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>
           {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
             <div key={d}>{d}</div>
           ))}
@@ -236,6 +236,7 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
                 className={`
                   relative py-[4px] rounded-[6px] cursor-default text-[12px]
                   transition-all duration-300
+                  ${theme === "dark" ? "font-gothic-body" : ""}
                   ${
                     isToday(day)
                       ? theme === "dark"

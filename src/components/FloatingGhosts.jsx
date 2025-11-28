@@ -38,11 +38,12 @@ export default function FloatingGhosts({ theme }) {
         top: ${startY}px;
         width: 35px;
         height: 35px;
-        opacity: 0.3;
+        opacity: ${0.2 + Math.random() * 0.3};
         pointer-events: none;
         animation: floatGhost ${duration}s ease-in-out ${delay}s infinite;
-        filter: brightness(1.1);
+        filter: brightness(1.2) drop-shadow(0 0 10px rgba(235, 221, 191, 0.4));
         transform-origin: center;
+        transition: all 0.3s ease;
       `;
       
       // Set custom properties for animation

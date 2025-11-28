@@ -304,6 +304,8 @@ router.delete("/planner/task/:yearMonth/:taskId", verifyToken, async (req, res) 
     
     if (templateDoc.exists) {
       // Deleting recurring task
+      const template = templateDoc.data();
+      
       if (scope === 'single' && date) {
         // Mark single occurrence as deleted via exception
         const plannerRef = userRef.collection("planners").doc(yearMonth);
@@ -326,8 +328,36 @@ router.delete("/planner/task/:yearMonth/:taskId", verifyToken, async (req, res) 
         await plannerRef.set(plannerData);
         
         res.json({ success: true, message: "Single occurrence deleted" });
+      } else if (scope === 'month') {
+        // Delete all occurrences in this month only
+        const plannerRef = userRef.collection("planners").doc(yearMonth);
+        const plannerDoc = await plannerRef.get();
+        const plannerData = plannerDoc.exists ? plannerDoc.data() : { yearMonth, tasks: [], completions: {}, exceptions: {} };
+        
+        if (!plannerData.exceptions) plannerData.exceptions = {};
+        if (!plannerData.exceptions[taskId]) plannerData.exceptions[taskId] = {};
+        
+        // Get all applicable dates for this task in this month
+        const applicableDates = getApplicableDates(template, yearMonth);
+        
+        // Mark all dates in this month as deleted
+        applicableDates.forEach(dateStr => {
+          plannerData.exceptions[taskId][dateStr] = {
+            isDeleted: true,
+            deletedAt: new Date().toISOString()
+          };
+          
+          // Remove completion for this date
+          if (plannerData.completions[dateStr]) {
+            plannerData.completions[dateStr] = plannerData.completions[dateStr].filter(id => id !== taskId);
+          }
+        });
+        
+        await plannerRef.set(plannerData);
+        
+        res.json({ success: true, message: "All occurrences in this month deleted", deletedCount: applicableDates.length });
       } else {
-        // Delete entire template
+        // Delete entire template (scope === 'all')
         await templateRef.delete();
         
         // Remove all completions for this task across all months

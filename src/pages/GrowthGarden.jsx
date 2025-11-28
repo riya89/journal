@@ -1393,15 +1393,15 @@ export default function GrowthGarden({ theme = "light" }) {
             style={{ zIndex: 1000 }}
           >
             <div className="text-center">
-              <div className="font-bold text-lg mb-1">
+              <div className={`font-bold text-lg mb-1 ${theme === "dark" ? "font-spooky-header" : ""}`}>
                 {new Date(date).toLocaleDateString("default", {
                   month: "short",
                   day: "numeric",
                 })}
               </div>
-              {title && <div className="text-sm opacity-90 mb-1">{title}</div>}
-              {mood && <div className="text-sm opacity-80 mb-1">Mood: {mood}</div>}
-              <div className="text-xs opacity-70 italic mt-2">{message}</div>
+              {title && <div className={`text-sm opacity-90 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>{title}</div>}
+              {mood && <div className={`text-sm opacity-80 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>Mood: {mood}</div>}
+              <div className={`text-xs opacity-70 italic mt-2 ${theme === "dark" ? "font-gothic-body" : ""}`}>{message}</div>
             </div>
           </div>
         )}
@@ -1421,7 +1421,10 @@ export default function GrowthGarden({ theme = "light" }) {
         src={theme === "dark" ? nightGarden : dayGarden}
         alt="garden background"
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ zIndex: 1, objectPosition: "center 20%" }}
+        style={{ 
+          zIndex: 1, 
+          objectPosition: theme === "dark" ? "center 20%" : "center 30%" 
+        }}
       />
 
       {/* 🔙 Back Button */}
@@ -1453,7 +1456,7 @@ export default function GrowthGarden({ theme = "light" }) {
         <h1
           className={`text-4xl font-bold tracking-wide ${
             theme === "dark"
-              ? "text-amber-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+              ? "text-amber-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-spooky-header"
               : "text-emerald-800 drop-shadow-[0_2px_4px_rgba(255,255,255,0.8)]"
           }`}
         >

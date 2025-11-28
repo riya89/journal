@@ -83,7 +83,7 @@ export default function Fireflies({ theme }) {
     }
 
     // Create fireflies (only in dark theme)
-    const fireflyCount = 40;
+    const fireflyCount = 60; // Increased for more atmosphere
     for (let i = 0; i < fireflyCount; i++) {
       fireflies.push(new Firefly());
     }

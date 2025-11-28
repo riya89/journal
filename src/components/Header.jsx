@@ -838,12 +838,17 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
   );
 
   return (
-    <header className="max-w-5xl w-full mx-auto px-6 pt-6 pb-3 relative">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center">
-        <div className="text-xl opacity-90">{time || "11:11 am"}</div>
-        <h1 className="text-4xl font-bold text-center">My Journal</h1>
+    <header className="max-w-5xl w-full mx-auto px-3 sm:px-6 pt-4 sm:pt-6 pb-3 relative">
+      {/* Desktop Layout */}
+      <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <div className={`text-lg lg:text-xl opacity-90 ${theme === "dark" ? "font-gothic-body" : ""}`}>
+          {time || "11:11 am"}
+        </div>
+        <h1 className={`text-3xl lg:text-4xl font-bold text-center ${theme === "dark" ? "font-spooky-header" : ""}`}>
+          My Journal
+        </h1>
 
-        <div className="justify-self-end flex items-center gap-3 relative">
+        <div className="justify-self-end flex items-center gap-2 lg:gap-3 relative">
           <select
             value={`${selectedMonth}-${selectedYear}`}
             onChange={(e) => {
@@ -851,10 +856,10 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
               setSelectedMonth(Number(m));
               setSelectedYear(Number(y));
             }}
-            className={`rounded-xl px-3 py-2 text-[15px] font-medium cursor-pointer transition-all duration-200 outline-none 
+            className={`rounded-xl px-2 lg:px-3 py-2 text-sm lg:text-[15px] font-medium cursor-pointer transition-all duration-200 outline-none 
               ${
                 theme === "dark"
-                  ? "bg-[#3a2e20] border border-[#5b4a3d] text-[#EBDDBF] hover:bg-[#4a3a28]"
+                  ? "bg-[#3a2e20] border border-[#5b4a3d] text-[#EBDDBF] hover:bg-[#4a3a28] font-gothic-body"
                   : "bg-[#F3EFE2] border border-[#cdd6c0] text-[#6c7a5b] hover:bg-[#E6F0D1]"
               }`}
           >
@@ -865,7 +870,7 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
                   value={`${i}-${yr}`}
                   className={
                     theme === "dark"
-                      ? "bg-[#2b241c] text-[#EBDDBF]"
+                      ? "bg-[#2b241c] text-[#EBDDBF] font-gothic-body"
                       : "bg-[#FFFBEA] text-[#6c7a5b]"
                   }
                 >
@@ -875,14 +880,12 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
             )}
           </select>
 
-          {/* Theme Toggle Button */}
           <button
             onClick={() => {
               const next = theme === "dark" ? "light" : "dark";
               setTheme(next);
               localStorage.setItem("theme", next);
               document.body.dataset.theme = next;
-              // Toggle dark class on html element for Tailwind
               if (next === "dark") {
                 document.documentElement.classList.add("dark");
               } else {
@@ -903,7 +906,7 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-12 bg-white dark:bg-[#151515] rounded-xl shadow-lg overflow-hidden z-50 border border-[#cdd6c0]/50 dark:border-[#3a3a3a]/60">
+            <div className="absolute right-0 top-12 bg-white dark:bg-[#151515] rounded-xl shadow-lg overflow-hidden z-50 border border-[#cdd6c0]/50 dark:border-[#3a3a3a]/60 min-w-[150px]">
               <button
                 onClick={() => {
                   setShowProfile(true);
@@ -920,6 +923,100 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
               </button>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Mobile/Tablet Layout */}
+      <div className="md:hidden flex flex-col gap-3">
+        {/* Top Row: Title and Controls */}
+        <div className="flex items-center justify-between">
+          <h1 className={`text-2xl sm:text-3xl font-bold ${theme === "dark" ? "font-spooky-header" : ""}`}>
+            My Journal
+          </h1>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const next = theme === "dark" ? "light" : "dark";
+                setTheme(next);
+                localStorage.setItem("theme", next);
+                document.body.dataset.theme = next;
+                if (next === "dark") {
+                  document.documentElement.classList.add("dark");
+                } else {
+                  document.documentElement.classList.remove("dark");
+                }
+              }}
+              className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 transition-all"
+              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+
+            <button
+              className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 relative"
+              onClick={() => setMenuOpen((p) => !p)}
+            >
+              ⚙️
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-3 top-16 bg-white dark:bg-[#151515] rounded-xl shadow-lg overflow-hidden z-50 border border-[#cdd6c0]/50 dark:border-[#3a3a3a]/60 min-w-[150px]">
+                <button
+                  onClick={() => {
+                    setShowProfile(true);
+                    setMenuOpen(false);
+                  }}
+                  className="block w-full text-left px-5 py-3 text-[#6c7a5b] dark:text-[#EBDDBF] hover:bg-[#E6F0D1] dark:hover:bg-[#3a2e20] transition"
+                >
+                  Profile
+                </button>
+                <button
+                  className="block w-full text-left px-5 py-3 text-[#6c7a5b] dark:text-[#EBDDBF] hover:bg-[#E6F0D1] dark:hover:bg-[#3a2e20] transition"
+                >
+                  Billing
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Row: Time and Month Selector */}
+        <div className="flex items-center justify-between">
+          <div className={`text-base opacity-90 ${theme === "dark" ? "font-gothic-body" : ""}`}>
+            {time || "11:11 am"}
+          </div>
+          
+          <select
+            value={`${selectedMonth}-${selectedYear}`}
+            onChange={(e) => {
+              const [m, y] = e.target.value.split("-");
+              setSelectedMonth(Number(m));
+              setSelectedYear(Number(y));
+            }}
+            className={`rounded-xl px-3 py-2 text-sm font-medium cursor-pointer transition-all duration-200 outline-none 
+              ${
+                theme === "dark"
+                  ? "bg-[#3a2e20] border border-[#5b4a3d] text-[#EBDDBF] hover:bg-[#4a3a28] font-gothic-body"
+                  : "bg-[#F3EFE2] border border-[#cdd6c0] text-[#6c7a5b] hover:bg-[#E6F0D1]"
+              }`}
+          >
+            {years.map((yr) =>
+              months.map((month, i) => (
+                <option
+                  key={`${i}-${yr}`}
+                  value={`${i}-${yr}`}
+                  className={
+                    theme === "dark"
+                      ? "bg-[#2b241c] text-[#EBDDBF] font-gothic-body"
+                      : "bg-[#FFFBEA] text-[#6c7a5b]"
+                  }
+                >
+                  {month} {yr}
+                </option>
+              ))
+            )}
+          </select>
         </div>
       </div>
 
@@ -995,23 +1092,25 @@ function ProfileModal({ user, theme, logout, onClose, setUser }) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm flex justify-center items-center z-[1000]"
+      className="fixed inset-0 bg-[rgba(0,0,0,0.4)] backdrop-blur-sm flex justify-center items-center z-[1000] p-4"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`rounded-2xl shadow-2xl p-6 w-[420px] max-w-[90%] text-center relative ${
+        className={`rounded-2xl shadow-2xl p-4 sm:p-6 w-full max-w-[420px] text-center relative ${
           theme === "dark"
             ? "bg-[#2b241c] text-[#EBDDBF]"
             : "bg-[#FFFBEA] text-[#6c7a5b]"
         }`}
       >
-        <h2 className="text-2xl font-bold mb-4">Your Profile 🌿</h2>
+        <h2 className={`text-xl sm:text-2xl font-bold mb-4 ${theme === "dark" ? "font-spooky-header" : ""}`}>
+          Your Profile 🌿
+        </h2>
 
         <div className="flex flex-col items-center gap-3">
           <img
             src={avatar}
             alt="avatar"
-            className="w-28 h-28 rounded-full object-cover shadow-md transition-transform duration-300 hover:scale-105"
+            className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover shadow-md transition-transform duration-300 hover:scale-105"
           />
 
           <button
@@ -1028,14 +1127,18 @@ function ProfileModal({ user, theme, logout, onClose, setUser }) {
           )}
 
           <div className="mt-4 space-y-1">
-            <p className="font-medium">{user?.displayName}</p>
-            <p className="text-sm opacity-75">{user?.email}</p>
+            <p className={`font-medium text-sm sm:text-base ${theme === "dark" ? "font-gothic-body" : ""}`}>
+              {user?.displayName}
+            </p>
+            <p className={`text-xs sm:text-sm opacity-75 ${theme === "dark" ? "font-gothic-body" : ""}`}>
+              {user?.email}
+            </p>
           </div>
         </div>
 
         <button
           onClick={logout}
-          className="mt-6 px-5 py-2 bg-[#E6F0D1] dark:bg-[#3a2e20] rounded-xl text-[#6c7a5b] dark:text-[#EBDDBF] font-semibold shadow-md hover:scale-[1.02] transition"
+          className="mt-6 px-5 py-2 bg-[#E6F0D1] dark:bg-[#3a2e20] rounded-xl text-[#6c7a5b] dark:text-[#EBDDBF] font-semibold shadow-md hover:scale-[1.02] transition text-sm sm:text-base"
         >
           Logout
         </button>
@@ -1051,27 +1154,27 @@ function ProfileModal({ user, theme, logout, onClose, setUser }) {
       {showAvatarDialog && (
         <div
           onClick={() => setShowAvatarDialog(false)}
-          className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex justify-center items-center z-[1100]"
+          className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex justify-center items-center z-[1100] p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`p-5 rounded-xl shadow-2xl ${
+            className={`p-4 sm:p-5 rounded-xl shadow-2xl max-w-[90vw] sm:max-w-md ${
               theme === "dark"
                 ? "bg-[#2b241c] text-[#EBDDBF]"
                 : "bg-[#FFFBEA] text-[#6c7a5b]"
             }`}
           >
-            <h3 className="text-xl font-semibold mb-3 text-center">
+            <h3 className="text-lg sm:text-xl font-semibold mb-3 text-center">
               Choose Your Avatar 🌷
             </h3>
-            <div className="grid grid-cols-5 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
               {avatarOptions.map((url) => (
                 <img
                   key={url}
                   src={url}
                   alt="avatar option"
                   onClick={() => handleAvatarPick(url)}
-                  className={`w-16 h-16 rounded-xl object-cover cursor-pointer transition-transform hover:scale-[1.08] border-2 ${
+                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover cursor-pointer transition-transform hover:scale-[1.08] border-2 ${
                     avatar === url
                       ? theme === "dark"
                         ? "border-[#EBDDBF] shadow-[0_0_10px_#EBDDBF99]"

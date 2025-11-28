@@ -820,6 +820,18 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Check if the selected date is in the past (read-only mode)
+  const isPastDate = () => {
+    if (!selectedDate) return false;
+    const selected = new Date(selectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    selected.setHours(0, 0, 0, 0);
+    return selected < today;
+  };
+
+  const isReadOnly = isPastDate();
+
   // 📷 Photo state management
   const [photoURL, setPhotoURL] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
@@ -1251,8 +1263,8 @@ const handleSave = async () => {
 
         {/* LEFT PAGE */}
         <div
-          className={`flex-1 p-10 pr-8 border-r overflow-y-auto font-['Shantell_Sans'] leading-relaxed animate-bookOpenLeft ${
-            theme === "dark" ? "text-[#EBDDBF]" : "text-[#6c7a5b]"
+          className={`flex-1 p-10 pr-8 border-r overflow-y-auto leading-relaxed animate-bookOpenLeft ${
+            theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#6c7a5b] font-['Shantell_Sans']"
           }`}
         >
           <div className="flex justify-between items-center mb-4 gap-4">
@@ -1301,16 +1313,23 @@ const handleSave = async () => {
           </div>
 
           {/* Title + Mood */}
-          <h2 className="text-[22px] mb-3 font-semibold">Title</h2>
+          <h2 className={`text-[22px] mb-3 font-semibold ${theme === "dark" ? "font-spooky-header" : ""}`}>
+            Title {isReadOnly && <span className="text-sm opacity-60">(Read-only)</span>}
+          </h2>
           <input
             type="text"
             value={title}
             onChange={(e) => {
-              setTitle(e.target.value);
-              playTypeSound();
+              if (!isReadOnly) {
+                setTitle(e.target.value);
+                playTypeSound();
+              }
             }}
             placeholder="A New Beginning..."
-            className="w-full p-2 bg-transparent border-b outline-none"
+            readOnly={isReadOnly}
+            className={`w-full p-2 bg-transparent border-b outline-none ${
+              isReadOnly ? 'cursor-not-allowed opacity-70' : ''
+            }`}
           />
 
           {/* <h2 className="text-[22px] mt-8 mb-3 font-semibold">Mood</h2>
@@ -1324,7 +1343,9 @@ const handleSave = async () => {
             placeholder="Peaceful 🌿"
             className="w-full p-2 bg-transparent border-b outline-none"
           /> */}
-<h2 className="text-[22px] mb-3 font-semibold">Mood</h2>
+<h2 className={`text-[22px] mb-3 font-semibold ${theme === "dark" ? "font-spooky-header" : ""}`}>
+  Mood {isReadOnly && <span className="text-sm opacity-60">(Read-only)</span>}
+</h2>
 
 <div className="flex items-center gap-4 mb-6">
   {/* Slider */}
@@ -1333,8 +1354,11 @@ const handleSave = async () => {
     min="0"
     max="5"
     value={mood}
-    onChange={(e) => setMood(Number(e.target.value))}
-    className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+    onChange={(e) => !isReadOnly && setMood(Number(e.target.value))}
+    disabled={isReadOnly}
+    className={`w-full h-2 rounded-lg appearance-none ${
+      isReadOnly ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
+    }`}
     style={{
       background: theme === 'dark'
         ? 'linear-gradient(to right, #3a2e20 0%, #EBDDBF 100%)'
@@ -1356,41 +1380,60 @@ const handleSave = async () => {
 
 
           {/* Save Button */}
-          <div className="flex justify-end mt-6 mb-4">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className={`px-5 py-2 rounded-xl font-semibold transition-all ${
+          {!isReadOnly && (
+            <div className="flex justify-end mt-6 mb-4">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className={`px-5 py-2 rounded-xl font-semibold transition-all ${
+                  theme === "dark"
+                    ? "bg-[#EBDDBF] text-[#2b241c] hover:bg-[#EBDDBF]/90"
+                    : "bg-[#7A916C] text-white hover:bg-[#6c7a5b]"
+                } ${saving ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                {saving ? "Saving..." : saved ? "Saved ✅" : "Save Entry"}
+              </button>
+            </div>
+          )}
+          
+          {isReadOnly && (
+            <div className="flex justify-center mt-6 mb-4">
+              <div className={`px-5 py-2 rounded-xl text-sm ${
                 theme === "dark"
-                  ? "bg-[#EBDDBF] text-[#2b241c] hover:bg-[#EBDDBF]/90"
-                  : "bg-[#7A916C] text-white hover:bg-[#6c7a5b]"
-              } ${saving ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              {saving ? "Saving..." : saved ? "Saved ✅" : "Save Entry"}
-            </button>
-          </div>
+                  ? "bg-[#3a2e20] text-[#EBDDBF]"
+                  : "bg-[#E6F0D1] text-[#6c7a5b]"
+              }`}>
+                📖 Viewing past entry (read-only)
+              </div>
+            </div>
+          )}
 
           {/* Reflection */}
           <div className="mt-5">
-            <h3 className="text-[18px] font-medium mb-2">Today's Reflections 🌙</h3>
+            <h3 className="text-[18px] font-medium mb-2">
+              Today's Reflections 🌙 {isReadOnly && <span className="text-sm opacity-60">(Read-only)</span>}
+            </h3>
             {prompts.map((q, i) => (
               <div key={i} className="mb-4">
                 <p className="text-[15px] mb-2 opacity-90">• {q}</p>
                 <textarea
                   value={answers[i] || ""}
                   onChange={(e) => {
-                    const newAns = [...answers];
-                    newAns[i] = e.target.value;
-                    setAnswers(newAns);
-                    playTypeSound();
+                    if (!isReadOnly) {
+                      const newAns = [...answers];
+                      newAns[i] = e.target.value;
+                      setAnswers(newAns);
+                      playTypeSound();
+                    }
                   }}
                   rows={3}
                   placeholder="Your thoughts..."
+                  readOnly={isReadOnly}
                   className={`w-full text-[14px] p-2 rounded-lg border outline-none resize-y ${
                     theme === "dark"
                       ? "bg-[#3a2e20]/50 border-[#EBDDBF]/30 text-[#EBDDBF]"
                       : "bg-white/50 border-[#7A916C]/40 text-[#6c7a5b]"
-                  }`}
+                  } ${isReadOnly ? 'cursor-not-allowed opacity-70' : ''}`}
                 />
               </div>
             ))}
@@ -1399,24 +1442,28 @@ const handleSave = async () => {
 
         {/* RIGHT PAGE */}
         <div
-          className={`flex-1 p-10 pl-8 overflow-y-auto font-['Shantell_Sans'] leading-relaxed animate-bookOpenRight ${
-            theme === "dark" ? "text-[#EBDDBF]" : "text-[#6c7a5b]"
+          className={`flex-1 p-10 pl-8 overflow-y-auto leading-relaxed animate-bookOpenRight ${
+            theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#6c7a5b] font-['Shantell_Sans']"
           }`}
         >
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[22px] font-semibold">Your Thoughts</h2>
-            <button
-              onClick={handleVoiceToggle}
-              className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
-                isRecording
-                  ? "bg-red-500/80 text-white animate-pulse"
-                  : theme === "dark"
-                  ? "bg-[#EBDDBF]/20 text-[#EBDDBF]"
-                  : "bg-[#E6F0D1]/70 text-[#6c7a5b]"
-              }`}
-            >
-              {isRecording ? "🎙️ Listening..." : "🎤 Speak"}
-            </button>
+            <h2 className={`text-[22px] font-semibold ${theme === "dark" ? "font-spooky-header" : ""}`}>
+              Your Thoughts {isReadOnly && <span className="text-sm opacity-60">(Read-only)</span>}
+            </h2>
+            {!isReadOnly && (
+              <button
+                onClick={handleVoiceToggle}
+                className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-medium transition-all ${
+                  isRecording
+                    ? "bg-red-500/80 text-white animate-pulse"
+                    : theme === "dark"
+                    ? "bg-[#EBDDBF]/20 text-[#EBDDBF]"
+                    : "bg-[#E6F0D1]/70 text-[#6c7a5b]"
+                }`}
+              >
+                {isRecording ? "🎙️ Listening..." : "🎤 Speak"}
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -1428,12 +1475,17 @@ const handleSave = async () => {
             <textarea
               value={content + tempTranscript}
               onChange={(e) => {
-                setContent(e.target.value);
-                playTypeSound();
+                if (!isReadOnly) {
+                  setContent(e.target.value);
+                  playTypeSound();
+                }
               }}
-              placeholder="Write your reflection here..."
+              placeholder={isReadOnly ? "Past entry..." : "Write your reflection here..."}
               rows={15}
-              className="w-full bg-transparent outline-none resize-none text-[16px] leading-relaxed"
+              readOnly={isReadOnly}
+              className={`w-full bg-transparent outline-none resize-none text-[16px] leading-relaxed ${
+                theme === "dark" ? "font-gothic-body" : ""
+              } ${isReadOnly ? 'cursor-not-allowed opacity-70' : ''}`}
             />
           )}
 

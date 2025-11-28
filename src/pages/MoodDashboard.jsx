@@ -515,12 +515,13 @@ export default function MoodDashboard({ user, theme }) {
     className="absolute top-6 left-6 px-4 py-2 rounded-xl shadow-sm
                bg-white/40 dark:bg-black/20 backdrop-blur text-sm"
   >
-    ← Home
+    ←
   </button>
 
   {/* TITLE */}
-  <h1 className="text-2xl font-bold mb-4 text-center
-      dark:text-[#F4E9D8] text-[#5C6F4C]">
+  <h1 className={`text-2xl font-bold mb-4 text-center ${
+    theme === "dark" ? "text-[#F4E9D8] font-spooky-header" : "text-[#5C6F4C]"
+  }`}>
     Mood Dashboard 🌙
   </h1>
 
@@ -529,8 +530,9 @@ export default function MoodDashboard({ user, theme }) {
 
     {/* BADGES */}
     <section className="bg-white/40 dark:bg-black/20 shadow rounded-2xl p-5">
-      <h2 className="text-lg font-semibold mb-3
-          dark:text-[#EBDDBF] text-[#6B7A59]">
+      <h2 className={`text-lg font-semibold mb-3 ${
+        theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
+      }`}>
         Badges
       </h2>
 
@@ -538,7 +540,7 @@ export default function MoodDashboard({ user, theme }) {
         {badges.map((b) => (
           <div key={b.id} className="flex flex-col items-center">
             <img src={b.url} className="w-12 h-12" />
-            <p className="text-xs mt-1 opacity-80">
+            <p className={`text-xs mt-1 opacity-80 ${theme === "dark" ? "font-gothic-body" : ""}`}>
               {b.streak}-day streak
             </p>
           </div>
@@ -549,7 +551,7 @@ export default function MoodDashboard({ user, theme }) {
             <div className="w-12 h-12 rounded-xl bg-gray-300/30 flex items-center justify-center text-lg">
               🔒
             </div>
-            <p className="text-xs mt-1">{id}-day streak</p>
+            <p className={`text-xs mt-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>{id}-day streak</p>
           </div>
         ))}
       </div>
@@ -557,31 +559,33 @@ export default function MoodDashboard({ user, theme }) {
 
     {/* STREAK SUMMARY */}
     <section className="bg-white/40 dark:bg-black/20 shadow rounded-2xl p-5">
-      <h2 className="text-lg font-semibold mb-3
-          dark:text-[#EBDDBF] text-[#6B7A59]">
+      <h2 className={`text-lg font-semibold mb-3 ${
+        theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
+      }`}>
         Streak Summary 🔥
       </h2>
 
       <div className="grid grid-cols-3 text-center gap-2">
         <div>
-          <p className="text-xs opacity-60">Current</p>
-          <p className="text-xl font-bold">{streaks.currentStreak}</p>
+          <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Current</p>
+          <p className={`text-xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.currentStreak}</p>
         </div>
         <div>
-          <p className="text-xs opacity-60">Longest</p>
-          <p className="text-xl font-bold">{streaks.longestStreak}</p>
+          <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Longest</p>
+          <p className={`text-xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.longestStreak}</p>
         </div>
         <div>
-          <p className="text-xs opacity-60">Entries</p>
-          <p className="text-xl font-bold">{streaks.totalEntries}</p>
+          <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Entries</p>
+          <p className={`text-xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.totalEntries}</p>
         </div>
       </div>
     </section>
 
     {/* MOOD GRAPH */}
     <section className="bg-white/40 dark:bg-black/20 shadow rounded-2xl p-5">
-      <h2 className="text-lg font-semibold mb-3
-          dark:text-[#EBDDBF] text-[#6B7A59]">
+      <h2 className={`text-lg font-semibold mb-3 ${
+        theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
+      }`}>
         Past 7 Days Mood
       </h2>
 
@@ -615,8 +619,9 @@ export default function MoodDashboard({ user, theme }) {
 
     {/* INSIGHTS */}
     <section className="bg-white/40 dark:bg-black/20 shadow rounded-2xl p-5">
-      <h2 className="text-lg font-semibold mb-3
-          dark:text-[#EBDDBF] text-[#6B7A59]">
+      <h2 className={`text-lg font-semibold mb-3 ${
+        theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
+      }`}>
         Weekly Reflections ✨
       </h2>
 
@@ -624,8 +629,8 @@ export default function MoodDashboard({ user, theme }) {
         {insights.map((text, idx) => (
           <p
             key={idx}
-            className="p-3 rounded-xl bg-white/60 dark:bg-black/30 
-                       text-sm leading-relaxed shadow-sm"
+            className={`p-3 rounded-xl bg-white/60 dark:bg-black/30 
+                       text-sm leading-relaxed shadow-sm ${theme === "dark" ? "font-gothic-body" : ""}`}
           >
             🌿 {text}
           </p>

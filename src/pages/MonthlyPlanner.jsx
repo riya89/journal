@@ -88,7 +88,7 @@ function SortableTaskRow({ task, theme, daysInMonth, yearMonth, completions, exc
       className={isDragging ? 'shadow-2xl' : ''}
     >
       <td
-        className="sticky left-0 z-10 p-3 font-medium"
+        className={`sticky left-0 z-10 p-3 font-medium ${theme === "dark" ? "font-gothic-body" : ""}`}
         style={{
           backgroundColor:
             theme === "dark"
@@ -131,13 +131,24 @@ function SortableTaskRow({ task, theme, daysInMonth, yearMonth, completions, exc
         return (
           <td key={day} className="p-3 text-center">
             {appliesOnDate ? (
-              <input
-                type="checkbox"
-                checked={isCompleted}
-                onChange={() => handleToggleTask(task.id, day + 1)}
-                className="w-5 h-5 cursor-pointer"
-                style={{ accentColor: category.color }}
-              />
+              <div className="flex items-center justify-center gap-1 group/cell">
+                <input
+                  type="checkbox"
+                  checked={isCompleted}
+                  onChange={() => handleToggleTask(task.id, day + 1)}
+                  className="w-5 h-5 cursor-pointer"
+                  style={{ accentColor: category.color }}
+                />
+                {task.isRecurring && (
+                  <button
+                    onClick={() => handleDeleteTask(task.id, date)}
+                    className="opacity-0 group-hover/cell:opacity-100 text-red-500 hover:text-red-700 text-xs transition-opacity"
+                    title="Delete this occurrence"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             ) : (
               <span className="text-gray-400">-</span>
             )}
@@ -373,13 +384,10 @@ export default function MonthlyPlanner({ theme }) {
     if (!deletingTask) return;
 
     // For recurring tasks, if "single occurrence" is selected but no date is provided,
-    // we need a date. Since delete is triggered from Actions column without date context,
-    // we'll show an error message for single occurrence without a date.
+    // force the scope to "month" since we can't delete a single occurrence without a date
     if (deletingTask.isRecurring && deleteScope === "single" && !deleteDate) {
-      showToast("Please delete from a specific date cell, or choose 'Delete all occurrences'", "error");
-      setShowDeleteModal(false);
-      setDeletingTask(null);
-      return;
+      showToast("Cannot delete single occurrence without a date. Deleting all occurrences in this month instead.", "error");
+      deleteScope = "month";
     }
 
     try {
@@ -392,6 +400,7 @@ export default function MonthlyPlanner({ theme }) {
         if (deleteScope === "single" && deleteDate) {
           params.append("date", deleteDate);
         }
+        // For "month" scope, the yearMonth is already in the URL path
       }
       
       if (params.toString()) {
@@ -510,10 +519,10 @@ export default function MonthlyPlanner({ theme }) {
           }`}
         >
           <span className="text-xl">←</span>
-          <span>Back to Home</span>
+          <span></span>
         </button>
 
-        <h1 className="text-4xl font-bold mb-4">📅 Monthly Planner</h1>
+        <h1 className={`text-4xl font-bold mb-4 ${theme === "dark" ? "font-spooky-header" : ""}`}> Monthly Planner</h1>
         
         {/* Month/Year Selector */}
         <div className="flex gap-4 items-center">
@@ -522,7 +531,7 @@ export default function MonthlyPlanner({ theme }) {
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
             className={`px-4 py-2 rounded-lg ${
               theme === "dark"
-                ? "bg-[#2b241c] text-[#EBDDBF]"
+                ? "bg-[#2b241c] text-[#EBDDBF] font-gothic-body"
                 : "bg-white text-[#7A916C]"
             }`}
           >
@@ -538,7 +547,7 @@ export default function MonthlyPlanner({ theme }) {
             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
             className={`px-4 py-2 rounded-lg ${
               theme === "dark"
-                ? "bg-[#2b241c] text-[#EBDDBF]"
+                ? "bg-[#2b241c] text-[#EBDDBF] font-gothic-body"
                 : "bg-white text-[#7A916C]"
             }`}
           >
@@ -586,7 +595,7 @@ export default function MonthlyPlanner({ theme }) {
               <tr>
                 <th
                   className={`sticky left-0 z-10 p-3 text-left font-semibold ${
-                    theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                    theme === "dark" ? "bg-[#2b241c] font-spooky-header" : "bg-[#E6F0D1]"
                   }`}
                 >
                   Task
@@ -595,7 +604,7 @@ export default function MonthlyPlanner({ theme }) {
                   <th
                     key={i}
                     className={`p-3 text-center font-semibold ${
-                      theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                      theme === "dark" ? "bg-[#2b241c] font-gothic-body" : "bg-[#E6F0D1]"
                     }`}
                   >
                     {i + 1}
@@ -603,7 +612,7 @@ export default function MonthlyPlanner({ theme }) {
                 ))}
                 <th
                   className={`p-3 text-center font-semibold ${
-                    theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
+                    theme === "dark" ? "bg-[#2b241c] font-spooky-header" : "bg-[#E6F0D1]"
                   }`}
                 >
                   Actions
@@ -631,37 +640,6 @@ export default function MonthlyPlanner({ theme }) {
                 ))}
               </SortableContext>
             </tbody>
-            <tfoot>
-              <tr>
-                <td
-                  className={`sticky left-0 z-10 p-3 font-semibold ${
-                    theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
-                  }`}
-                >
-                  Total Time
-                </td>
-                {Array.from({ length: daysInMonth }, (_, day) => {
-                  const date = `${yearMonth}-${String(day + 1).padStart(2, "0")}`;
-                  const dailyTotal = calculateDailyTotal(tasks, date);
-                  const colorClass = getTotalColor(dailyTotal, theme);
-                  return (
-                    <td
-                      key={day}
-                      className={`p-3 text-center font-semibold ${
-                        theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
-                      } ${colorClass}`}
-                    >
-                      {dailyTotal > 0 ? formatTime(dailyTotal) : "-"}
-                    </td>
-                  );
-                })}
-                <td
-                  className={`p-3 text-center ${
-                    theme === "dark" ? "bg-[#2b241c]" : "bg-[#E6F0D1]"
-                  }`}
-                />
-              </tr>
-            </tfoot>
           </table>
 
           {tasks.length === 0 && (
@@ -712,6 +690,7 @@ export default function MonthlyPlanner({ theme }) {
         theme={theme}
         taskName={deletingTask?.name || ""}
         isRecurring={deletingTask?.isRecurring || false}
+        hasDateContext={deleteDate !== null}
       />
     </div>
   );

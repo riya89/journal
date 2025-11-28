@@ -796,49 +796,86 @@ export default function AIAssistant({ theme }) {
   };
 
   // -------------------------------------------------
-  // 🔈 ElevenLabs Streaming TTS - Starts playing immediately
+  // 🔈 Michelle TTS with ElevenLabs Fallback
   // -------------------------------------------------
   const speakStreaming = async (text, token) => {
     try {
       setIsSpeaking(true);
+      console.log("🔊 Michelle speaking:", text);
+      
+      // Try Michelle (Edge TTS) first
+      try {
+        const edgeRes = await apiPost("http://localhost:8000/journal/assistant/speak-edge", { 
+          text,
+          voice: "en-US-MichelleNeural", // Michelle's voice
+          rate: "0.80" // Slower speech rate for better listening
+        });
 
-      console.log("🔊 Starting TTS for:", text);
+        if (edgeRes.ok) {
+          const blob = await edgeRes.blob();
+          const audioURL = URL.createObjectURL(blob);
+          const audio = new Audio(audioURL);
 
-      // Try streaming endpoint first
+          console.log("✅ Michelle audio ready, playing...");
+
+          audio.onended = () => {
+            console.log("🔇 Michelle finished speaking");
+            setIsSpeaking(false);
+          };
+          audio.onerror = (e) => {
+            console.error("❌ Michelle audio error:", e);
+            setIsSpeaking(false);
+          };
+          
+          await audio.play();
+          return; // Success!
+        }
+      } catch (edgeError) {
+        console.warn("⚠️ Michelle (Edge TTS) failed, trying fallback:", edgeError);
+      }
+
+      // Fallback to ElevenLabs if Michelle fails
+      console.log("🔄 Falling back to premium voice...");
+      
       let res = await apiPost("http://localhost:8000/journal/assistant/speak-stream", { text });
 
-      // Fallback to regular endpoint if streaming fails
       if (!res.ok) {
-        console.warn("⚠️ Streaming endpoint failed, using regular endpoint");
+        console.warn("⚠️ Premium voice streaming failed, trying regular endpoint");
         res = await apiPost("http://localhost:8000/journal/assistant/speak", { text });
       }
 
       if (!res.ok) {
-        throw new Error("TTS failed");
+        throw new Error("Premium voice failed");
       }
 
-      // Create audio from response
       const blob = await res.blob();
       const audioURL = URL.createObjectURL(blob);
       const audio = new Audio(audioURL);
 
-      console.log("✅ Audio ready, playing...");
+      console.log("✅ Premium voice audio ready, playing...");
 
       audio.onended = () => {
-        console.log("🔇 Audio ended");
+        console.log("🔇 Premium voice audio ended");
         setIsSpeaking(false);
       };
       audio.onerror = (e) => {
-        console.error("❌ Audio playback error:", e);
+        console.error("❌ Premium voice audio error:", e);
         setIsSpeaking(false);
       };
       
-      // Start playing immediately
       await audio.play();
       
     } catch (err) {
-      console.error("TTS Streaming Error:", err);
+      console.error("❌ All voice methods failed:", err);
       setIsSpeaking(false);
+      
+      // Final fallback to browser voice
+      console.log("🔄 Using browser voice as final fallback");
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.8; // Slower rate
+      utterance.pitch = 1.1;
+      utterance.onend = () => setIsSpeaking(false);
+      speechSynthesis.speak(utterance);
     }
   };
 
@@ -888,6 +925,8 @@ export default function AIAssistant({ theme }) {
         ←
       </button>
 
+
+
       {/* ⭐ ORB */}
       <div className="pointer-events-none fixed left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 z-0">
         <div
@@ -924,10 +963,10 @@ export default function AIAssistant({ theme }) {
               className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-md text-[15px] ${
                 msg.sender === "user"
                   ? theme === "dark"
-                    ? "bg-[#4a3b2b] text-[#EBDDBF]"
+                    ? "bg-[#4a3b2b] text-[#EBDDBF] font-gothic-body"
                     : "bg-[#d8e8c8] text-[#44533a]"
                   : theme === "dark"
-                  ? "bg-[#2e241b] text-[#EBDDBF]"
+                  ? "bg-[#2e241b] text-[#EBDDBF] font-gothic-body"
                   : "bg-white text-[#6c7a5b]"
               }`}
             >
@@ -955,7 +994,7 @@ export default function AIAssistant({ theme }) {
             placeholder="Say what's on your mind..."
             className={`flex-1 px-4 py-3 rounded-xl shadow-md ${
               theme === "dark"
-                ? "bg-[#2e241b] text-[#EBDDBF] placeholder-[#EBDDBF]/40"
+                ? "bg-[#2e241b] text-[#EBDDBF] placeholder-[#EBDDBF]/40 font-gothic-body"
                 : "bg-white text-[#6c7a5b] placeholder-[#6c7a5b]/40"
             }`}
           />
@@ -967,7 +1006,7 @@ export default function AIAssistant({ theme }) {
               isListening
                 ? "bg-red-500 text-white animate-pulse"
                 : theme === "dark"
-                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3a28]"
+                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3a28] font-gothic-body"
                 : "bg-[#E6F0D1] text-[#6c7a5b] hover:bg-[#d8e8c8]"
             }`}
             title={isListening ? "Stop listening" : "Start voice input"}
@@ -979,7 +1018,7 @@ export default function AIAssistant({ theme }) {
             onClick={sendMessage}
             className={`px-6 py-3 rounded-xl font-semibold shadow-md ${
               theme === "dark"
-                ? "bg-[#f4c27c] text-[#2e241b] hover:bg-[#e8b36a]"
+                ? "bg-[#f4c27c] text-[#2e241b] hover:bg-[#e8b36a] font-gothic-body"
                 : "bg-[#7A916C] text-white hover:bg-[#6c7a5b]"
             }`}
           >

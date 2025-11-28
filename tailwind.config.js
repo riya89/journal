@@ -6,6 +6,11 @@ module.exports = {
     extend: {
       fontFamily: {
         shantell: ['"Shantell Sans"', 'sans-serif'],
+        // Spooky fonts for dark mode
+        'spooky-header': ['Griffy', 'serif'],
+        'gothic-body': ['Playfair Display', 'serif'],
+        'halloween': ['Nosifer', 'cursive'],
+        'warning': ['Butcherman', 'cursive'],
       },
       colors: {
         cream: '#FFFBEA',
