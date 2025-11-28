@@ -1,4 +1,4 @@
-globalThis.__RAINDROP_GIT_COMMIT_SHA = "23aeba134009adec50c43f93eac5674ad326e3ac"; 
+globalThis.__RAINDROP_GIT_COMMIT_SHA = "b59970a11070c19ca4bbf3b33df8cfae75a007c8"; 
 
 // node_modules/@liquidmetal-ai/raindrop-framework/dist/core/cors.js
 var matchOrigin = (request, env, config) => {
