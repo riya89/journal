@@ -126,6 +126,15 @@ export const AuthProvider = ({ children }) => {
     }
   }, [logout]);
 
+  // Update user data (e.g., avatar) - updates both state and localStorage
+  const updateUser = useCallback((updates) => {
+    setUser((prevUser) => {
+      const updatedUser = { ...prevUser, ...updates };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  }, []);
+
   // Register logout handler with API utility
   useEffect(() => {
     registerLogoutHandler(logout);
@@ -197,6 +206,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     getValidToken,
     refreshToken,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

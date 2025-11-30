@@ -642,6 +642,9 @@ import FloatingParticles from "../components/FloatingParticles";
 import FloatingGhosts from "../components/FloatingGhosts";
 import Fireflies from "../components/Fireflies";
 import { apiPost } from "../utils/api";
+import ConversationContext from "../utils/conversationContext";
+import HistoryPanel from "../components/HistoryPanel";
+import FollowUpSuggestions from "../components/FollowUpSuggestions";
 
 export default function AIAssistant({ theme }) {
   const navigate = useNavigate();
@@ -649,14 +652,83 @@ export default function AIAssistant({ theme }) {
   const [input, setInput] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [contextLoaded, setContextLoaded] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [followUpSuggestions, setFollowUpSuggestions] = useState([]);
 
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
+  const conversationContextRef = useRef(null);
 
   // 📌 Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // 📌 Initialize session and load context with daily reset
+  useEffect(() => {
+    const initializeSession = async () => {
+      if (!auth.currentUser) return;
+
+      // Get today's date as a string (YYYY-MM-DD)
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get stored session info
+      let sid = sessionStorage.getItem('aiSessionId');
+      const lastSessionDate = sessionStorage.getItem('aiSessionDate');
+      
+      // Check if we need to start a new session (new day)
+      if (!sid || lastSessionDate !== today) {
+        // Generate new session ID for today
+        sid = ConversationContext.generateSessionId();
+        sessionStorage.setItem('aiSessionId', sid);
+        sessionStorage.setItem('aiSessionDate', today);
+        
+        console.log('🌅 New day detected - starting fresh conversation');
+        console.log('📅 Session date:', today);
+      } else {
+        console.log('📅 Continuing today\'s conversation');
+      }
+
+      setSessionId(sid);
+
+      // Initialize conversation context
+      conversationContextRef.current = new ConversationContext(
+        sid,
+        auth.currentUser.uid
+      );
+
+      // Try to load existing context from backend
+      try {
+        const loadedContext = await ConversationContext.load(
+          auth.currentUser.uid,
+          sid
+        );
+
+        if (loadedContext && loadedContext.getMessageCount() > 0) {
+          // Load messages into UI
+          const loadedMessages = loadedContext.getAllMessages().map(msg => ({
+            sender: msg.role,
+            text: msg.content,
+            timestamp: msg.timestamp
+          }));
+          
+          setMessages(loadedMessages);
+          conversationContextRef.current = loadedContext;
+          console.log('📚 Loaded conversation context:', loadedMessages.length, 'messages');
+        } else {
+          console.log('🆕 Starting new conversation session');
+        }
+      } catch (error) {
+        console.error('Error loading context:', error);
+      }
+
+      setContextLoaded(true);
+    };
+
+    initializeSession();
+  }, []);
 
   // 🎤 Setup Speech Recognition
   useEffect(() => {
@@ -724,15 +796,41 @@ export default function AIAssistant({ theme }) {
     try {
       const token = await auth.currentUser.getIdToken();
 
+      // Add user message to context
+      if (conversationContextRef.current) {
+        conversationContextRef.current.addMessage('user', userText);
+      }
+
       // Add empty AI message that we'll update
       const aiMessageIndex = messages.length + 1;
       setMessages((prev) => [...prev, { sender: "ai", text: "", streaming: true }]);
 
-      // 1️⃣ Fetch AI text reply
-      const replyRes = await apiPost("http://localhost:8000/journal/assistant/reply", { message: userText });
+      // 1️⃣ Fetch AI text reply WITH CONTEXT
+      const replyRes = await apiPost("http://localhost:8000/journal/assistant/reply-with-context", { 
+        message: userText,
+        sessionId: sessionId,
+        includeHistory: true
+      });
 
       const replyData = await replyRes.json();
       const fullText = replyData.reply || "I'm here with you 🌿";
+      
+      // Store follow-up suggestions
+      if (replyData.followUpSuggestions && replyData.followUpSuggestions.length > 0) {
+        setFollowUpSuggestions(replyData.followUpSuggestions);
+      } else {
+        setFollowUpSuggestions([]);
+      }
+
+      // Add AI response to context
+      if (conversationContextRef.current) {
+        conversationContextRef.current.addMessage('assistant', fullText);
+        
+        // Persist to Firebase (async, don't wait)
+        conversationContextRef.current.persist().catch(err => {
+          console.error('Error persisting context:', err);
+        });
+      }
 
       // 2️⃣ Start voice generation IMMEDIATELY (parallel with text animation)
       // Don't await - let it run in parallel
@@ -783,15 +881,41 @@ export default function AIAssistant({ theme }) {
     } catch (e) {
       console.error("Backend error:", e);
 
-      const fallback = "I'm here with you 🌿 I'm listening.";
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1] = { sender: "ai", text: fallback, streaming: false };
-        return newMessages;
-      });
-      
-      const token = await auth.currentUser.getIdToken();
-      speakStreaming(fallback, token);
+      // Fallback to old endpoint if new one fails
+      try {
+        console.log("🔄 Falling back to old endpoint...");
+        const fallbackRes = await apiPost("http://localhost:8000/journal/assistant/reply", { 
+          message: userText 
+        });
+        const fallbackData = await fallbackRes.json();
+        const fallbackText = fallbackData.reply || "I'm here with you 🌿 I'm listening.";
+
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = { sender: "ai", text: fallbackText, streaming: false };
+          return newMessages;
+        });
+
+        // Add to context
+        if (conversationContextRef.current) {
+          conversationContextRef.current.addMessage('assistant', fallbackText);
+        }
+
+        const token = await auth.currentUser.getIdToken();
+        speakStreaming(fallbackText, token);
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        
+        const fallback = "I'm here with you 🌿 I'm listening.";
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          newMessages[newMessages.length - 1] = { sender: "ai", text: fallback, streaming: false };
+          return newMessages;
+        });
+        
+        const token = await auth.currentUser.getIdToken();
+        speakStreaming(fallback, token);
+      }
     }
   };
 
@@ -888,6 +1012,9 @@ export default function AIAssistant({ theme }) {
     const text = input.trim();
     setInput("");
 
+    // Clear follow-up suggestions when user sends a new message
+    setFollowUpSuggestions([]);
+
     // Add user bubble
     setMessages((prev) => [...prev, { sender: "user", text }]);
 
@@ -895,14 +1022,66 @@ export default function AIAssistant({ theme }) {
     await sendToBackend(text);
   };
 
+  // Handle follow-up suggestion selection
+  const handleFollowUpSelect = async (suggestion) => {
+    // Clear suggestions immediately
+    setFollowUpSuggestions([]);
+    
+    // Add user bubble with the selected suggestion
+    setMessages((prev) => [...prev, { sender: "user", text: suggestion }]);
+
+    // Send to backend
+    await sendToBackend(suggestion);
+  };
+
   // ENTER key
   const handleKeyDown = (e) => {
     if (e.key === "Enter") sendMessage();
   };
 
+  // Load a session from history
+  const loadSessionFromHistory = async (session) => {
+    try {
+      // Clear current session
+      sessionStorage.removeItem('aiSessionId');
+      sessionStorage.removeItem('aiSessionDate');
+      
+      // Set the loaded session
+      setSessionId(session.sessionId);
+      sessionStorage.setItem('aiSessionId', session.sessionId);
+      
+      // Extract and store date from session ID (format: session_YYYY-MM-DD_...)
+      const sessionDate = session.sessionId.split('_')[1]; // Get YYYY-MM-DD part
+      if (sessionDate && sessionDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        sessionStorage.setItem('aiSessionDate', sessionDate);
+        console.log('📅 Loaded conversation from:', sessionDate);
+      }
+      
+      // Load messages into UI
+      const loadedMessages = session.messages.map(msg => ({
+        sender: msg.role,
+        text: msg.content,
+        timestamp: msg.timestamp
+      }));
+      
+      setMessages(loadedMessages);
+      
+      // Update conversation context
+      conversationContextRef.current = new ConversationContext(
+        session.sessionId,
+        auth.currentUser.uid
+      );
+      conversationContextRef.current.loadMessages(session.messages);
+      
+      console.log('📚 Loaded session from history:', session.sessionId);
+    } catch (error) {
+      console.error('Error loading session from history:', error);
+    }
+  };
+
   return (
     <div
-      className={`min-h-screen w-full relative flex flex-col items-center pt-20 px-6 transition-all duration-500 ${
+      className={`min-h-screen w-full relative flex flex-col items-center transition-all duration-500 ${
         theme === "dark"
           ? "bg-[#1a1410] text-[#EBDDBF]"
           : "bg-[#FFFBEA] text-[#6c7a5b]"
@@ -913,24 +1092,117 @@ export default function AIAssistant({ theme }) {
       <FloatingGhosts theme={theme} />
       <Fireflies theme={theme} />
 
-      {/* BACK BUTTON */}
-      <button
-        onClick={() => navigate("/")}
-        className={`fixed top-6 left-6 px-4 py-2 rounded-xl font-medium shadow-md z-50 ${
-          theme === "dark"
-            ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b]"
-            : "bg-white text-[#6c7a5b] hover:bg-[#f4f0d8]"
-        }`}
-      >
-        ←
-      </button>
+      {/* HEADER BAR */}
+      <div className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b ${
+        theme === "dark"
+          ? "bg-[#1a1410]/90 border-[#3a2e20]"
+          : "bg-[#FFFBEA]/90 border-[#e8ecd9]"
+      }`}>
+        <div className="flex items-center justify-between px-6 py-4">
+          {/* Left: Back Button */}
+          <button
+            onClick={() => navigate("/")}
+            className={`px-4 py-2 rounded-xl font-medium shadow-sm transition-all ${
+              theme === "dark"
+                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b]"
+                : "bg-white text-[#6c7a5b] hover:bg-[#f4f0d8]"
+            }`}
+          >
+            ← Home
+          </button>
+
+          {/* Center: Session Indicator with Date */}
+          {contextLoaded && sessionId && (
+            <div className={`flex items-center gap-3 px-4 py-2 rounded-full text-sm ${
+              theme === "dark"
+                ? "bg-[#3a2e20]/60 text-[#EBDDBF]/80"
+                : "bg-white/60 text-[#6c7a5b]/80"
+            }`}>
+              {/* Date Badge */}
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
+                theme === "dark"
+                  ? "bg-[#2b241c] text-[#f4c27c]"
+                  : "bg-[#f4f0d8] text-[#7A916C]"
+              }`}>
+                <span>📅</span>
+                <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+              
+              {/* Message Count */}
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${
+                  messages.length > 0
+                    ? theme === "dark"
+                      ? "bg-[#f4c27c]"
+                      : "bg-[#7A916C]"
+                    : "bg-gray-400"
+                }`}></span>
+                <span className="font-medium">
+                  {messages.length > 0 ? `${messages.length} messages` : 'New conversation'}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Right: Action Buttons */}
+          <div className="flex items-center gap-2">
+            {contextLoaded && messages.length > 0 && (
+              <button
+                onClick={() => {
+                  // Clear session and start fresh
+                  sessionStorage.removeItem('aiSessionId');
+                  sessionStorage.removeItem('aiSessionDate');
+                  setMessages([]);
+                  setSessionId(null);
+                  setContextLoaded(false);
+                  setFollowUpSuggestions([]);
+                  
+                  // Reinitialize with new session
+                  const today = new Date().toISOString().split('T')[0];
+                  const newSid = ConversationContext.generateSessionId();
+                  sessionStorage.setItem('aiSessionId', newSid);
+                  sessionStorage.setItem('aiSessionDate', today);
+                  setSessionId(newSid);
+                  conversationContextRef.current = new ConversationContext(
+                    newSid,
+                    auth.currentUser.uid
+                  );
+                  setContextLoaded(true);
+                  
+                  console.log('🆕 Started new conversation');
+                }}
+                className={`px-4 py-2 rounded-xl font-medium shadow-sm text-sm transition-all ${
+                  theme === "dark"
+                    ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b]"
+                    : "bg-white text-[#6c7a5b] hover:bg-[#f4f0d8]"
+                }`}
+                title="Start a new conversation"
+              >
+                ✨ New Chat
+              </button>
+            )}
+            
+            <button
+              onClick={() => setShowHistory(true)}
+              className={`px-4 py-2 rounded-xl font-medium shadow-sm text-sm transition-all ${
+                theme === "dark"
+                  ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b]"
+                  : "bg-white text-[#6c7a5b] hover:bg-[#f4f0d8]"
+              }`}
+              title="View conversation history"
+            >
+              📚 History
+            </button>
+          </div>
+        </div>
+      </div>
 
 
 
-      {/* ⭐ ORB */}
-      <div className="pointer-events-none fixed left-1/2 top-1/3 -translate-x-1/2 -translate-y-1/2 z-0">
+      {/* ⭐ ORB - Centered in viewport */}
+      <div className="pointer-events-none fixed left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 z-0">
         <div
-          className={`w-[260px] h-[260px] rounded-full blur-[40px] ${
+          className={`w-[260px] h-[260px] rounded-full blur-[40px] transition-all duration-500 ${
             theme === "dark"
               ? isSpeaking
                 ? "bg-[rgba(255,180,90,0.9)] animate-orbPulse"
@@ -942,7 +1214,7 @@ export default function AIAssistant({ theme }) {
         ></div>
 
         <div
-          className={`absolute left-1/2 top-1/2 w-[120px] h-[120px] -translate-x-1/2 -translate-y-1/2 rounded-full ${
+          className={`absolute left-1/2 top-1/2 w-[120px] h-[120px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500 ${
             theme === "dark"
               ? "bg-[rgba(255,210,120,0.95)]"
               : "bg-[rgba(210,250,230,0.95)]"
@@ -951,7 +1223,16 @@ export default function AIAssistant({ theme }) {
       </div>
 
       {/* CHAT MESSAGES */}
-      <div className="w-full max-w-3xl flex-1 overflow-y-auto pb-40 px-2 z-10">
+      <div className="w-full max-w-3xl flex-1 overflow-y-auto pb-40 pt-24 px-2 z-10">
+        {messages.length === 0 && contextLoaded && (
+          <div className={`text-center py-12 opacity-60 ${
+            theme === "dark" ? "text-[#EBDDBF]" : "text-[#6c7a5b]"
+          }`}>
+            <p className="text-lg mb-2">✨ Welcome to your AI companion</p>
+            <p className="text-sm">Share what's on your mind, and I'll listen with care</p>
+          </div>
+        )}
+        
         {messages.map((msg, i) => (
           <div
             key={i}
@@ -960,7 +1241,7 @@ export default function AIAssistant({ theme }) {
             }`}
           >
             <div
-              className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-md text-[15px] ${
+              className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-md text-[15px] transition-all ${
                 msg.sender === "user"
                   ? theme === "dark"
                     ? "bg-[#4a3b2b] text-[#EBDDBF] font-gothic-body"
@@ -977,6 +1258,16 @@ export default function AIAssistant({ theme }) {
             </div>
           </div>
         ))}
+        
+        {/* FOLLOW-UP SUGGESTIONS */}
+        {followUpSuggestions.length > 0 && (
+          <FollowUpSuggestions
+            suggestions={followUpSuggestions}
+            onSelect={handleFollowUpSelect}
+            theme={theme}
+          />
+        )}
+        
         <div ref={chatEndRef}></div>
       </div>
 
@@ -1026,6 +1317,15 @@ export default function AIAssistant({ theme }) {
           </button>
         </div>
       </div>
+
+      {/* HISTORY PANEL */}
+      {showHistory && (
+        <HistoryPanel
+          theme={theme}
+          onClose={() => setShowHistory(false)}
+          onLoadSession={loadSessionFromHistory}
+        />
+      )}
 
       {/* ORB ANIMATION */}
       <style>{`

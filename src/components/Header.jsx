@@ -811,8 +811,8 @@ import { useEffect, useState } from "react";
 import { apiPost } from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
 
-export default function Header({ theme, setTheme, user, setUser, onLogout, selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }) {
-  const { logout } = useAuth();
+export default function Header({ theme, setTheme, user, onLogout, selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }) {
+  const { logout, updateUser } = useAuth();
   const [time, setTime] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -1026,7 +1026,7 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
           theme={theme}
           logout={logout}
           onClose={() => setShowProfile(false)}
-          setUser={setUser}
+          updateUser={updateUser}
         />
       )}
     </header>
@@ -1034,7 +1034,7 @@ export default function Header({ theme, setTheme, user, setUser, onLogout, selec
 }
 
 /* ========== PROFILE MODAL ========== */
-function ProfileModal({ user, theme, logout, onClose, setUser }) {
+function ProfileModal({ user, theme, logout, onClose, updateUser }) {
   const [avatar, setAvatar] = useState(
     user?.avatarURL ||
       "https://i.pinimg.com/1200x/ba/98/b4/ba98b4160f7af525982f94b633b2a2b2.jpg"
@@ -1062,10 +1062,8 @@ function ProfileModal({ user, theme, logout, onClose, setUser }) {
         setSuccessMsg("✨ Avatar updated!");
         setShowAvatarDialog(false);
 
-        // ✅ Update global user state AND localStorage
-        const updatedUser = { ...user, avatarURL: url };
-        setUser(updatedUser);
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        // ✅ Update user in AuthContext (which also updates localStorage)
+        updateUser({ avatarURL: url });
 
         setTimeout(() => setSuccessMsg(""), 2000);
       }

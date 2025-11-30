@@ -272,6 +272,10 @@ import GrowthGarden from "./pages/GrowthGarden";
 import AIAssistant from "./pages/AIAssistant";
 import MoodDashboard from "./pages/MoodDashboard";
 import MonthlyPlanner from "./pages/MonthlyPlanner";
+import TimeCapsule from "./pages/TimeCapsule";
+import GratitudeJarPage from "./pages/GratitudeJarPage";
+import MoodTrackingHub from "./pages/MoodTrackingHub";
+// import GamificationDashboard from "./pages/GamificationDashboard";
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -318,6 +322,22 @@ function AppContent() {
         path="/monthly-planner"
         element={<MonthlyPlanner theme={theme} />}
       />
+      <Route
+        path="/time-capsule"
+        element={<TimeCapsule theme={theme} />}
+      />
+      <Route
+        path="/gratitude-jar"
+        element={<GratitudeJarPage theme={theme} />}
+      />
+      <Route
+        path="/mood-tracking-hub"
+        element={<MoodTrackingHub theme={theme} />}
+      />
+      {/* <Route
+        path="/gamification"
+        element={<GamificationDashboard theme={theme} setTheme={setTheme} />}
+      /> */}
     </Routes>
   );
 }

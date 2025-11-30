@@ -807,6 +807,9 @@ import PictureOfTheDay from "./PictureOfTheDay";
 import tornPageCornerRight from "../assets/journalmodal.png";
 import tornPageCornerLeft from "../assets/journalmodal1.png";
 import { apiGet, apiPost } from "../utils/api";
+import { updateJournalQuests } from "../utils/questProgress";
+import TaskSuggestionModal from "./TaskSuggestionModal";
+import PostJournalCheckModal from "./PostJournalCheckModal";
 
 export default function JournalModal({ isOpen, onClose, theme, selectedDate , user}) {
   const [title, setTitle] = useState("");
@@ -819,6 +822,16 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  
+  // Task suggestion state
+  const [showTaskSuggestions, setShowTaskSuggestions] = useState(false);
+  const [taskSuggestions, setTaskSuggestions] = useState([]);
+  
+  // Post-journal task check state
+  const [showPostJournalCheck, setShowPostJournalCheck] = useState(false);
+  
+  // Track if this is an existing entry (to avoid showing suggestions on edits)
+  const [isExistingEntry, setIsExistingEntry] = useState(false);
 
   // Check if the selected date is in the past (read-only mode)
   const isPastDate = () => {
@@ -1068,6 +1081,14 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
         setPrompts(data.prompts || []);
         setAnswers(data.answers || ["", ""]);
         setPhotoURL(data.photoURL || null);
+        
+        // Check if this is an existing entry (has content already)
+        const hasExistingContent = (data.content && data.content.trim().length > 0) || 
+                                   (data.title && data.title.trim().length > 0);
+        setIsExistingEntry(hasExistingContent);
+      } else {
+        // New entry
+        setIsExistingEntry(false);
       }
     } catch (err) {
       console.error("❌ Failed to load journal:", err);
@@ -1134,6 +1155,123 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   //     setSaving(false);
   //   }
   // };
+// Analyze journal for task suggestions
+const analyzeForTaskSuggestions = async (journalText, moodValue, date) => {
+  try {
+    console.log('📋 Task suggestion analysis started');
+    console.log('Content length:', journalText?.length);
+    
+    // Content-based filtering: Only show if content suggests actionable themes
+    
+    // Skip if content is too short (minimum 20 characters for basic validation)
+    if (!journalText || journalText.trim().length < 20) {
+      console.log('⏭️ Skipping task suggestions: Entry too short');
+      return;
+    }
+
+    // Only analyze if content suggests challenges/goals/stress/plans
+    const triggerWords = [
+      'stress', 'stressed', 'stressful',
+      'overwhelm', 'overwhelmed', 'overwhelming',
+      'anxious', 'anxiety', 'worried', 'worry',
+      'need to', 'should', 'have to', 'must',
+      'goal', 'goals',
+      'want to', 'plan', 'planning', 'planned',
+      'tomorrow', 'next week', 'upcoming',
+      'organize', 'prioritize', 'manage',
+      'improve', 'work on', 'focus on'
+    ];
+    
+    const lowerText = journalText.toLowerCase();
+    const foundWords = triggerWords.filter(word => lowerText.includes(word));
+    console.log('Found trigger words:', foundWords);
+    
+    const hasRelevantContent = foundWords.length > 0;
+
+    if (!hasRelevantContent) {
+      console.log('⏭️ Skipping task suggestions: No actionable themes detected');
+      return;
+    }
+
+    console.log('🎯 Analyzing journal for task suggestions...');
+
+    const response = await apiPost("http://localhost:8000/journal/analyze-for-tasks", {
+      journalText: journalText.trim(),
+      mood: moodValue,
+      date: date
+    });
+
+    if (!response.ok) {
+      console.error('❌ API returned error:', response.status);
+      return;
+    }
+
+    const data = await response.json();
+    console.log('API response:', data);
+
+    // Show modal if we have suggestions
+    if (data.suggestedTasks && data.suggestedTasks.length > 0) {
+      setTaskSuggestions(data.suggestedTasks);
+      setShowTaskSuggestions(true);
+      console.log(`✨ Showing ${data.suggestedTasks.length} task suggestions`);
+    } else {
+      console.log('⏭️ No tasks suggested by AI');
+    }
+  } catch (error) {
+    console.error('❌ Failed to analyze journal for tasks:', error);
+    // Fail silently - don't interrupt the user's flow
+  }
+};
+
+// Add suggested tasks to tomorrow's planner
+const handleAddSuggestedTasks = async (selectedTasks, makeRecurring = false, targetDate = null) => {
+  try {
+    // Use provided date or default to tomorrow
+    const taskDate = targetDate || (() => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    })();
+    
+    const yearMonth = taskDate.substring(0, 7); // Extract YYYY-MM
+
+    // Add each selected task
+    for (const task of selectedTasks) {
+      if (makeRecurring) {
+        // Create as daily recurring task (counts in dopamine graph)
+        const taskData = {
+          name: task.name,
+          category: task.category,
+          timeEstimate: task.timeEstimate,
+          isRecurring: true,
+          recurrenceType: 'daily',
+          recurrenceDays: [0, 1, 2, 3, 4, 5, 6], // All days
+          yearMonth
+        };
+        await apiPost("http://localhost:8000/journal/planner/task", taskData);
+      } else {
+        // Create as one-time task for selected date (doesn't count in graph)
+        const taskData = {
+          yearMonth,
+          name: task.name,
+          category: task.category,
+          timeEstimate: task.timeEstimate,
+          isRecurring: false,
+          specificDate: taskDate,  // Only show on this specific date
+          completed: false
+        };
+        await apiPost("http://localhost:8000/journal/planner/task", taskData);
+      }
+    }
+
+    const destination = makeRecurring ? 'daily tasks' : `planner for ${taskDate}`;
+    console.log(`✅ Added ${selectedTasks.length} task(s) to ${destination}`);
+  } catch (error) {
+    console.error('Failed to add suggested tasks:', error);
+    alert('Failed to add tasks to planner. Please try again.');
+  }
+};
+
 const handleSave = async () => {
   if (!title.trim() && !content.trim() && !answers.some(a => a.trim())) {
     alert("Write something first 💭");
@@ -1177,12 +1315,28 @@ const handleSave = async () => {
       ai_chat: ""
     });
 
+    // ✅ Quest progress is already updated by /journal/add endpoint
+    // No need to call updateJournalQuests() again!
 
+    // 3️⃣ Analyze journal for task suggestions (non-blocking)
+    // ✅ Only show on FIRST save (not when editing existing entry)
+    if (!isExistingEntry && content && content.trim().length > 0) {
+      analyzeForTaskSuggestions(content, mood, selectedDate).catch(err => {
+        console.warn('Task suggestion analysis failed, but journal saved successfully:', err);
+      });
+    }
 
     // UI success
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    
+    // 5️⃣ Show post-journal task check modal after successful save
+    // Only show for today's date (not past dates)
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDate === today) {
+      setShowPostJournalCheck(true);
+    }
   } catch (err) {
     console.error("❌ Failed to save journal:", err);
     alert("Could not save entry. Please try again.");
@@ -1532,6 +1686,25 @@ const handleSave = async () => {
           />
         </div>
       </div>
+
+      {/* Task Suggestion Modal */}
+      {showTaskSuggestions && (
+        <TaskSuggestionModal
+          suggestions={taskSuggestions}
+          onAddTasks={handleAddSuggestedTasks}
+          onClose={() => setShowTaskSuggestions(false)}
+        />
+      )}
+      
+      {/* Post-Journal Task Check Modal */}
+      {showPostJournalCheck && (
+        <PostJournalCheckModal
+          date={selectedDate}
+          onClose={() => setShowPostJournalCheck(false)}
+          theme={theme}
+          user={user}
+        />
+      )}
     </div>
   );
 }

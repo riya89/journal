@@ -413,8 +413,6 @@
 //   );
 // }
 import { useEffect, useState } from "react";
-import { Line } from "react-chartjs-2";
-import "chart.js/auto";
 import { useNavigate } from "react-router-dom";
 import Modal from "../components/Modal";
 import FlowerMeadow from "../components/FlowerMeadow";
@@ -422,20 +420,25 @@ import FloatingParticles from "../components/FloatingParticles";
 import FloatingGhosts from "../components/FloatingGhosts";
 import Fireflies from "../components/Fireflies";
 import { apiGet } from "../utils/api";
+import XPBar from "../components/XPBar";
+import QuestPanel from "../components/QuestPanel";
+import BadgeGallery from "../components/BadgeGallery";
+import ExtendedMoodDashboard from "../components/ExtendedMoodDashboard";
 export default function MoodDashboard({ user, theme }) {
   const navigate = useNavigate();
 
   const [badges, setBadges] = useState([]);
   const [insights, setInsights] = useState([]);
-  const [moodData, setMoodData] = useState([]);
   const [newBadge, setNewBadge] = useState(null);
   const [streaks, setStreaks] = useState({
     currentStreak: 0,
     longestStreak: 0,
     totalEntries: 0,
   });
+  const [earnedBadges, setEarnedBadges] = useState([]);
 
   const BASE = "http://localhost:8000/raindrop";
+  
 
   // ---------- FETCH DATA ----------
   useEffect(() => {
@@ -458,10 +461,7 @@ export default function MoodDashboard({ user, theme }) {
         if (d.newlyEarned?.length > 0) setNewBadge(d.newlyEarned[0]);
       });
 
-    // Mood
-    apiGet(`${BASE}/mood?uid=${user.uid}`)
-      .then((r) => r.json())
-      .then((d) => setMoodData(normalizeMood(d.moodData || [])));
+    // Mood data is now handled by ExtendedMoodDashboard component
 
     // Insights
     apiGet(`${BASE}/insights?uid=${user.uid}`)
@@ -477,22 +477,15 @@ export default function MoodDashboard({ user, theme }) {
         }
         setInsights(parsed);
       });
+
+    // Fetch earned badges for gamification
+    apiGet('http://localhost:8000/journal/user/stats')
+      .then((r) => r.json())
+      .then((d) => {
+        setEarnedBadges(d.earnedBadges || []);
+      })
+      .catch((err) => console.error('Error fetching gamification badges:', err));
   }, [user]);
-
-  // ---------- NORMALIZE MOOD DATA ----------
-  const normalizeMood = (raw) => {
-    const byDate = {};
-    raw.forEach((e) => (byDate[e.date] = e.mood));
-
-    const days = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
-      days.push({ date: key, mood: byDate[key] ?? null });
-    }
-    return days;
-  };
 
   const lockedBadges = [7, 14, 21, 30, 60, 90].filter(
     (s) => !badges.find((b) => b.streak === s)
@@ -500,151 +493,197 @@ export default function MoodDashboard({ user, theme }) {
 
   return (
     <main
-  className="min-h-screen py-10 px-4 flex flex-col items-center gap-8
-             transition-all duration-500 pb-40 relative"
-  data-theme={theme}
->
-  {/* ✨ Floating Particles & Ghosts */}
-  <FloatingParticles theme={theme} />
-  <FloatingGhosts theme={theme} />
-  <Fireflies theme={theme} />
+      className="h-screen overflow-hidden flex flex-col relative"
+      data-theme={theme}
+    >
+      {/* ✨ Floating Particles & Ghosts */}
+      <FloatingParticles theme={theme} />
+      <FloatingGhosts theme={theme} />
+      <Fireflies theme={theme} />
 
-  {/* BACK BUTTON */}
-  <button
-    onClick={() => navigate(-1)}
-    className="absolute top-6 left-6 px-4 py-2 rounded-xl shadow-sm
-               bg-white/40 dark:bg-black/20 backdrop-blur text-sm"
-  >
-    ←
-  </button>
+      {/* BACK BUTTON */}
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg shadow-sm
+                   bg-white/40 dark:bg-black/20 backdrop-blur text-sm"
+      >
+        ←
+      </button>
 
-  {/* TITLE */}
-  <h1 className={`text-2xl font-bold mb-4 text-center ${
-    theme === "dark" ? "text-[#F4E9D8] font-spooky-header" : "text-[#5C6F4C]"
-  }`}>
-    Mood Dashboard 🌙
-  </h1>
+      {/* TITLE */}
+      <div className="pt-4 pb-2 text-center">
+        <h1 className={`text-xl font-bold ${
+          theme === "dark" ? "text-[#F4E9D8] font-spooky-header" : "text-[#5C6F4C]"
+        }`}>
+          Mood Dashboard 🌙
+        </h1>
+      </div>
 
-  {/* ====== GRID LAYOUT ====== */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
+      {/* MAIN CONTENT - SCROLLABLE CONTAINER */}
+      <div className="flex-1 overflow-y-auto px-4 pb-32">
+        <div className="max-w-7xl mx-auto space-y-3">
+          
+          {/* TOP ROW: XP Bar + Streak Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* XP Bar */}
+            <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3">
+              <XPBar theme={theme} />
+            </div>
 
-    {/* BADGES */}
-    <section className="bg-white/40 dark:bg-black/20 shadow rounded-2xl p-5">
-      <h2 className={`text-lg font-semibold mb-3 ${
-        theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
-      }`}>
-        Badges
-      </h2>
+            {/* STREAK SUMMARY */}
+            <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3">
+              <h2 className={`text-sm font-semibold mb-2 ${
+                theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
+              }`}>
+                Streak Summary 🔥
+              </h2>
+              <div className="grid grid-cols-3 text-center gap-2">
+                <div>
+                  <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Current</p>
+                  <p className={`text-lg font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.currentStreak}</p>
+                </div>
+                <div>
+                  <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Longest</p>
+                  <p className={`text-lg font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.longestStreak}</p>
+                </div>
+                <div>
+                  <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Entries</p>
+                  <p className={`text-lg font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.totalEntries}</p>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {badges.map((b) => (
-          <div key={b.id} className="flex flex-col items-center">
-            <img src={b.url} className="w-12 h-12" />
-            <p className={`text-xs mt-1 opacity-80 ${theme === "dark" ? "font-gothic-body" : ""}`}>
-              {b.streak}-day streak
+          {/* MIDDLE ROW: Quest Panel + Streak Badges & Achievements */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {/* Quest Panel */}
+            {user && (
+              <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3">
+                <QuestPanel theme={theme} userId={user.uid} compact={true} />
+              </div>
+            )}
+
+            {/* STREAK BADGES & ACHIEVEMENTS COMBINED */}
+            <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3">
+              <h2 className={`text-sm font-semibold mb-2 ${
+                theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
+              }`}>
+                🔥 Streak Badges & 🏆 Achievements
+              </h2>
+              
+              {/* Streak Badges */}
+              <div className="mb-3">
+                <p className="text-xs opacity-70 mb-1">Streak Badges</p>
+                <div className="grid grid-cols-6 gap-2">
+                  {badges.map((b) => (
+                    <div key={b.id} className="flex flex-col items-center">
+                      <img src={b.url} className="w-10 h-10" alt={`${b.streak} day badge`} />
+                      <p className={`text-[10px] mt-0.5 opacity-80 ${theme === "dark" ? "font-gothic-body" : ""}`}>
+                        {b.streak}d
+                      </p>
+                    </div>
+                  ))}
+                  {lockedBadges.map((id) => (
+                    <div key={id} className="flex flex-col items-center opacity-40">
+                      <div className="w-10 h-10 rounded-lg bg-gray-300/30 flex items-center justify-center text-sm">
+                        🔒
+                      </div>
+                      <p className={`text-[10px] mt-0.5 ${theme === "dark" ? "font-gothic-body" : ""}`}>{id}d</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Achievement Badges */}
+              <div>
+                <p className="text-xs opacity-70 mb-1">Achievement Badges</p>
+                <div className="max-h-32 overflow-hidden">
+                  <BadgeGallery earnedBadges={earnedBadges} theme={theme} compact={true} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* INSIGHTS & STATS ROW */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            {/* INSIGHTS & REFLECTIONS */}
+            <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3">
+              <h2 className={`text-sm font-semibold mb-2 ${
+                theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
+              }`}>
+                💡 Insights & Reflections
+              </h2>
+              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                {insights.slice(0, 5).map((text, idx) => (
+                  <p
+                    key={idx}
+                    className={`p-2 rounded-lg bg-white/60 dark:bg-black/30 
+                               text-xs leading-snug shadow-sm ${theme === "dark" ? "font-gothic-body" : ""}`}
+                  >
+                    🌿 {text}
+                  </p>
+                ))}
+              </div>
+            </div>
+
+            {/* AVERAGE MOOD */}
+            <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3 text-center">
+              <div className="text-3xl mb-2">📊</div>
+              <p className={`text-xs opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>
+                Average Mood
+              </p>
+              <p className={`text-2xl font-bold ${theme === "dark" ? "text-[#fbbf24]" : "text-[#7A916C]"}`}>
+                4.4/5
+              </p>
+            </div>
+
+            {/* TREND */}
+            <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3 text-center">
+              <div className="text-3xl mb-2">➡️</div>
+              <p className={`text-xs opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>
+                Trend
+              </p>
+              <p className={`text-2xl font-bold capitalize ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+                Stable
+              </p>
+            </div>
+          </div>
+
+          {/* EXTENDED MOOD HISTORY */}
+          <div className="mt-6">
+            <h2 className={`text-lg font-semibold mb-4 text-center ${
+              theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
+            }`}>
+              Extended Mood History 📊
+            </h2>
+            <ExtendedMoodDashboard user={user} theme={theme} />
+          </div>
+
+        </div>
+      </div>
+
+      {/* FLOWER MEADOW (bottom) */}
+      <div className="fixed bottom-0 w-full pointer-events-none z-0">
+        <FlowerMeadow theme={theme} />
+      </div>
+
+      {/* New Badge Modal */}
+      {newBadge && (
+        <Modal onClose={() => setNewBadge(null)}>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">🏅 New Badge Earned!</h2>
+            <img
+              src={newBadge.url}
+              className="w-28 h-28 mx-auto animate-bounce"
+              alt="New badge"
+            />
+            <p className="mt-3 text-lg">
+              You unlocked <strong>{newBadge.id}</strong>  
+              for a <strong>{newBadge.streak}-day streak!</strong>
             </p>
           </div>
-        ))}
-
-        {lockedBadges.map((id) => (
-          <div key={id} className="flex flex-col items-center opacity-40">
-            <div className="w-12 h-12 rounded-xl bg-gray-300/30 flex items-center justify-center text-lg">
-              🔒
-            </div>
-            <p className={`text-xs mt-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>{id}-day streak</p>
-          </div>
-        ))}
-      </div>
-    </section>
-
-    {/* STREAK SUMMARY */}
-    <section className="bg-white/40 dark:bg-black/20 shadow rounded-2xl p-5">
-      <h2 className={`text-lg font-semibold mb-3 ${
-        theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
-      }`}>
-        Streak Summary 🔥
-      </h2>
-
-      <div className="grid grid-cols-3 text-center gap-2">
-        <div>
-          <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Current</p>
-          <p className={`text-xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.currentStreak}</p>
-        </div>
-        <div>
-          <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Longest</p>
-          <p className={`text-xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.longestStreak}</p>
-        </div>
-        <div>
-          <p className={`text-xs opacity-60 ${theme === "dark" ? "font-gothic-body" : ""}`}>Entries</p>
-          <p className={`text-xl font-bold ${theme === "dark" ? "font-gothic-body" : ""}`}>{streaks.totalEntries}</p>
-        </div>
-      </div>
-    </section>
-
-    {/* MOOD GRAPH */}
-    <section className="bg-white/40 dark:bg-black/20 shadow rounded-2xl p-5">
-      <h2 className={`text-lg font-semibold mb-3 ${
-        theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
-      }`}>
-        Past 7 Days Mood
-      </h2>
-
-      <div className="h-48">
-        <Line
-          data={{
-            labels: moodData.map(d => d.date),
-            datasets: [
-              {
-                label: "",
-                data: moodData.map(d => d.mood),
-                borderColor: "#7A916C",
-                backgroundColor: "#7A916C30",
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                tension: 0.4,
-              },
-            ],
-          }}
-          options={{
-            plugins: { legend: { display: false } },
-            maintainAspectRatio: false,
-            scales: {
-              x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-              y: { grid: { display: false }, suggestedMin: 0, suggestedMax: 5 }
-            }
-          }}
-        />
-      </div>
-    </section>
-
-    {/* INSIGHTS */}
-    <section className="bg-white/40 dark:bg-black/20 shadow rounded-2xl p-5">
-      <h2 className={`text-lg font-semibold mb-3 ${
-        theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
-      }`}>
-        Weekly Reflections ✨
-      </h2>
-
-      <div className="space-y-2">
-        {insights.map((text, idx) => (
-          <p
-            key={idx}
-            className={`p-3 rounded-xl bg-white/60 dark:bg-black/30 
-                       text-sm leading-relaxed shadow-sm ${theme === "dark" ? "font-gothic-body" : ""}`}
-          >
-            🌿 {text}
-          </p>
-        ))}
-      </div>
-    </section>
-
-  </div>
-
-  {/* FLOWER MEADOW (bottom spacing preserved) */}
-  <div className="fixed bottom-0 w-full pointer-events-none">
-    <FlowerMeadow theme={theme} />
-  </div>
-</main>
-
+        </Modal>
+      )}
+    </main>
   );
 }

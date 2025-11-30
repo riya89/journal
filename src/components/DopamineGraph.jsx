@@ -7,8 +7,13 @@ export default function DopamineGraph({ dailyStats, theme }) {
     );
   }
 
-  // Find max value for Y-axis
-  const maxPlanned = Math.max(...dailyStats.map((s) => s.planned), 1);
+  // Find max value for Y-axis (excluding one-time spikes from specific-date tasks)
+  // Use the most common task count (mode) or minimum non-zero value as baseline
+  const taskCounts = dailyStats.map(s => s.planned).filter(count => count > 0);
+  const minPlanned = Math.min(...taskCounts);
+  // Use minimum as the consistent baseline (this is your recurring task count)
+  const maxPlanned = Math.max(minPlanned, 1);
+  
   const graphHeight = 300;
   const graphWidth = dailyStats.length * 30;
 

@@ -1,26 +1,26 @@
 # Implementation Plan
 
-- [ ] 1. Implement post-journal task check system
+- [x] 1. Implement post-journal task check system
   - Create task check API endpoint
   - Build post-journal check modal
   - Integrate with journal save flow
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
-- [ ] 1.1 Create post-save check endpoint
+- [x] 1.1 Create post-save check endpoint
   - Create `GET /journal/post-save-check` endpoint
   - Fetch today's tasks from planner
   - Return task list with completion status
   - Calculate completion statistics
   - _Requirements: 1.1, 1.2_
 
-- [ ] 1.2 Build quick complete endpoint
+- [x] 1.2 Build quick complete endpoint
   - Create `POST /journal/quick-complete-tasks` endpoint
   - Accept array of task IDs to mark complete
   - Update planner completion data
   - Return success status and completion count
   - _Requirements: 1.4_
 
-- [ ] 1.3 Build PostJournalCheckModal component
+- [x] 1.3 Build PostJournalCheckModal component
   - Create `PostJournalCheckModal.jsx` with task list
   - Add checkboxes for each task
   - Implement task selection/deselection
@@ -28,26 +28,26 @@
   - Add "Review tasks" navigation button
   - _Requirements: 1.2, 1.5_
 
-- [ ] 1.4 Integrate modal into journal save flow
+- [x] 1.4 Integrate modal into journal save flow
   - Trigger modal after successful journal save
   - Skip modal if no tasks exist for the day
   - Skip modal if all tasks already completed
   - Handle modal dismiss and save actions
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 1.5 Connect to celebration system
+- [x] 1.5 Connect to celebration system
   - Check if all tasks completed after modal save
   - Trigger celebration modal if all tasks done
   - Award appropriate badges/XP
   - _Requirements: 1.3_
 
-- [ ] 2. Build weekly progress summary
+- [-] 2. Build weekly progress summary
   - Implement summary calculation logic
   - Create summary API endpoint
   - Build summary UI component
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 2.1 Create weekly summary endpoint
+- [x] 2.1 Create weekly summary endpoint
   - Create `GET /journal/summary/weekly` endpoint
   - Fetch journal entries for last 7 days
   - Fetch planner data for last 7 days

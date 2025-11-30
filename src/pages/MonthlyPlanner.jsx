@@ -22,6 +22,10 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { apiGet, apiPost, apiPut, apiDelete } from "../utils/api";
+import { updateTaskQuests } from "../utils/questProgress";
+import { checkCelebrationTrigger } from "../utils/celebrationTrigger";
+import { useAuth } from "../contexts/AuthContext";
+import CelebrationModal from "../components/CelebrationModal";
 
 // Sortable Task Row Component
 function SortableTaskRow({ task, theme, daysInMonth, yearMonth, completions, exceptions, handleToggleTask, handleEditTask, handleDeleteTask }) {
@@ -43,12 +47,16 @@ function SortableTaskRow({ task, theme, daysInMonth, yearMonth, completions, exc
     position: 'relative',
   };
 
-  const category = TASK_CATEGORIES[task.category];
+  const category = TASK_CATEGORIES[task.category] || TASK_CATEGORIES.other;
 
   // Helper function to check if task applies to a specific date
   const taskAppliesOnDate = (date) => {
     if (!task.isRecurring) {
-      // Non-recurring tasks apply to all dates in their month
+      // If task has a specific date, only show on that date
+      if (task.specificDate) {
+        return task.specificDate === date;
+      }
+      // Otherwise, non-recurring tasks apply to all dates in their month
       return true;
     }
     
@@ -228,6 +236,7 @@ function getTotalColor(totalMinutes, theme) {
 
 export default function MonthlyPlanner({ theme }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [tasks, setTasks] = useState([]);
@@ -240,6 +249,8 @@ export default function MonthlyPlanner({ theme }) {
   const [deletingTask, setDeletingTask] = useState(null);
   const [deleteDate, setDeleteDate] = useState(null);
   const [dailyStats, setDailyStats] = useState([]);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationData, setCelebrationData] = useState(null);
 
   const yearMonth = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
@@ -361,6 +372,28 @@ export default function MonthlyPlanner({ theme }) {
 
       setCompletions(newCompletions);
       fetchStats(); // Refresh graph
+
+      // Update quest progress (non-blocking)
+      if (user?.uid) {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          updateTaskQuests(user.uid, taskId, task.category, date, !isCompleted).catch(err => {
+            console.warn('Quest progress update failed, but task toggled successfully:', err);
+          });
+        }
+      }
+
+      // Check for celebration trigger if task was just completed (not uncompleted)
+      if (!isCompleted) {
+        checkCelebrationTrigger(date).then(celebrationResult => {
+          if (celebrationResult) {
+            setCelebrationData(celebrationResult);
+            setShowCelebration(true);
+          }
+        }).catch(err => {
+          console.warn('Celebration check failed:', err);
+        });
+      }
     } catch (err) {
       console.error("Failed to toggle task:", err);
     }
@@ -692,6 +725,25 @@ export default function MonthlyPlanner({ theme }) {
         isRecurring={deletingTask?.isRecurring || false}
         hasDateContext={deleteDate !== null}
       />
+
+      {/* Celebration Modal */}
+      {showCelebration && celebrationData && (
+        <CelebrationModal
+          stats={celebrationData.stats}
+          reward={celebrationData.reward}
+          onClose={() => {
+            setShowCelebration(false);
+            setCelebrationData(null);
+          }}
+          onShare={() => {
+            // Optional: Implement share functionality
+            console.log('Share celebration:', celebrationData);
+            // For now, just close the modal
+            setShowCelebration(false);
+            setCelebrationData(null);
+          }}
+        />
+      )}
     </div>
   );
 }
