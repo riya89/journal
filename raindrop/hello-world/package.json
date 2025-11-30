@@ -14,7 +14,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@liquidmetal-ai/raindrop-framework": "0.10.0",
+    "@liquidmetal-ai/raindrop-framework": "0.11.0",
     "@modelcontextprotocol/sdk": "^1",
     "aws-sdk": "^2.1692.0",
     "express": "^5.1.0",

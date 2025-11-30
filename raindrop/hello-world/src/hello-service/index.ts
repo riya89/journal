@@ -1705,6 +1705,12 @@ export default class extends Service<Env> {
     if (path === "/analytics/reset" && method === "POST") {
       return this.resetDatabase();
     }
+    if (path === "/analytics/mood/extended" && method === "GET") {
+  const uid = url.searchParams.get("uid");
+  const days = parseInt(url.searchParams.get("days") || "30");
+  if (!uid) return this.json({ error: "uid required" }, 400);
+  return this.getMoodExtended(uid, days);
+}
 
     return this.json({ error: "Not Found" }, 404);
   }
@@ -1768,6 +1774,74 @@ export default class extends Service<Env> {
     }
   }
 
+  async getMoodExtended(uid: string, days: number): Promise<Response> {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
+    
+    const rows = await this.env.JOURNALDB.prepare(`
+      SELECT entry_date, mood
+      FROM journal_entries
+      WHERE uid = ?
+      AND mood IS NOT NULL
+      AND entry_date >= ?
+      ORDER BY entry_date ASC
+    `).bind(uid, cutoffStr).all<{ entry_date: string; mood: number }>();
+    
+    const moodData = rows.results.map(r => ({ 
+      date: r.entry_date, 
+      mood: r.mood 
+    }));
+    
+    // Calculate stats
+    const moods = moodData.map(m => m.mood);
+    const avgMood = moods.reduce((a, b) => a + b, 0) / moods.length || 0;
+    
+    // Calculate variance
+    const variance = moods.length > 0 
+      ? moods.reduce((sum, m) => sum + Math.pow(m - avgMood, 2), 0) / moods.length
+      : 0;
+    
+    // Calculate trend
+    let trend = "stable";
+    if (moods.length >= 3) {
+      const firstHalf = moods.slice(0, Math.floor(moods.length / 2));
+      const secondHalf = moods.slice(Math.floor(moods.length / 2));
+      const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+      const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+      
+      if (secondAvg > firstAvg + 0.3) trend = "improving";
+      else if (secondAvg < firstAvg - 0.3) trend = "declining";
+    }
+    
+    const bestDay = moodData.reduce((best, curr) => 
+      curr.mood > best.mood ? curr : best, 
+      { date: "", mood: 0 }
+    );
+    const worstDay = moodData.reduce((worst, curr) => 
+      curr.mood < worst.mood ? curr : worst,
+      { date: "", mood: 5 }
+    );
+    
+    return this.json({
+      uid,
+      period: `${days} days`,
+      moodData,
+      stats: {
+        averageMood: Math.round(avgMood * 10) / 10,
+        moodVariance: Math.round(variance * 10) / 10,
+        trend,
+        bestDay,
+        worstDay,
+        daysTracked: moodData.length,
+        missedDays: days - moodData.length
+      }
+    });
+  } catch (e: unknown) {
+    return this.json({ error: "extended mood fetch failed", details: String(e) }, 500);
+  }
+}
 // -----------------------------------------
 // 1️⃣ INSERT JOURNAL ENTRY (overwrite per day + clear insight cache)
 // -----------------------------------------
@@ -1903,14 +1977,20 @@ async syncJournal(request: Request): Promise<Response> {
       const newlyEarned = await this.awardBadges(uid, currentStreak);
 
       return this.json({
-        uid,
-        currentStreak,
-        longestStreak,
-        lastEntryDate,
-        totalEntries: dates.length,
-        newlyEarned,
-        isStreakActive,
-      });
+  uid,
+  currentStreak,
+  longestStreak,
+  lastEntryDate,
+  totalEntries: dates.length,
+  newlyEarned,
+  isStreakActive,
+  // ADD THESE NEW FIELDS:
+  streakBroken: !isStreakActive && dates.length > 0,
+  missedDays: !isStreakActive && dates.length > 0 
+    ? Math.floor((today.getTime() - new Date(lastEntryDate).getTime()) / 86400000) - 1
+    : 0,
+  previousStreak: !isStreakActive ? longestStreak : 0
+});
     } catch (e: unknown) {
       return this.json({ error: "streaks failed", details: String(e) }, 500);
     }

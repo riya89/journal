@@ -1,4 +1,4 @@
-globalThis.__RAINDROP_GIT_COMMIT_SHA = "b59970a11070c19ca4bbf3b33df8cfae75a007c8"; 
+globalThis.__RAINDROP_GIT_COMMIT_SHA = "f9a0bf7f5b7798cf820984c5fc79cd9223244c1c"; 
 
 // node_modules/@liquidmetal-ai/raindrop-framework/dist/core/cors.js
 var matchOrigin = (request, env, config) => {
@@ -82,7 +82,7 @@ var corsAllowAll = createCorsHandler({
   origin: "*",
   allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowHeaders: ["Content-Type", "Authorization"],
-  credentials: false
+  credentials: true
 });
 var corsDisabled = (request, _env, response) => {
   if (!response && request.method === "OPTIONS") {
@@ -168,6 +168,12 @@ var hello_service_default = class extends Service {
     if (path === "/analytics/reset" && method === "POST") {
       return this.resetDatabase();
     }
+    if (path === "/analytics/mood/extended" && method === "GET") {
+      const uid = url.searchParams.get("uid");
+      const days = parseInt(url.searchParams.get("days") || "30");
+      if (!uid) return this.json({ error: "uid required" }, 400);
+      return this.getMoodExtended(uid, days);
+    }
     return this.json({ error: "Not Found" }, 404);
   }
   json(data, status = 200) {
@@ -223,57 +229,61 @@ var hello_service_default = class extends Service {
       return this.json({ error: "init failed", details: String(e) }, 500);
     }
   }
-  // // -----------------------------------------
-  // // 1️⃣ UPSERT JOURNAL ENTRY (Insert or Update)
-  // // -----------------------------------------
-  // async syncJournal(request: Request): Promise<Response> {
-  //   try {
-  //     const raw: any = await request.json();
-  //     if (!raw?.uid || !raw?.date) return this.json({ error: "uid and date required" }, 400);
-  //     // Check if entry exists for this uid + date
-  //     const existing = await this.env.JOURNALDB.prepare(
-  //       `SELECT id FROM journal_entries WHERE uid = ? AND entry_date = ?`
-  //     ).bind(raw.uid, raw.date).first<{ id: string }>();
-  //     if (existing) {
-  //       // UPDATE existing entry
-  //       await this.env.JOURNALDB.prepare(
-  //         `UPDATE journal_entries 
-  //          SET title = ?, content = ?, mood = ?, ai_chat = ?, updated_at = CURRENT_TIMESTAMP
-  //          WHERE uid = ? AND entry_date = ?`
-  //       )
-  //         .bind(
-  //           raw.title || null,
-  //           raw.content || null,
-  //           raw.mood ?? null,
-  //           raw.ai_chat ?? null,
-  //           raw.uid,
-  //           raw.date
-  //         )
-  //         .run();
-  //       return this.json({ status: "updated", id: existing.id });
-  //     } else {
-  //       // INSERT new entry
-  //       const id = crypto.randomUUID();
-  //       await this.env.JOURNALDB.prepare(
-  //         `INSERT INTO journal_entries (id, uid, entry_date, title, content, mood, ai_chat)
-  //          VALUES (?, ?, ?, ?, ?, ?, ?)`
-  //       )
-  //         .bind(
-  //           id,
-  //           raw.uid,
-  //           raw.date,
-  //           raw.title || null,
-  //           raw.content || null,
-  //           raw.mood ?? null,
-  //           raw.ai_chat ?? null
-  //         )
-  //         .run();
-  //       return this.json({ status: "created", id });
-  //     }
-  //   } catch (e: unknown) {
-  //     return this.json({ error: "sync failed", details: String(e) }, 500);
-  //   }
-  // }
+  async getMoodExtended(uid, days) {
+    try {
+      const cutoffDate = /* @__PURE__ */ new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      const cutoffStr = cutoffDate.toISOString().split("T")[0];
+      const rows = await this.env.JOURNALDB.prepare(`
+      SELECT entry_date, mood
+      FROM journal_entries
+      WHERE uid = ?
+      AND mood IS NOT NULL
+      AND entry_date >= ?
+      ORDER BY entry_date ASC
+    `).bind(uid, cutoffStr).all();
+      const moodData = rows.results.map((r) => ({
+        date: r.entry_date,
+        mood: r.mood
+      }));
+      const moods = moodData.map((m) => m.mood);
+      const avgMood = moods.reduce((a, b) => a + b, 0) / moods.length || 0;
+      const variance = moods.length > 0 ? moods.reduce((sum, m) => sum + Math.pow(m - avgMood, 2), 0) / moods.length : 0;
+      let trend = "stable";
+      if (moods.length >= 3) {
+        const firstHalf = moods.slice(0, Math.floor(moods.length / 2));
+        const secondHalf = moods.slice(Math.floor(moods.length / 2));
+        const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+        const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+        if (secondAvg > firstAvg + 0.3) trend = "improving";
+        else if (secondAvg < firstAvg - 0.3) trend = "declining";
+      }
+      const bestDay = moodData.reduce(
+        (best, curr) => curr.mood > best.mood ? curr : best,
+        { date: "", mood: 0 }
+      );
+      const worstDay = moodData.reduce(
+        (worst, curr) => curr.mood < worst.mood ? curr : worst,
+        { date: "", mood: 5 }
+      );
+      return this.json({
+        uid,
+        period: `${days} days`,
+        moodData,
+        stats: {
+          averageMood: Math.round(avgMood * 10) / 10,
+          moodVariance: Math.round(variance * 10) / 10,
+          trend,
+          bestDay,
+          worstDay,
+          daysTracked: moodData.length,
+          missedDays: days - moodData.length
+        }
+      });
+    } catch (e) {
+      return this.json({ error: "extended mood fetch failed", details: String(e) }, 500);
+    }
+  }
   // -----------------------------------------
   // 1️⃣ INSERT JOURNAL ENTRY (overwrite per day + clear insight cache)
   // -----------------------------------------
@@ -377,7 +387,11 @@ var hello_service_default = class extends Service {
         lastEntryDate,
         totalEntries: dates.length,
         newlyEarned,
-        isStreakActive
+        isStreakActive,
+        // ADD THESE NEW FIELDS:
+        streakBroken: !isStreakActive && dates.length > 0,
+        missedDays: !isStreakActive && dates.length > 0 ? Math.floor((today.getTime() - new Date(lastEntryDate).getTime()) / 864e5) - 1 : 0,
+        previousStreak: !isStreakActive ? longestStreak : 0
       });
     } catch (e) {
       return this.json({ error: "streaks failed", details: String(e) }, 500);
@@ -417,191 +431,6 @@ var hello_service_default = class extends Service {
       return this.json({ error: "get badges failed", details: String(e) }, 500);
     }
   }
-  //   // -----------------------------------------
-  //   // 3️⃣ WEEKLY INSIGHTS (uses AI)
-  //   // -----------------------------------------
-  //   async getInsights(uid: string): Promise<Response> {
-  //     try {
-  //       const db = this.env.JOURNALDB;
-  //       const rows = await db.prepare(`
-  //         SELECT entry_date, mood, title, content, ai_chat
-  //         FROM journal_entries
-  //         WHERE uid = ?
-  //           AND entry_date >= date('now', '-7 days')
-  //         ORDER BY entry_date ASC
-  //       `).bind(uid).all<{
-  //         entry_date: string;
-  //         mood: number | null;
-  //         title: string | null;
-  //         content: string | null;
-  //         ai_chat: string | null;
-  //       }>();
-  //       const entries = rows.results;
-  //       const journalCount = entries.length;
-  //       const aiChatCount = entries.filter(
-  //         (e: { ai_chat: string | null }) => e.ai_chat !== null && e.ai_chat.trim() !== ""
-  //       ).length;
-  //       const moods = entries
-  //         .map((e: { mood: number | null }) => e.mood)
-  //         .filter((m: number | null): m is number => m !== null);
-  //       const avgMood = moods.length ? moods.reduce((a: number, b: number) => a + b, 0) / moods.length : null;
-  //       const streakResp = await this.getStreaks(uid);
-  //       const streakData = (await streakResp.json()) as { currentStreak?: number; longestStreak?: number } | null;
-  //       const textSummary = entries
-  //         .map((e: {
-  //           entry_date: string;
-  //           mood: number | null;
-  //           title: string | null;
-  //           content: string | null;
-  //           ai_chat: string | null;
-  //         }) => `
-  // Date: ${e.entry_date}
-  // Mood: ${e.mood ?? "N/A"}
-  // Journal: ${e.title ?? ""} — ${e.content ?? ""}
-  // AI Chat: ${e.ai_chat ?? ""}
-  // `.trim())
-  //         .join("\n\n");
-  //       const aiResponse = await this.env.AI.run("llama-3.1-8b-instant", {
-  //         model: "llama-3.1-8b-instant",
-  //         response_format: { type: "json_object" },
-  //         messages: [
-  //           {
-  //             role: "system",
-  //             content: `You are a warm, emotionally intelligent journaling companion. Your tone is soft and kind. Give 1-2 lines only. Return only JSON: { "insights": ["...","..."] }`
-  //           },
-  //           {
-  //             role: "user",
-  //             content: textSummary
-  //           }
-  //         ]
-  //       });
-  //       const insights =
-  //         (aiResponse as any).insights ||
-  //         (aiResponse as any).choices?.[0]?.message?.content ||
-  //         [];
-  //       return this.json({
-  //         uid,
-  //         avgMood,
-  //         journalCount,
-  //         aiChatCount,
-  //         currentStreak: streakData?.currentStreak ?? null,
-  //         insights
-  //       });
-  //     } catch (e: unknown) {
-  //       return this.json({ error: "insights failed", details: String(e) }, 500);
-  //     }
-  //   }
-  // async getInsights(uid: string): Promise<Response> {
-  //   try {
-  //     const db = this.env.JOURNALDB;
-  //     // Today (YYYY-MM-DD)
-  //     const today = new Date().toISOString().slice(0, 10);
-  //     // 1️⃣ CHECK CACHED INSIGHTS
-  //     const cached = await db.prepare(
-  //       `SELECT insights_json FROM daily_insights WHERE uid = ? AND insight_date = ?`
-  //     )
-  //       .bind(uid, today)
-  //       .all<{ insights_json: string }>();
-  //   if (cached.results.length > 0) {
-  //   const row = cached.results[0]!; // <- non-null assertion
-  //   const insights = JSON.parse(row.insights_json || "[]");
-  //   return this.json({
-  //     uid,
-  //     insights,
-  //   });
-  // }
-  //     // 2️⃣ FETCH LAST 7 DAYS
-  //     const rows = await db.prepare(`
-  //       SELECT entry_date, mood, title, content, ai_chat
-  //       FROM journal_entries
-  //       WHERE uid = ?
-  //         AND entry_date >= date('now', '-7 days')
-  //       ORDER BY entry_date ASC
-  //     `)
-  //       .bind(uid)
-  //       .all<{
-  //         entry_date: string;
-  //         mood: number | null;
-  //         title: string | null;
-  //         content: string | null;
-  //         ai_chat: string | null;
-  //       }>();
-  //     const entries = rows.results;
-  //     // 3️⃣ Build summary for AI (with typed e)
-  //     const textSummary = entries
-  //       .map(
-  //         (e: {
-  //           entry_date: string;
-  //           mood: number | null;
-  //           title: string | null;
-  //           content: string | null;
-  //           ai_chat: string | null;
-  //         }) => `
-  // Date: ${e.entry_date}
-  // Mood: ${e.mood ?? "N/A"}
-  // Journal: ${e.title ?? ""} — ${e.content ?? ""}
-  // AI Chat: ${e.ai_chat ?? ""}
-  //       `.trim()
-  //       )
-  //       .join("\n\n");
-  //     // 4️⃣ RUN AI
-  //     const aiResponse = await this.env.AI.run("llama-3.1-8b-instant", {
-  //       model: "llama-3.1-8b-instant",
-  //       response_format: { type: "json_object" },
-  //       messages: [
-  //         {
-  //           role: "system",
-  //           content: `
-  // You are a warm journaling companion.
-  // Write only 1–2 short, uplifting reflections.
-  // Return only JSON: { "insights": ["...","..."] }
-  //           `,
-  //         },
-  //         {
-  //           role: "user",
-  //           content: textSummary,
-  //         },
-  //       ],
-  //     });
-  //     let insightsRaw: any =
-  //       (aiResponse as any).insights ||
-  //       (aiResponse as any).choices?.[0]?.message?.content ||
-  //       [];
-  //     // 5️⃣ SAFELY PARSE INSIGHTS WITH TS CHECKS
-  //     let insightsList: string[] = [];
-  //     if (Array.isArray(insightsRaw)) {
-  //       insightsList = insightsRaw as string[];
-  //     } else if (typeof insightsRaw === "string") {
-  //       try {
-  //         const parsed = JSON.parse(insightsRaw);
-  //         insightsList = Array.isArray(parsed.insights)
-  //           ? (parsed.insights as string[])
-  //           : [];
-  //       } catch {
-  //         insightsList = [];
-  //       }
-  //     }
-  //     // 6️⃣ CACHE INSIGHTS
-  //     await db
-  //       .prepare(
-  //         `
-  //       INSERT OR REPLACE INTO daily_insights (uid, insight_date, insights_json)
-  //       VALUES (?, ?, ?)
-  //     `
-  //       )
-  //       .bind(uid, today, JSON.stringify(insightsList))
-  //       .run();
-  //     return this.json({
-  //       uid,
-  //       insights: insightsList,
-  //     });
-  //   } catch (e: unknown) {
-  //     return this.json({
-  //       error: "insights failed",
-  //       details: String(e),
-  //     }, 500);
-  //   }
-  // }
   // -----------------------------------------
   // 3️⃣ WEEKLY INSIGHTS (AI + Daily Cache)
   // -----------------------------------------
