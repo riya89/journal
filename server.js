@@ -112,6 +112,23 @@ app.get("/raindrop/mood", async (req, res) => {
   const data = await response.json();
   res.json(data);
 });
+// ---- Proxy: Extended Mood History ----
+app.get("/raindrop/analytics/mood/extended", async (req, res) => {
+  const uid = req.query.uid;
+  const days = req.query.days || 30;
+  
+  try {
+    const response = await fetch(
+      `https://hello-service.01k9ppzcfjfvyc4cwm4p0ccypp.lmapp.run/analytics/mood/extended?uid=${uid}&days=${days}`
+    );
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error("❌ Extended mood proxy error:", err);
+    res.status(500).json({ error: "Failed to fetch extended mood data" });
+  }
+});
+
 // 🚀 Start server
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
