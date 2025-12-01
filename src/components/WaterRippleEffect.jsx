@@ -114,13 +114,23 @@ export default function WaterRippleEffect({
         
         // Theme-based color adjustments
         if (u_isDark > 0.5) {
-          // Dark theme: Add darker tones, reduce brightness
-          color.rgb *= 0.7; // Darken overall
-          color.rgb = mix(color.rgb, vec3(0.2, 0.25, 0.35), 0.15); // Add dark blue-gray tint
+          // Dark theme: Rustic, antique brown tones matching #1a1410, #2b241c, #3a2e20
+          color.rgb *= 0.5; // Much darker overall
           
-          // Add subtle vignette
-          float vignette = 1.0 - length(uv - 0.5) * 0.8;
+          // Add rusty brown/sepia tint - matching your dark theme palette
+          vec3 rustBrown = vec3(0.23, 0.18, 0.12); // #3a2e20 converted to RGB
+          vec3 deepBrown = vec3(0.17, 0.14, 0.10); // #2b241c converted to RGB
+          color.rgb = mix(color.rgb, rustBrown, 0.35); // Strong rusty overlay
+          color.rgb = mix(color.rgb, deepBrown, 0.15); // Add depth
+          
+          // Strong vignette for antique feel
+          float vignette = 1.0 - length(uv - 0.5) * 1.2;
+          vignette = pow(vignette, 1.5); // More dramatic falloff
           color.rgb *= vignette;
+          
+          // Add subtle warm glow in center
+          float centerGlow = exp(-length(uv - 0.5) * 2.0) * 0.1;
+          color.rgb += vec3(0.15, 0.10, 0.05) * centerGlow; // Warm amber glow
         } else {
           // Light theme: Brighten, add warmth
           color.rgb *= 1.1; // Slightly brighten
@@ -128,8 +138,10 @@ export default function WaterRippleEffect({
         }
         
         // Subtle water color enhancement
-        vec3 waterTint = u_isDark > 0.5 ? vec3(0.3, 0.4, 0.6) : vec3(0.5, 0.7, 1.0);
-        color.rgb = mix(color.rgb, waterTint, 0.03);
+        vec3 waterTint = u_isDark > 0.5 
+          ? vec3(0.25, 0.18, 0.12) // Rusty water tint for dark theme
+          : vec3(0.5, 0.7, 1.0);    // Blue water tint for light theme
+        color.rgb = mix(color.rgb, waterTint, u_isDark > 0.5 ? 0.08 : 0.03);
         
         gl_FragColor = color;
       }

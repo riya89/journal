@@ -5,23 +5,13 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import WaterRippleEffect from "../components/WaterRippleEffect";
 
-export default function Login({ onLoginSuccess, theme: initialTheme }) {
+export default function Login({ onLoginSuccess, theme, setTheme }) {
   const { login } = useAuth();
-  const [theme, setTheme] = useState(initialTheme || localStorage.getItem("theme") || "light");
-
-  // Sync theme with localStorage and DOM
-  useEffect(() => {
-    localStorage.setItem("theme", theme);
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    document.body.dataset.theme = theme;
-  }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === "dark" ? "light" : "dark");
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
   };
   const handleGoogleLogin = async () => {
     try {

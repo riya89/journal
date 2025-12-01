@@ -300,7 +300,7 @@ function AppContent() {
   }
 
   if (!user) {
-    return <Login theme={theme} />;
+    return <Login theme={theme} setTheme={setTheme} />;
   }
 
   return (
