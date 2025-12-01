@@ -24,9 +24,11 @@ export default function GratitudeJarPage({ theme }) {
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
-        className="fixed top-4 left-4 z-30 px-3 py-1.5 rounded-lg shadow-sm
+        className={`fixed top-4 left-4 z-30 px-3 py-1.5 rounded-lg shadow-sm
                    bg-white/40 dark:bg-black/20 backdrop-blur text-sm
-                   hover:bg-white/60 dark:hover:bg-black/30 transition-colors"
+                   hover:bg-white/60 dark:hover:bg-black/30 transition-colors ${
+                     theme === 'dark' ? 'font-gothic-body' : ''
+                   }`}
       >
         ← Back
       </button>

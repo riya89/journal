@@ -119,10 +119,10 @@ import { useState, useEffect } from "react";
 import { apiGet } from "../utils/api";
 
 export default function ProfileSidebar({ theme, journalDates = [], selectedMonth, selectedYear, user }) {
-  const [affirmation, setAffirmation] = useState("I am grounded, calm, and present.");
+  const [affirmation, setAffirmation] = useState("I am grounded, calm, and present. 🌿");
   const [loadingAffirmation, setLoadingAffirmation] = useState(true);
 
-  // 🌸 Fetch daily affirmation from API
+  // 🌸 Fetch personalized affirmation from API (based on journals + AI chat + mood)
   useEffect(() => {
     const fetchAffirmation = async () => {
       try {
@@ -132,7 +132,7 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
           return;
         }
 
-        const res = await apiGet("http://localhost:8000/journal/affirmation/daily");
+        const res = await apiGet("http://localhost:8000/journal/affirmation/personalized");
 
         if (res.ok) {
           const data = await res.json();

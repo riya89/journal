@@ -808,11 +808,13 @@
 //   );
 // }
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiPost } from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Header({ theme, setTheme, user, onLogout, selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }) {
   const { logout, updateUser } = useAuth();
+  const navigate = useNavigate();
   const [time, setTime] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -845,7 +847,7 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
           {time || "11:11 am"}
         </div>
         <h1 className={`text-3xl lg:text-4xl font-bold text-center ${theme === "dark" ? "font-spooky-header" : ""}`}>
-          My Journal
+          Your Space
         </h1>
 
         <div className="justify-self-end flex items-center gap-2 lg:gap-3 relative">
@@ -879,6 +881,17 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
               ))
             )}
           </select>
+
+          {/* User Manual Button */}
+          <button
+            onClick={() => navigate('/user-manual')}
+            className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 transition-all hover:scale-110"
+            title="User Manual"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          </button>
 
           <button
             onClick={() => {
@@ -917,6 +930,10 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
                 Profile
               </button>
               <button
+                onClick={() => {
+                  navigate('/billing');
+                  setMenuOpen(false);
+                }}
                 className="block w-full text-left px-5 py-3 text-[#6c7a5b] dark:text-[#EBDDBF] hover:bg-[#E6F0D1] dark:hover:bg-[#3a2e20] transition"
               >
                 Billing
@@ -931,10 +948,21 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
         {/* Top Row: Title and Controls */}
         <div className="flex items-center justify-between">
           <h1 className={`text-2xl sm:text-3xl font-bold ${theme === "dark" ? "font-spooky-header" : ""}`}>
-            My Journal
+            Your Space
           </h1>
           
           <div className="flex items-center gap-2">
+            {/* User Manual Button */}
+            <button
+              onClick={() => navigate('/user-manual')}
+              className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 transition-all"
+              title="User Manual"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </button>
+
             <button
               onClick={() => {
                 const next = theme === "dark" ? "light" : "dark";
@@ -972,6 +1000,10 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
                   Profile
                 </button>
                 <button
+                  onClick={() => {
+                    navigate('/billing');
+                    setMenuOpen(false);
+                  }}
                   className="block w-full text-left px-5 py-3 text-[#6c7a5b] dark:text-[#EBDDBF] hover:bg-[#E6F0D1] dark:hover:bg-[#3a2e20] transition"
                 >
                   Billing

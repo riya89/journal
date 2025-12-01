@@ -130,7 +130,7 @@ const GratitudeJar = ({ theme }) => {
     <div className="gratitude-jar-container flex flex-col relative z-10 overflow-hidden" style={{ height: 'calc(100vh - 140px)' }}>
       <div className="text-center pt-2 pb-2 px-6">
         <h2 className={`text-xl font-bold mb-0.5 text-gray-800 dark:text-white ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
-          Gratitude Jar 🏺
+          Gratitude Jar
         </h2>
         <p className={`text-xs text-gray-600 dark:text-gray-400 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
           Collect moments of gratitude and revisit them when you need a boost
@@ -329,10 +329,10 @@ const GratitudeJar = ({ theme }) => {
               <button
                 onClick={getRandomGratitude}
                 disabled={loadingRandom || gratitudes.length === 0}
-                className="px-3 py-1.5 bg-[#6B7A59] dark:bg-[#5b4a3d] text-white text-xs rounded-lg 
+                className={`px-3 py-1.5 bg-[#6B7A59] dark:bg-[#5b4a3d] text-white text-xs rounded-lg 
                          hover:bg-[#5C6F4C] dark:hover:bg-[#6d5a4a] 
                          transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-                         flex items-center gap-1.5 shadow-md"
+                         flex items-center gap-1.5 shadow-md ${theme === 'dark' ? 'font-gothic-body' : ''}`}
               >
                 {loadingRandom ? (
                   <>
@@ -341,17 +341,17 @@ const GratitudeJar = ({ theme }) => {
                   </>
                 ) : (
                   <>
-                    🎲 Random
+                    Random
                   </>
                 )}
               </button>
               <button
                 onClick={() => setShowAdd(true)}
-                className="px-3 py-1.5 bg-[#7A916C] dark:bg-[#8b6f47] text-white text-xs rounded-lg 
+                className={`px-3 py-1.5 bg-[#7A916C] dark:bg-[#8b6f47] text-white text-xs rounded-lg 
                          hover:bg-[#6c7a5b] dark:hover:bg-[#9d7d52] 
-                         transition-colors flex items-center gap-1.5 shadow-md"
+                         transition-colors flex items-center gap-1.5 shadow-md ${theme === 'dark' ? 'font-gothic-body' : ''}`}
               >
-                ✨ Add
+                Add
               </button>
             </div>
           </div>
@@ -400,7 +400,7 @@ const GratitudeJar = ({ theme }) => {
                 ))}
               </div>
               {gratitudes.length > 10 && (
-                <p className="text-center text-sm text-gray-500 dark:text-[#EBDDBF]/60 mt-4">
+                <p className={`text-center text-sm text-gray-500 dark:text-[#EBDDBF]/60 mt-4 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                   And {gratitudes.length - 10} more in your jar...
                 </p>
               )}
@@ -454,8 +454,8 @@ const GratitudeJar = ({ theme }) => {
             </div>
             <button
               onClick={getRandomGratitude}
-              className="mt-4 text-[#7A916C] dark:text-[#d4a574] hover:text-[#6c7a5b] 
-                       dark:hover:text-[#EBDDBF] text-sm font-medium"
+              className={`mt-4 text-[#7A916C] dark:text-[#d4a574] hover:text-[#6c7a5b] 
+                       dark:hover:text-[#EBDDBF] text-sm font-medium ${theme === 'dark' ? 'font-gothic-body' : ''}`}
             >
               Read Another →
             </button>
@@ -475,9 +475,9 @@ const GratitudeJar = ({ theme }) => {
           </p>
           <button
             onClick={() => setShowAdd(true)}
-            className="px-6 py-3 bg-[#7A916C] dark:bg-[#8b6f47] text-white rounded-lg 
+            className={`px-6 py-3 bg-[#7A916C] dark:bg-[#8b6f47] text-white rounded-lg 
                      hover:bg-[#6c7a5b] dark:hover:bg-[#9d7d52] 
-                     transition-colors inline-flex items-center gap-2"
+                     transition-colors inline-flex items-center gap-2 ${theme === 'dark' ? 'font-gothic-body' : ''}`}
           >
             ✨ Add Your First Gratitude
           </button>

@@ -97,7 +97,7 @@ const TimeCapsuleUI = ({ theme }) => {
       {/* Header */}
       <div className="mb-8">
         <h2 className={`text-3xl font-bold text-gray-800 dark:text-white mb-2 ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
-          Time Capsules 🕰️
+          Time Capsules 
         </h2>
         <p className={`text-gray-600 dark:text-gray-400 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
           Write messages to your future self and unlock them later to reflect on your growth
@@ -116,7 +116,7 @@ const TimeCapsuleUI = ({ theme }) => {
         className="mb-8 px-6 py-3 bg-[#7A916C] dark:bg-[#5b4a3d] text-white rounded-lg 
                  hover:bg-[#6c7a5b] dark:hover:bg-[#6d5a4a] 
                  transition-colors shadow-lg hover:shadow-xl transform hover:scale-105
-                 flex items-center gap-2 font-medium"
+                 flex items-center gap-2 font-medium dark:font-gothic-body"
       >
         <span className="text-xl">✨</span>
         Create Time Capsule
@@ -127,13 +127,15 @@ const TimeCapsuleUI = ({ theme }) => {
         {/* Locked Capsules */}
         <div className="locked-capsules">
           <h3 className={`text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2 ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
-            <span>🔒</span>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
             Locked ({capsules.locked.length})
           </h3>
           
           {capsules.locked.length === 0 ? (
             <div className="p-8 text-center bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-gray-500 dark:text-gray-400 dark:font-gothic-body">
                 No locked capsules yet. Create one to get started!
               </p>
             </div>
@@ -155,7 +157,7 @@ const TimeCapsuleUI = ({ theme }) => {
           
           {capsules.unlocked.length === 0 ? (
             <div className="p-8 text-center bg-gray-50 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600">
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-gray-500 dark:text-gray-400 dark:font-gothic-body">
                 No unlocked capsules yet. They'll appear here when the time comes!
               </p>
             </div>
@@ -208,24 +210,26 @@ const LockedCapsuleCard = ({ capsule }) => {
                   border-[#cdd6c0] dark:border-[#5b4a3d] shadow-md">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/70">
+          <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/70 dark:font-gothic-body">
             Created: {new Date(capsule.createdAt).toLocaleDateString()}
           </p>
-          <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/70">
+          <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/70 dark:font-gothic-body">
             Unlocks: {new Date(capsule.unlockDate).toLocaleDateString()}
           </p>
         </div>
-        <div className="text-4xl">🔒</div>
+        <svg className="w-10 h-10 text-[#7A916C] dark:text-[#d4a574]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
       </div>
       
       <div className="mb-4">
-        <div className="text-2xl font-bold text-[#7A916C] dark:text-[#d4a574]">
+        <div className="text-2xl font-bold text-[#7A916C] dark:text-[#d4a574] dark:font-gothic-body">
           {getCountdownText(capsule.daysUntilUnlock)}
         </div>
       </div>
       
       <div className="p-4 bg-white/50 dark:bg-black/30 rounded-lg">
-        <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/80 italic">
+        <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/80 italic dark:font-gothic-body">
           Your message is safely locked away, waiting for the right moment...
         </p>
       </div>
@@ -243,10 +247,10 @@ const UnlockedCapsuleCard = ({ capsule, onView }) => {
          onClick={onView}>
       <div className="flex items-start justify-between mb-4">
         <div>
-          <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/70">
+          <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/70 dark:font-gothic-body">
             Created: {new Date(capsule.createdAt).toLocaleDateString()}
           </p>
-          <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/70">
+          <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/70 dark:font-gothic-body">
             Unlocked: {new Date(capsule.unlockDate).toLocaleDateString()}
           </p>
         </div>
@@ -254,23 +258,23 @@ const UnlockedCapsuleCard = ({ capsule, onView }) => {
       </div>
       
       <div className="mb-4">
-        <p className="text-gray-700 dark:text-[#EBDDBF] line-clamp-3">
+        <p className="text-gray-700 dark:text-[#EBDDBF] line-clamp-3 dark:font-gothic-body">
           {capsule.message}
         </p>
       </div>
       
       {capsule.currentGoals && capsule.currentGoals.length > 0 && (
         <div className="mb-4">
-          <p className="text-xs text-gray-500 dark:text-[#EBDDBF]/60 mb-1">Goals from the past:</p>
+          <p className="text-xs text-gray-500 dark:text-[#EBDDBF]/60 mb-1 dark:font-gothic-body">Goals from the past:</p>
           <div className="flex flex-wrap gap-2">
             {capsule.currentGoals.slice(0, 3).map((goal, idx) => (
               <span key={idx} className="text-xs px-2 py-1 bg-white/50 dark:bg-black/30 
-                                       rounded-full text-gray-600 dark:text-[#EBDDBF]/80">
+                                       rounded-full text-gray-600 dark:text-[#EBDDBF]/80 dark:font-gothic-body">
                 {goal}
               </span>
             ))}
             {capsule.currentGoals.length > 3 && (
-              <span className="text-xs px-2 py-1 text-gray-500 dark:text-[#EBDDBF]/60">
+              <span className="text-xs px-2 py-1 text-gray-500 dark:text-[#EBDDBF]/60 dark:font-gothic-body">
                 +{capsule.currentGoals.length - 3} more
               </span>
             )}
@@ -279,7 +283,7 @@ const UnlockedCapsuleCard = ({ capsule, onView }) => {
       )}
       
       <button className="text-sm text-[#7A916C] dark:text-[#d4a574] hover:text-[#6c7a5b] 
-                       dark:hover:text-[#EBDDBF] font-medium">
+                       dark:hover:text-[#EBDDBF] font-medium dark:font-gothic-body">
         View Full Message →
       </button>
     </div>

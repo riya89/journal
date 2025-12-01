@@ -156,7 +156,7 @@ export default function TaskModal({
         <div className="space-y-4">
           {/* Task Name Input */}
           <div>
-            <label className="block mb-2 font-semibold">Task Name:</label>
+            <label className={`block mb-2 font-semibold ${theme === "dark" ? "font-gothic-body" : ""}`}>Task Name:</label>
             <input
               type="text"
               value={taskName}
@@ -175,7 +175,7 @@ export default function TaskModal({
 
           {/* Category Selector */}
           <div>
-            <label className="block mb-2 font-semibold">Category:</label>
+            <label className={`block mb-2 font-semibold ${theme === "dark" ? "font-gothic-body" : ""}`}>Category:</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -195,7 +195,7 @@ export default function TaskModal({
 
           {/* Time Estimate Input */}
           <div>
-            <label className="block mb-2 font-semibold">
+            <label className={`block mb-2 font-semibold ${theme === "dark" ? "font-gothic-body" : ""}`}>
               ⏰ Time Estimate (optional):
             </label>
             <input
@@ -221,7 +221,7 @@ export default function TaskModal({
           {/* Recurrence Selector - Hide when editing non-recurring task */}
           {(!editingTask || editingTask.isRecurring) && (
             <div>
-              <label className="block mb-2 font-semibold">🔁 Repeat:</label>
+              <label className={`block mb-2 font-semibold ${theme === "dark" ? "font-gothic-body" : ""}`}>🔁 Repeat:</label>
               <select
                 value={recurrenceType}
                 onChange={(e) => {
@@ -292,7 +292,7 @@ export default function TaskModal({
           {/* Edit Scope Selector - Show when editing existing recurring task */}
           {editingTask && editingTask.isRecurring && (
             <div>
-              <label className="block mb-2 font-semibold">Edit Scope:</label>
+              <label className={`block mb-2 font-semibold ${theme === "dark" ? "font-gothic-body" : ""}`}>Edit Scope:</label>
               <div className="space-y-2">
                 <label
                   className={`flex items-center gap-2 p-3 rounded cursor-pointer transition ${

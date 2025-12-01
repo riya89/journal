@@ -93,7 +93,7 @@ export default function Login({ onLoginSuccess, theme, setTheme }) {
         <h1 className={`text-4xl font-bold mb-4 font-['Shantell_Sans'] ${
           theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#7A916C]'
         }`}>
-          My Journal
+          Echo
         </h1>
         <p className={`text-lg mb-8 font-['Shantell_Sans'] ${
           theme === 'dark' ? 'text-[#EBDDBF]/80' : 'text-[#6c7a5b]'

@@ -1104,7 +1104,7 @@ export default function AIAssistant({ theme }) {
             onClick={() => navigate("/")}
             className={`px-4 py-2 rounded-xl font-medium shadow-sm transition-all ${
               theme === "dark"
-                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b]"
+                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b] font-gothic-body"
                 : "bg-white text-[#6c7a5b] hover:bg-[#f4f0d8]"
             }`}
           >
@@ -1115,16 +1115,16 @@ export default function AIAssistant({ theme }) {
           {contextLoaded && sessionId && (
             <div className={`flex items-center gap-3 px-4 py-2 rounded-full text-sm ${
               theme === "dark"
-                ? "bg-[#3a2e20]/60 text-[#EBDDBF]/80"
+                ? "bg-[#3a2e20]/60 text-[#EBDDBF]/80 font-gothic-body"
                 : "bg-white/60 text-[#6c7a5b]/80"
             }`}>
               {/* Date Badge */}
               <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${
                 theme === "dark"
-                  ? "bg-[#2b241c] text-[#f4c27c]"
+                  ? "bg-[#2b241c] text-[#f4c27c] font-gothic-body"
                   : "bg-[#f4f0d8] text-[#7A916C]"
               }`}>
-                <span>📅</span>
+                <span></span>
                 <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
               </div>
               
@@ -1173,7 +1173,7 @@ export default function AIAssistant({ theme }) {
                 }}
                 className={`px-4 py-2 rounded-xl font-medium shadow-sm text-sm transition-all ${
                   theme === "dark"
-                    ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b]"
+                    ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b] font-gothic-body"
                     : "bg-white text-[#6c7a5b] hover:bg-[#f4f0d8]"
                 }`}
                 title="Start a new conversation"
@@ -1186,12 +1186,12 @@ export default function AIAssistant({ theme }) {
               onClick={() => setShowHistory(true)}
               className={`px-4 py-2 rounded-xl font-medium shadow-sm text-sm transition-all ${
                 theme === "dark"
-                  ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b]"
+                  ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3b2b] font-gothic-body"
                   : "bg-white text-[#6c7a5b] hover:bg-[#f4f0d8]"
               }`}
               title="View conversation history"
             >
-              📚 History
+              History
             </button>
           </div>
         </div>
@@ -1226,10 +1226,10 @@ export default function AIAssistant({ theme }) {
       <div className="w-full max-w-3xl flex-1 overflow-y-auto pb-40 pt-24 px-2 z-10">
         {messages.length === 0 && contextLoaded && (
           <div className={`text-center py-12 opacity-60 ${
-            theme === "dark" ? "text-[#EBDDBF]" : "text-[#6c7a5b]"
+            theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#6c7a5b]"
           }`}>
-            <p className="text-lg mb-2">✨ Welcome to your AI companion</p>
-            <p className="text-sm">Share what's on your mind, and I'll listen with care</p>
+            <p className={`text-lg mb-2 ${theme === "dark" ? "font-spooky-header" : ""}`}>✨ Welcome to your AI companion</p>
+            <p className={`text-sm ${theme === "dark" ? "font-gothic-body" : ""}`}>Share what's on your mind, and I'll listen with care</p>
           </div>
         )}
         

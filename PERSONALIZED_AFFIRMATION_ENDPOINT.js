@@ -1,50 +1,7 @@
-# Backend Implementation: Personalized Affirmations
-
-## Overview
-This document describes the backend implementation for personalized affirmations based on user mood, journal entries, and AI chat conversations.
-
-## New Endpoint: `/journal/affirmation/personalized`
-
-### Purpose
-Generate personalized affirmations based on user's recent mood data, journal entries, and AI chat conversations.
-
-### Request
-```
-GET http://localhost:8000/journal/affirmation/personalized
-```
-
-### Headers
-```
-Authorization: Bearer {firebase-token}
-```
-
-### Query Parameters
-```
-forceRefresh: boolean (optional) - Force regeneration even if cached
-```
-
-### Response
-```json
-{
-  "affirmation": "You've been navigating stress with such grace this week. Your resilience is beautiful.",
-  "basedOn": {
-    "recentMood": "mixed",
-    "themes": ["stress", "work"],
-    "moodTrend": "improving"
-  },
-  "cached": false,
-  "generatedAt": "2025-11-30T10:30:00Z"
-}
-```
-
-## Implementation Code
-
-Add this to your `backend/routes/journal.js` file:
-
-```javascript
 // ============================================
-// PERSONALIZED AFFIRMATIONS
+// 🌸 PERSONALIZED AFFIRMATIONS ENDPOINT
 // ============================================
+// Add this to your backend/routes/journal.js file
 
 /**
  * Helper: Analyze themes from journal entries and AI chat messages
@@ -126,7 +83,7 @@ async function isSimilarToRecent(userId, newAffirmation) {
 }
 
 /**
- * Generate personalized affirmation
+ * Generate personalized affirmation based on journal entries, AI chat, and mood
  * GET /journal/affirmation/personalized
  */
 router.get("/affirmation/personalized", verifyToken, async (req, res) => {
@@ -261,13 +218,6 @@ Recent AI chat messages (last 2-3 days):
 ${chatSnippets || 'No recent AI conversations'}
     `.trim();
     
-    // Generate affirmation with Gemini
-    const GEMINI_KEY = process.env.GEMINI_API_KEY;
-    
-    if (!GEMINI_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
-    }
-    
     // Build mood-specific prompt
     let toneGuidance = '';
     if (moodCategory === 'low') {
@@ -278,23 +228,36 @@ ${chatSnippets || 'No recent AI conversations'}
       toneGuidance = 'Be balanced and validating. Acknowledge both challenges and strengths with gentle support.';
     }
     
-    const prompt = `You are a compassionate mental wellness coach. Generate a deeply personalized affirmation based on the user's actual journal entries and mood data below.
+    const prompt = `Generate a SHORT, personalized affirmation in FIRST PERSON (1-2 sentences MAXIMUM, under 25 words total).
 
 ${context}
 
-Tone guidance: ${toneGuidance}
+Tone: ${toneGuidance}
 
-Requirements:
-- 1-2 sentences maximum
-- Reference specific themes or experiences from their journal entries
-- Acknowledge their actual emotional journey (not generic)
-- Warm, compassionate, validating tone
-- Focus on their unique strengths, growth, or self-compassion
-- Use "you" language (second person)
-- Avoid generic clichés like "you've got this" or "stay positive"
-- Make it feel like you truly understand their specific situation
+STRICT RULES:
+- MAXIMUM 1-2 short sentences (under 25 words total)
+- MUST use FIRST PERSON: "I am...", "I attract...", "I deserve...", "I choose..."
+- NO second person ("you are", "your")
+- NO coaching language
+- Direct, powerful, present tense
+- Reference their actual themes/mood if available
+- NO explanations, JUST the affirmation
 
-Generate ONE deeply personalized affirmation that shows you read their journals:`;
+Examples of CORRECT format:
+- "I am resilient and capable of handling whatever comes my way."
+- "I attract peace and positive energy into my life today."
+- "I am worthy of rest and self-compassion."
+- "I choose to trust my journey and embrace growth."
+- "I am stronger than my stress, and I navigate challenges with grace."
+
+Generate ONE short FIRST PERSON affirmation NOW (under 25 words):`;
+    
+    // Generate affirmation with Gemini
+    const GEMINI_KEY = process.env.GEMINI_API_KEY;
+    
+    if (!GEMINI_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
+    }
     
     let affirmation = '';
     let attempts = 0;
@@ -303,7 +266,7 @@ Generate ONE deeply personalized affirmation that shows you read their journals:
     // Try to generate unique affirmation (check against recent ones)
     while (attempts < maxAttempts) {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -313,7 +276,7 @@ Generate ONE deeply personalized affirmation that shows you read their journals:
             }],
             generationConfig: {
               temperature: 0.9,
-              maxOutputTokens: 100
+              maxOutputTokens: 50  // Reduced from 100 to force shorter responses
             }
           })
         }
@@ -329,6 +292,17 @@ Generate ONE deeply personalized affirmation that shows you read their journals:
       // Remove quotes if present
       affirmation = affirmation.replace(/^["']|["']$/g, '');
       
+      // Remove any coaching language that slipped through
+      affirmation = affirmation.replace(/^As your mental wellness coach,?\s*/i, '');
+      affirmation = affirmation.replace(/^I've noticed (that )?\s*/i, '');
+      affirmation = affirmation.replace(/^I want to remind you (that )?\s*/i, '');
+      
+      // If still too long (over 150 chars), truncate to first 2 sentences
+      if (affirmation.length > 150) {
+        const sentences = affirmation.match(/[^.!?]+[.!?]+/g) || [affirmation];
+        affirmation = sentences.slice(0, 2).join(' ').trim();
+      }
+      
       // Check if similar to recent affirmations
       const isSimilar = await isSimilarToRecent(userId, affirmation);
       
@@ -341,8 +315,8 @@ Generate ONE deeply personalized affirmation that shows you read their journals:
     }
     
     if (!affirmation) {
-      // Fallback affirmation
-      affirmation = "You're doing your best, and that's more than enough. Be gentle with yourself today. 🌿";
+      // Fallback affirmation (first person)
+      affirmation = "I am doing my best, and that is more than enough. I choose to be gentle with myself today. 🌿";
     }
     
     // Store affirmation
@@ -354,7 +328,7 @@ Generate ONE deeply personalized affirmation that shows you read their journals:
         moodTrend,
         avgMood: parseFloat(avgMood.toFixed(1))
       },
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: new Date(),
       userId
     };
     
@@ -376,9 +350,9 @@ Generate ONE deeply personalized affirmation that shows you read their journals:
   } catch (error) {
     console.error('Error generating personalized affirmation:', error);
     
-    // Return fallback affirmation
+    // Return fallback affirmation (first person)
     res.json({
-      affirmation: "You're doing your best, and that's more than enough. Be gentle with yourself today. 🌿",
+      affirmation: "I am doing my best, and that is more than enough. I choose to be gentle with myself today. 🌿",
       basedOn: {
         recentMood: 'unknown',
         themes: ['general'],
@@ -390,66 +364,3 @@ Generate ONE deeply personalized affirmation that shows you read their journals:
     });
   }
 });
-```
-
-## Firestore Data Structure
-
-### Collection: `users/{uid}/affirmations/{date}`
-
-```javascript
-{
-  affirmation: "You've been navigating stress with such grace this week...",
-  basedOn: {
-    recentMood: "mixed",
-    themes: ["stress", "work"],
-    moodTrend: "improving",
-    avgMood: 3.2
-  },
-  createdAt: Timestamp,
-  userId: "user123"
-}
-```
-
-## Environment Variables
-
-Add to your `.env` file:
-
-```bash
-GEMINI_API_KEY=your-gemini-api-key
-RAINDROP_URL=http://localhost:8787
-```
-
-## Testing
-
-```bash
-# Get personalized affirmation
-curl -X GET "http://localhost:8000/journal/affirmation/personalized" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-
-# Force refresh (regenerate)
-curl -X GET "http://localhost:8000/journal/affirmation/personalized?forceRefresh=true" \
-  -H "Authorization: Bearer YOUR_TOKEN"
-```
-
-## Error Handling
-
-1. **No mood data**: Uses neutral mood (3/5) as default
-2. **No journal entries**: Uses general themes
-3. **Gemini API failure**: Returns fallback affirmation
-4. **Similar affirmation**: Regenerates up to 3 times
-5. **Cache miss**: Generates new affirmation
-
-## Performance Considerations
-
-1. **Daily caching**: One affirmation per day per user
-2. **Similarity check**: Limited to last 10 affirmations within 14 days
-3. **Mood data**: Fetches only last 7 days
-4. **Journal data**: Fetches only last 3 entries
-5. **Async storage**: Firestore writes are non-blocking
-
-## Integration Notes
-
-- Works with existing Raindrop analytics endpoint
-- Compatible with existing journal collection structure
-- No migration needed for existing users
-- Graceful fallbacks for all external dependencies

@@ -504,8 +504,10 @@ export default function MoodDashboard({ user, theme }) {
       {/* BACK BUTTON */}
       <button
         onClick={() => navigate(-1)}
-        className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg shadow-sm
-                   bg-white/40 dark:bg-black/20 backdrop-blur text-sm"
+        className={`absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg shadow-sm
+                   bg-white/40 dark:bg-black/20 backdrop-blur text-sm ${
+                     theme === "dark" ? "font-gothic-body" : ""
+                   }`}
       >
         ←
       </button>
@@ -535,7 +537,7 @@ export default function MoodDashboard({ user, theme }) {
               <h2 className={`text-sm font-semibold mb-2 ${
                 theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
               }`}>
-                Streak Summary 🔥
+                Streak Summary 
               </h2>
               <div className="grid grid-cols-3 text-center gap-2">
                 <div>
@@ -568,12 +570,12 @@ export default function MoodDashboard({ user, theme }) {
               <h2 className={`text-sm font-semibold mb-2 ${
                 theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
               }`}>
-                🔥 Streak Badges & 🏆 Achievements
+                Your Badges
               </h2>
               
               {/* Streak Badges */}
               <div className="mb-3">
-                <p className="text-xs opacity-70 mb-1">Streak Badges</p>
+                <p className={`text-xs opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>Streak Badges</p>
                 <div className="grid grid-cols-6 gap-2">
                   {badges.map((b) => (
                     <div key={b.id} className="flex flex-col items-center">
@@ -596,7 +598,7 @@ export default function MoodDashboard({ user, theme }) {
               
               {/* Achievement Badges */}
               <div>
-                <p className="text-xs opacity-70 mb-1">Achievement Badges</p>
+                <p className={`text-xs opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>Achievement Badges</p>
                 <div className="max-h-32 overflow-hidden">
                   <BadgeGallery earnedBadges={earnedBadges} theme={theme} compact={true} />
                 </div>
@@ -628,22 +630,30 @@ export default function MoodDashboard({ user, theme }) {
 
             {/* AVERAGE MOOD */}
             <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3 text-center">
-              <div className="text-3xl mb-2">📊</div>
+              <div className="mb-2 flex justify-center">
+                <svg className={`w-8 h-8 ${theme === "dark" ? "text-[#fbbf24]" : "text-[#7A916C]"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
               <p className={`text-xs opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>
                 Average Mood
               </p>
-              <p className={`text-2xl font-bold ${theme === "dark" ? "text-[#fbbf24]" : "text-[#7A916C]"}`}>
+              <p className={`text-2xl font-bold ${theme === "dark" ? "text-[#fbbf24] font-gothic-body" : "text-[#7A916C]"}`}>
                 4.4/5
               </p>
             </div>
 
             {/* TREND */}
             <div className="bg-white/40 dark:bg-black/20 shadow rounded-xl p-3 text-center">
-              <div className="text-3xl mb-2">➡️</div>
+              <div className="mb-2 flex justify-center">
+                <svg className={`w-8 h-8 ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
               <p className={`text-xs opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>
                 Trend
               </p>
-              <p className={`text-2xl font-bold capitalize ${theme === "dark" ? "text-gray-300" : "text-gray-700"}`}>
+              <p className={`text-2xl font-bold capitalize ${theme === "dark" ? "text-gray-300 font-gothic-body" : "text-gray-700"}`}>
                 Stable
               </p>
             </div>
@@ -671,13 +681,13 @@ export default function MoodDashboard({ user, theme }) {
       {newBadge && (
         <Modal onClose={() => setNewBadge(null)}>
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">🏅 New Badge Earned!</h2>
+            <h2 className={`text-2xl font-bold mb-4 ${theme === "dark" ? "font-spooky-header" : ""}`}>🏅 New Badge Earned!</h2>
             <img
               src={newBadge.url}
               className="w-28 h-28 mx-auto animate-bounce"
               alt="New badge"
             />
-            <p className="mt-3 text-lg">
+            <p className={`mt-3 text-lg ${theme === "dark" ? "font-gothic-body" : ""}`}>
               You unlocked <strong>{newBadge.id}</strong>  
               for a <strong>{newBadge.streak}-day streak!</strong>
             </p>

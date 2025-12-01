@@ -595,7 +595,7 @@ export default function MonthlyPlanner({ theme }) {
             onClick={() => setShowAddModal(true)}
             className={`px-6 py-2 rounded-lg font-semibold transition ${
               theme === "dark"
-                ? "bg-[#EBDDBF] text-[#2b241c] hover:bg-[#EBDDBF]/90"
+                ? "bg-[#EBDDBF] text-[#2b241c] hover:bg-[#EBDDBF]/90 font-gothic-body"
                 : "bg-[#7A916C] text-white hover:bg-[#6c7a5b]"
             }`}
           >
@@ -606,11 +606,11 @@ export default function MonthlyPlanner({ theme }) {
             onClick={() => setShowTemplatesModal(true)}
             className={`px-6 py-2 rounded-lg font-semibold transition ${
               theme === "dark"
-                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3e30]"
+                ? "bg-[#3a2e20] text-[#EBDDBF] hover:bg-[#4a3e30] font-gothic-body"
                 : "bg-gray-200 text-[#7A916C] hover:bg-gray-300"
             }`}
           >
-            📋 View Templates
+             View Templates
           </button>
         </div>
       </div>

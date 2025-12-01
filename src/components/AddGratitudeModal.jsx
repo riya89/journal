@@ -31,7 +31,7 @@ const AddGratitudeModal = ({ onSubmit, onClose }) => {
     <Modal onClose={onClose}>
       <div className="add-gratitude-modal">
         <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
-          Add Gratitude 🙏
+          Add Gratitude
         </h2>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
           What are you grateful for today? These moments will be saved in your gratitude jar.

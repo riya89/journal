@@ -71,7 +71,7 @@ export default function XPBar({ theme }) {
     return (
       <div className={`xp-bar-container px-4 py-2 rounded-xl text-sm ${
         theme === 'dark' 
-          ? 'bg-[#3a2e20] border border-[#5b4a3d] text-[#EBDDBF]' 
+          ? 'bg-[#3a2e20] border border-[#5b4a3d] text-[#EBDDBF] font-gothic-body' 
           : 'bg-[#F3EFE2] border border-[#cdd6c0] text-[#6c7a5b]'
       }`}>
         <span className="opacity-70">Unable to load XP</span>
@@ -88,7 +88,7 @@ export default function XPBar({ theme }) {
       {/* Level Badge */}
       <div className={`level-badge flex items-center justify-center w-12 h-12 rounded-full font-bold text-sm shadow-md ${
         theme === 'dark'
-          ? 'bg-gradient-to-br from-[#5b4a3d] to-[#3a2e20] text-[#EBDDBF] border-2 border-[#EBDDBF]/30'
+          ? 'bg-gradient-to-br from-[#5b4a3d] to-[#3a2e20] text-[#EBDDBF] border-2 border-[#EBDDBF]/30 font-gothic-body'
           : 'bg-gradient-to-br from-[#7A916C] to-[#94A786] text-white border-2 border-white/50'
       }`}>
         <span>Lv {xpData.currentLevel}</span>
@@ -116,7 +116,7 @@ export default function XPBar({ theme }) {
 
           {/* XP Text */}
           <div className={`xp-text absolute inset-0 flex items-center justify-center text-xs font-semibold ${
-            theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#6c7a5b]'
+            theme === 'dark' ? 'text-[#EBDDBF] font-gothic-body' : 'text-[#6c7a5b]'
           }`}>
             <span className="drop-shadow-sm">
               {xpData.xpProgress} / {xpData.xpForNextLevel} XP
@@ -126,7 +126,7 @@ export default function XPBar({ theme }) {
 
         {/* Next Level Info */}
         <div className={`text-xs text-center opacity-70 ${
-          theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#6c7a5b]'
+          theme === 'dark' ? 'text-[#EBDDBF] font-gothic-body' : 'text-[#6c7a5b]'
         }`}>
           {xpNeeded > 0 ? `${xpNeeded} XP to level ${xpData.currentLevel + 1}` : 'Max level!'}
         </div>

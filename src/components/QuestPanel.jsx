@@ -119,14 +119,14 @@ export default function QuestPanel({ theme, userId, compact = false }) {
           : 'bg-[#F3EFE2] border border-[#cdd6c0]'
       }`}>
         <div className={`text-center py-8 ${
-          theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#6c7a5b]'
+          theme === 'dark' ? 'text-[#EBDDBF] font-gothic-body' : 'text-[#6c7a5b]'
         }`}>
           <p className="text-sm opacity-70">Unable to load quests</p>
           <button
             onClick={fetchQuests}
             className={`mt-3 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
               theme === 'dark'
-                ? 'bg-[#5b4a3d] hover:bg-[#6b5a4d] text-[#EBDDBF]'
+                ? 'bg-[#5b4a3d] hover:bg-[#6b5a4d] text-[#EBDDBF] font-gothic-body'
                 : 'bg-[#7A916C] hover:bg-[#6c7a5b] text-white'
             }`}
           >
@@ -147,12 +147,12 @@ export default function QuestPanel({ theme, userId, compact = false }) {
       {!compact && (
         <div className="p-6 pb-4">
           <h3 className={`text-lg font-bold mb-1 ${
-            theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#6c7a5b]'
+            theme === 'dark' ? 'text-[#EBDDBF] font-spooky-header' : 'text-[#6c7a5b]'
           }`}>
             Quests
           </h3>
           <p className={`text-xs opacity-70 ${
-            theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#6c7a5b]'
+            theme === 'dark' ? 'text-[#EBDDBF] font-gothic-body' : 'text-[#6c7a5b]'
           }`}>
             Complete challenges to earn XP and level up
           </p>
@@ -162,7 +162,7 @@ export default function QuestPanel({ theme, userId, compact = false }) {
       {compact && (
         <div className="px-3 pt-2 pb-1">
           <h3 className={`text-sm font-bold ${
-            theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#6c7a5b]'
+            theme === 'dark' ? 'text-[#EBDDBF] font-spooky-header' : 'text-[#6c7a5b]'
           }`}>
             Quests
           </h3>
@@ -180,10 +180,10 @@ export default function QuestPanel({ theme, userId, compact = false }) {
             className={`flex-1 px-4 py-3 text-sm font-semibold capitalize transition-all relative ${
               activeTab === tab
                 ? theme === 'dark'
-                  ? 'text-[#EBDDBF] bg-[#2b241c]'
+                  ? 'text-[#EBDDBF] bg-[#2b241c] font-gothic-body'
                   : 'text-[#6c7a5b] bg-white/60'
                 : theme === 'dark'
-                  ? 'text-[#EBDDBF]/60 hover:text-[#EBDDBF]/80'
+                  ? 'text-[#EBDDBF]/60 hover:text-[#EBDDBF]/80 font-gothic-body'
                   : 'text-[#6c7a5b]/60 hover:text-[#6c7a5b]/80'
             }`}
           >
@@ -192,10 +192,10 @@ export default function QuestPanel({ theme, userId, compact = false }) {
               <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] ${
                 activeTab === tab
                   ? theme === 'dark'
-                    ? 'bg-[#7A916C] text-white'
+                    ? 'bg-[#7A916C] text-white font-gothic-body'
                     : 'bg-[#7A916C] text-white'
                   : theme === 'dark'
-                    ? 'bg-[#5b4a3d] text-[#EBDDBF]'
+                    ? 'bg-[#5b4a3d] text-[#EBDDBF] font-gothic-body'
                     : 'bg-[#cdd6c0] text-[#6c7a5b]'
               }`}>
                 {questCount[tab]}
@@ -215,7 +215,7 @@ export default function QuestPanel({ theme, userId, compact = false }) {
       <div className={`${compact ? 'p-3 space-y-2 max-h-[300px]' : 'p-6 space-y-3 max-h-[500px]'} overflow-y-auto`}>
         {activeQuests.length === 0 ? (
           <div className={`text-center ${compact ? 'py-6' : 'py-12'} ${
-            theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#6c7a5b]'
+            theme === 'dark' ? 'text-[#EBDDBF] font-gothic-body' : 'text-[#6c7a5b]'
           }`}>
             <div className={`${compact ? 'text-2xl mb-2' : 'text-4xl mb-3'}`}>✨</div>
             <p className={`${compact ? 'text-xs' : 'text-sm'} opacity-70`}>

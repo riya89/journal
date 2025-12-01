@@ -275,6 +275,8 @@ import MonthlyPlanner from "./pages/MonthlyPlanner";
 import TimeCapsule from "./pages/TimeCapsule";
 import GratitudeJarPage from "./pages/GratitudeJarPage";
 import MoodTrackingHub from "./pages/MoodTrackingHub";
+import Billing from "./pages/Billing";
+import UserManual from "./pages/UserManual";
 // import GamificationDashboard from "./pages/GamificationDashboard";
 
 function AppContent() {
@@ -333,6 +335,14 @@ function AppContent() {
       <Route
         path="/mood-tracking-hub"
         element={<MoodTrackingHub theme={theme} />}
+      />
+      <Route
+        path="/billing"
+        element={<Billing theme={theme} />}
+      />
+      <Route
+        path="/user-manual"
+        element={<UserManual theme={theme} />}
       />
       {/* <Route
         path="/gamification"

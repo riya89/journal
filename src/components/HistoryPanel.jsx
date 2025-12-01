@@ -121,13 +121,13 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
                 onClick={() => setSelectedSession(null)}
                 className={`text-sm px-3 py-1 rounded-lg ${
                   theme === 'dark'
-                    ? 'hover:bg-[#4a3b2b]'
+                    ? 'hover:bg-[#4a3b2b] font-gothic-body'
                     : 'hover:bg-gray-100'
                 }`}
               >
                 ← Back to History
               </button>
-              <p className="text-xs opacity-60 mt-1">
+              <p className={`text-xs opacity-60 mt-1 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                 {formatDate(selectedSession.startedAt)} • {selectedSession.messageCount} messages
               </p>
             </div>
@@ -154,15 +154,15 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
                   className={`max-w-[75%] px-4 py-3 rounded-2xl shadow-md text-sm ${
                     msg.role === 'user'
                       ? theme === 'dark'
-                        ? 'bg-[#4a3b2b] text-[#EBDDBF]'
+                        ? 'bg-[#4a3b2b] text-[#EBDDBF] font-gothic-body'
                         : 'bg-[#d8e8c8] text-[#44533a]'
                       : theme === 'dark'
-                      ? 'bg-[#3a2e20] text-[#EBDDBF]'
+                      ? 'bg-[#3a2e20] text-[#EBDDBF] font-gothic-body'
                       : 'bg-gray-100 text-[#6c7a5b]'
                   }`}
                 >
                   {msg.content}
-                  <div className="text-xs opacity-50 mt-1">
+                  <div className={`text-xs opacity-50 mt-1 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                     {new Date(msg.timestamp).toLocaleTimeString()}
                   </div>
                 </div>
@@ -180,7 +180,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
               onClick={() => loadSessionIntoChat(selectedSession)}
               className={`px-4 py-2 rounded-xl text-sm font-medium ${
                 theme === 'dark'
-                  ? 'bg-[#f4c27c] text-[#2e241b] hover:bg-[#e8b36a]'
+                  ? 'bg-[#f4c27c] text-[#2e241b] hover:bg-[#e8b36a] font-gothic-body'
                   : 'bg-[#7A916C] text-white hover:bg-[#6c7a5b]'
               }`}
             >
@@ -190,7 +190,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
               onClick={(e) => deleteSession(selectedSession.sessionId, e)}
               className={`px-4 py-2 rounded-xl text-sm font-medium ${
                 theme === 'dark'
-                  ? 'bg-red-900/30 text-red-300 hover:bg-red-900/50'
+                  ? 'bg-red-900/30 text-red-300 hover:bg-red-900/50 font-gothic-body'
                   : 'bg-red-100 text-red-600 hover:bg-red-200'
               }`}
             >
@@ -224,7 +224,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
           }`}
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold">Conversation History</h2>
+            <h2 className={`text-2xl font-semibold ${theme === 'dark' ? 'font-spooky-header' : ''}`}>Conversation History</h2>
             <button
               onClick={onClose}
               className={`text-2xl px-3 py-1 rounded-lg ${
@@ -247,7 +247,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
                 placeholder="Search conversations..."
                 className={`flex-1 px-4 py-2 rounded-xl text-sm ${
                   theme === 'dark'
-                    ? 'bg-[#3a2e20] text-[#EBDDBF] placeholder-[#EBDDBF]/40'
+                    ? 'bg-[#3a2e20] text-[#EBDDBF] placeholder-[#EBDDBF]/40 font-gothic-body'
                     : 'bg-gray-100 text-[#6c7a5b] placeholder-[#6c7a5b]/40'
                 }`}
               />
@@ -255,7 +255,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
                 type="submit"
                 className={`px-4 py-2 rounded-xl text-sm font-medium ${
                   theme === 'dark'
-                    ? 'bg-[#4a3b2b] text-[#EBDDBF] hover:bg-[#5a4b3b]'
+                    ? 'bg-[#4a3b2b] text-[#EBDDBF] hover:bg-[#5a4b3b] font-gothic-body'
                     : 'bg-gray-200 text-[#6c7a5b] hover:bg-gray-300'
                 }`}
               >
@@ -267,10 +267,10 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
               className={`px-4 py-2 rounded-xl text-sm font-medium ${
                 filterArchived
                   ? theme === 'dark'
-                    ? 'bg-[#f4c27c] text-[#2e241b]'
+                    ? 'bg-[#f4c27c] text-[#2e241b] font-gothic-body'
                     : 'bg-[#7A916C] text-white'
                   : theme === 'dark'
-                  ? 'bg-[#4a3b2b] text-[#EBDDBF] hover:bg-[#5a4b3b]'
+                  ? 'bg-[#4a3b2b] text-[#EBDDBF] hover:bg-[#5a4b3b] font-gothic-body'
                   : 'bg-gray-200 text-[#6c7a5b] hover:bg-gray-300'
               }`}
             >
@@ -282,12 +282,12 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
         {/* Session List */}
         <div className="overflow-y-auto p-6 space-y-3" style={{ maxHeight: 'calc(90vh - 180px)' }}>
           {loading ? (
-            <div className="text-center py-12 opacity-60">
+            <div className={`text-center py-12 opacity-60 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               <div className="animate-spin w-8 h-8 border-2 border-current border-t-transparent rounded-full mx-auto mb-3"></div>
               Loading conversations...
             </div>
           ) : filteredSessions.length === 0 ? (
-            <div className="text-center py-12 opacity-60">
+            <div className={`text-center py-12 opacity-60 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               <p className="text-lg mb-2">
                 {searchQuery ? 'No conversations found' : filterArchived ? 'No archived conversations' : 'No conversations yet'}
               </p>
@@ -307,19 +307,19 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
                 }`}
               >
                 <div className="flex items-start justify-between mb-2">
-                  <p className="text-sm line-clamp-2 flex-1">{session.preview}</p>
+                  <p className={`text-sm line-clamp-2 flex-1 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>{session.preview}</p>
                   <button
                     onClick={(e) => deleteSession(session.sessionId, e)}
                     className={`ml-3 px-2 py-1 rounded text-xs ${
                       theme === 'dark'
-                        ? 'hover:bg-red-900/30 text-red-300'
+                        ? 'hover:bg-red-900/30 text-red-300 font-gothic-body'
                         : 'hover:bg-red-100 text-red-600'
                     }`}
                   >
                     Delete
                   </button>
                 </div>
-                <div className="flex items-center gap-3 text-xs opacity-60">
+                <div className={`flex items-center gap-3 text-xs opacity-60 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                   <span>{formatDate(session.startedAt)}</span>
                   <span>•</span>
                   <span>{session.messageCount} messages</span>
@@ -332,16 +332,16 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
                 </div>
                 {session.themes && session.themes.length > 0 && (
                   <div className="flex gap-2 mt-2">
-                    {session.themes.map((theme, idx) => (
+                    {session.themes.map((themeTag, idx) => (
                       <span
                         key={idx}
                         className={`px-2 py-1 rounded-full text-xs ${
                           theme === 'dark'
-                            ? 'bg-[#4a3b2b] text-[#EBDDBF]'
+                            ? 'bg-[#4a3b2b] text-[#EBDDBF] font-gothic-body'
                             : 'bg-gray-200 text-[#6c7a5b]'
                         }`}
                       >
-                        {theme}
+                        {themeTag}
                       </span>
                     ))}
                   </div>

@@ -202,7 +202,7 @@ export default function ExtendedMoodDashboard({ user, theme }) {
           <h3 className={`text-lg font-semibold mb-4 ${
             theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
           }`}>
-            Period Comparison 📊
+            Period Comparison 
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
