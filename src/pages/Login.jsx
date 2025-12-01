@@ -3,6 +3,7 @@ import { auth, provider } from "../lib/firebase";
 import { Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import WaterRippleEffect from "../components/WaterRippleEffect";
 
 export default function Login({ onLoginSuccess, theme: initialTheme }) {
   const { login } = useAuth();
@@ -56,12 +57,20 @@ export default function Login({ onLoginSuccess, theme: initialTheme }) {
     <div className={`relative min-h-screen flex items-center justify-center overflow-hidden ${
       theme === 'dark' ? 'bg-[#1a1410]' : 'bg-[#FFFBEA]'
     }`}>
-      {/* Background Image */}
+      {/* 💧 Water Ripple Effect Background */}
+      <WaterRippleEffect
+        imageUrl="https://images.unsplash.com/photo-1511198922712-e31c72f8fcd4?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        mouseOnly={true}
+        theme={theme}
+        className=""
+      />
+      
+      {/* Background Image - very subtle overlay */}
       <img
         src="https://i.pinimg.com/736x/34/8d/95/348d9515bbee54e866009b8b2926aaf2.jpg"
         alt="background"
         className={`absolute inset-0 w-full h-full object-cover ${
-          theme === 'dark' ? 'opacity-30' : 'opacity-40'
+          theme === 'dark' ? 'opacity-5' : 'opacity-5'
         }`}
       />
 
