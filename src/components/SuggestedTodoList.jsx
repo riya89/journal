@@ -114,7 +114,7 @@ export default function SuggestedTodoList({ theme }) {
           </p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
+        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
           {todos.map((todo) => {
             const categoryInfo = getCategoryInfo(todo.category);
             

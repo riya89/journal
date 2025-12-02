@@ -1291,10 +1291,12 @@ const handleSave = async () => {
     // No need to call updateJournalQuests() again!
 
     // 3️⃣ Analyze journal for task suggestions (non-blocking)
-    // TEMPORARY: Always show for testing (remove !isExistingEntry check)
-    analyzeForTaskSuggestions(content, mood, selectedDate).catch(err => {
-      console.warn('Task suggestion analysis failed, but journal saved successfully:', err);
-    });
+    // Only show suggestions on FIRST save (not when editing existing entries)
+    if (!isExistingEntry) {
+      analyzeForTaskSuggestions(content, mood, selectedDate).catch(err => {
+        console.warn('Task suggestion analysis failed, but journal saved successfully:', err);
+      });
+    }
 
     // UI success
     setSaving(false);

@@ -450,8 +450,9 @@ export default function MoodDashboard({ user, theme }) {
       .then((d) => setBadges(d.badges || []))
       .catch((err) => console.error('Error fetching badges:', err));
 
-    // Streaks
-    apiGet(`${BASE}/streaks?uid=${user.uid}`)
+    // Streaks (with timezone)
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    apiGet(`${BASE}/streaks?uid=${user.uid}&timezone=${encodeURIComponent(userTimezone)}`)
       .then((r) => r.json())
       .then((d) => {
         setStreaks({
