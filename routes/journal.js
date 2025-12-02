@@ -4859,6 +4859,48 @@ router.post("/quests/check-expiration", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to check quest expiration" });
   }
 });
+router.post("/quests/reset-all", verifyToken, async (req, res) => {
+  try {
+    const userId = req.uid;
+    const userRef = db.collection("users").doc(userId);
+    const questsRef = userRef.collection("quests");
+    
+    // Delete all existing quests
+    const snapshot = await questsRef.get();
+    const batch = db.batch();
+    
+    snapshot.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    
+    await batch.commit();
+    console.log(`🗑️ Deleted ${snapshot.size} old quests for user ${userId}`);
+    
+    // Reset last generation timestamps
+    await userRef.set({
+      lastQuestGeneration: {
+        daily: null,
+        weekly: null,
+        monthly: null
+      }
+    }, { merge: true });
+    
+    // Generate new quests with correct timezone
+    const newQuests = await checkAndGenerateQuests(userId);
+    
+    console.log(`✅ Generated ${newQuests.length} new quests with correct timezone`);
+    
+    res.json({
+      success: true,
+      deletedCount: snapshot.size,
+      newQuests,
+      message: `Reset complete: deleted ${snapshot.size} old quests, generated ${newQuests.length} new quests`
+    });
+  } catch (err) {
+    console.error("Error resetting quests:", err);
+    res.status(500).json({ error: "Failed to reset quests" });
+  }
+});
 // router.post("/quests/check-expiration", verifyToken, async (req, res) => {
 //   try {
 //     const userId = req.uid;
