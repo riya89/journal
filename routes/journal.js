@@ -2019,109 +2019,67 @@ router.get("/planner/templates", verifyToken, async (req, res) => {
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
-  const { message, sessionId, includeHistory } = req.body;
-  
-  if (!message || !message.trim()) {
-    return res.status(400).json({ reply: "Hey, what's up? 🌿" });
-  }
-
+router.post("/assistant/speak-edge", verifyToken, async (req, res) => {
   try {
-    let context = [];
+    const { text, voice = "en-US-MichelleNeural", rate = "+0%" } = req.body;
     
-    // Load conversation history if requested
-    if (includeHistory && sessionId) {
-      const sessionRef = db
-        .collection("users")
-        .doc(req.uid)
-        .collection("aiSessions")
-        .doc(sessionId);
-      
-      const sessionDoc = await sessionRef.get();
-      
-      if (sessionDoc.exists) {
-        const sessionData = sessionDoc.data();
-        context = sessionData.messages?.slice(-10) || []; // Last 10 messages
-      }
+    if (!text) {
+      return res.status(400).json({ error: "Text is required" });
     }
 
-    // Add current message to context
-    context.push({ 
-      role: "user", 
-      content: message, 
-      timestamp: new Date().toISOString() 
-    });
+    console.log(`🔊 Generating speech with voice: ${voice}, rate: ${rate}`);
 
-    // Build the friendly prompt
-    const contextPrompt = buildFriendlyPrompt(message, context.slice(0, -1));
+    // Create temp file path
+    const tempFile = path.join(__dirname, `temp_${Date.now()}.mp3`);
 
-    // Call Gemini AI
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: contextPrompt }]
-          }],
-          generationConfig: {
-            temperature: 0.9,
-            topP: 0.95,
-            topK: 40,
-            maxOutputTokens: 150,
-          }
-        })
+    // Escape text properly for shell command
+    const escapedText = text.replace(/"/g, '\\"').replace(/'/g, "\\'");
+
+    // Generate audio with Edge TTS command with rate control
+    const command = `edge-tts --voice "${voice}" --rate="${rate}" --text "${escapedText}" --write-media "${tempFile}"`;
+    
+    console.log(`📝 Running command: ${command.substring(0, 100)}...`);
+
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error("❌ Edge TTS error:", error);
+        console.error("stderr:", stderr);
+        return res.status(500).json({ 
+          error: "TTS generation failed",
+          details: error.message 
+        });
       }
-    );
 
-    const data = await response.json();
-    let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
-                "Hey, I'm here. What's going on?";
+      // Check if file was created
+      if (!fs.existsSync(tempFile)) {
+        console.error("❌ Audio file not generated");
+        return res.status(500).json({ error: "Audio file not generated" });
+      }
 
-    // Clean up the reply
-    reply = reply.replace(/^["']|["']$/g, '').trim();
+      console.log(`✅ Audio file generated: ${tempFile}`);
 
-    // 🔥 FIXED: No follow-up suggestions
-    const followUpSuggestions = [];
+      // Send the audio file
+      res.setHeader('Content-Type', 'audio/mpeg');
+      const audioStream = fs.createReadStream(tempFile);
+      audioStream.pipe(res);
 
-    // Save to session (async, don't wait)
-    context.push({ 
-      role: "assistant", 
-      content: reply, 
-      timestamp: new Date().toISOString() 
-    });
-    
-    const sessionRef = db
-      .collection("users")
-      .doc(req.uid)
-      .collection("aiSessions")
-      .doc(sessionId);
-    
-    sessionRef.set({
-      sessionId,
-      messages: context.slice(-10),
-      updatedAt: new Date(),
-      lastMessage: reply.substring(0, 100)
-    }, { merge: true }).catch(err => {
-      console.error('Error saving session:', err);
-    });
+      // Clean up temp file after sending
+      audioStream.on('end', () => {
+        fs.unlink(tempFile, (err) => {
+          if (err) console.error("Failed to delete temp file:", err);
+          else console.log(`🗑️ Cleaned up temp file: ${tempFile}`);
+        });
+      });
 
-    res.json({
-      reply,
-      followUpSuggestions, // Empty array now
-      sessionId,
-      messageId: `msg_${Date.now()}`,
-      timestamp: new Date().toISOString()
+      audioStream.on('error', (err) => {
+        console.error("❌ Stream error:", err);
+        fs.unlink(tempFile, () => {});
+      });
     });
 
   } catch (err) {
-    console.error("AI Assistant Error:", err);
-    res.json({ 
-      reply: "Sorry, my brain just glitched for a sec. What were you saying?",
-      followUpSuggestions: [] // Also empty on error
-    });
+    console.error("❌ Edge TTS endpoint error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -2737,7 +2695,110 @@ BE NATURAL:
   return prompt;
 };
 
-// UPDATED ENDPOINT CODE:
+// // UPDATED ENDPOINT CODE:
+// router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
+//   const { message, sessionId, includeHistory } = req.body;
+  
+//   if (!message || !message.trim()) {
+//     return res.status(400).json({ reply: "Hey, what's up? 🌿" });
+//   }
+
+//   try {
+//     let context = [];
+    
+//     // Load conversation history if requested
+//     if (includeHistory && sessionId) {
+//       const sessionRef = db
+//         .collection("users")
+//         .doc(req.uid)
+//         .collection("aiSessions")
+//         .doc(sessionId);
+      
+//       const sessionDoc = await sessionRef.get();
+      
+//       if (sessionDoc.exists) {
+//         const sessionData = sessionDoc.data();
+//         context = sessionData.messages?.slice(-10) || []; // Last 10 messages
+//       }
+//     }
+
+//     // Add current message to context
+//     context.push({ 
+//       role: "user", 
+//       content: message, 
+//       timestamp: new Date().toISOString() 
+//     });
+
+//     // Build the friendly prompt
+//     const contextPrompt = buildFriendlyPrompt(message, context.slice(0, -1));
+
+//     // Call Gemini AI
+//     const response = await fetch(
+//       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+//       {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           contents: [{
+//             parts: [{ text: contextPrompt }]
+//           }],
+//           generationConfig: {
+//             temperature: 0.9, // More creative and varied
+//             topP: 0.95,
+//             topK: 40,
+//             maxOutputTokens: 150, // Keep responses concise
+//           }
+//         })
+//       }
+//     );
+
+//     const data = await response.json();
+//     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
+//                 "Hey, I'm here. What's going on?";
+
+//     // Clean up the reply (remove quotes if AI added them)
+//     reply = reply.replace(/^["']|["']$/g, '').trim();
+
+//     // Generate follow-up suggestions based on context
+//     const followUpSuggestions = generateFollowUpSuggestions(message, reply);
+
+//     // Save to session (async, don't wait)
+//     context.push({ 
+//       role: "assistant", 
+//       content: reply, 
+//       timestamp: new Date().toISOString() 
+//     });
+    
+//     const sessionRef = db
+//       .collection("users")
+//       .doc(req.uid)
+//       .collection("aiSessions")
+//       .doc(sessionId);
+    
+//     sessionRef.set({
+//       sessionId,
+//       messages: context.slice(-10), // Keep only last 10
+//       updatedAt: new Date(),
+//       lastMessage: reply.substring(0, 100)
+//     }, { merge: true }).catch(err => {
+//       console.error('Error saving session:', err);
+//     });
+
+//     res.json({
+//       reply,
+//       followUpSuggestions,
+//       sessionId,
+//       messageId: `msg_${Date.now()}`,
+//       timestamp: new Date().toISOString()
+//     });
+
+//   } catch (err) {
+//     console.error("AI Assistant Error:", err);
+//     res.json({ 
+//       reply: "Sorry, my brain just glitched for a sec. What were you saying?" 
+//     });
+//   }
+// });
 router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
   const { message, sessionId, includeHistory } = req.body;
   
@@ -2785,10 +2846,10 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
             parts: [{ text: contextPrompt }]
           }],
           generationConfig: {
-            temperature: 0.9, // More creative and varied
+            temperature: 0.9,
             topP: 0.95,
             topK: 40,
-            maxOutputTokens: 150, // Keep responses concise
+            maxOutputTokens: 150,
           }
         })
       }
@@ -2798,11 +2859,11 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
                 "Hey, I'm here. What's going on?";
 
-    // Clean up the reply (remove quotes if AI added them)
+    // Clean up the reply
     reply = reply.replace(/^["']|["']$/g, '').trim();
 
-    // Generate follow-up suggestions based on context
-    const followUpSuggestions = generateFollowUpSuggestions(message, reply);
+    // 🔥 FIXED: No follow-up suggestions
+    const followUpSuggestions = [];
 
     // Save to session (async, don't wait)
     context.push({ 
@@ -2819,7 +2880,7 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
     
     sessionRef.set({
       sessionId,
-      messages: context.slice(-10), // Keep only last 10
+      messages: context.slice(-10),
       updatedAt: new Date(),
       lastMessage: reply.substring(0, 100)
     }, { merge: true }).catch(err => {
@@ -2828,7 +2889,7 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
 
     res.json({
       reply,
-      followUpSuggestions,
+      followUpSuggestions, // Empty array now
       sessionId,
       messageId: `msg_${Date.now()}`,
       timestamp: new Date().toISOString()
@@ -2837,7 +2898,8 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
   } catch (err) {
     console.error("AI Assistant Error:", err);
     res.json({ 
-      reply: "Sorry, my brain just glitched for a sec. What were you saying?" 
+      reply: "Sorry, my brain just glitched for a sec. What were you saying?",
+      followUpSuggestions: [] // Also empty on error
     });
   }
 });
