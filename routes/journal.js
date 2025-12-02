@@ -3404,6 +3404,55 @@ function shouldGenerateNewQuests(lastGeneration, period) {
 /**
  * Generate quests for a specific period
  */
+// async function generateQuestsForPeriod(userId, period) {
+//   const userRef = db.collection("users").doc(userId);
+//   const questsRef = userRef.collection("quests");
+//   const generatedQuests = [];
+//   const now = new Date();
+
+//   let templates, count;
+  
+//   if (period === 'daily') {
+//     templates = selectRandomTemplates(DAILY_QUEST_TEMPLATES, 2);
+//     count = 2;
+//   } else if (period === 'weekly') {
+//     templates = selectRandomTemplates(WEEKLY_QUEST_TEMPLATES, 2);
+//     count = 2;
+//   } else if (period === 'monthly') {
+//     templates = selectRandomTemplates(MONTHLY_QUEST_TEMPLATES, 1);
+//     count = 1;
+//   }
+
+//   const expiresAt = calculateExpirationDate(period);
+
+//   for (const template of templates) {
+//     const questRef = questsRef.doc();
+//     const quest = {
+//   userId,
+//   type: period,
+//   title: template.title,
+//   description: template.description,
+//   target: template.target,
+//   progress: 0,
+//   reward: template.reward,
+//   status: 'active',
+//   trackingType: template.trackingType,
+//   createdAt: now,
+//   expiresAt,
+//   completedAt: null,
+//   expiredAt: null,
+//   lastProgressDate: now,
+//   progressMetadata: { uniqueDays: [] }  // Add this line
+// };
+
+
+
+//     await questRef.set(quest);
+//     generatedQuests.push({ id: questRef.id, ...quest });
+//   }
+
+//   return generatedQuests;
+// }
 async function generateQuestsForPeriod(userId, period) {
   const userRef = db.collection("users").doc(userId);
   const questsRef = userRef.collection("quests");
@@ -3411,7 +3460,6 @@ async function generateQuestsForPeriod(userId, period) {
   const now = new Date();
 
   let templates, count;
-  
   if (period === 'daily') {
     templates = selectRandomTemplates(DAILY_QUEST_TEMPLATES, 2);
     count = 2;
@@ -3428,22 +3476,22 @@ async function generateQuestsForPeriod(userId, period) {
   for (const template of templates) {
     const questRef = questsRef.doc();
     const quest = {
-  userId,
-  type: period,
-  title: template.title,
-  description: template.description,
-  target: template.target,
-  progress: 0,
-  reward: template.reward,
-  status: 'active',
-  trackingType: template.trackingType,
-  createdAt: now,
-  expiresAt,
-  completedAt: null,
-  expiredAt: null,
-  lastProgressDate: now  // Add this line
-};
-
+      userId,
+      type: period,
+      title: template.title,
+      description: template.description,
+      target: template.target,
+      progress: 0,
+      reward: template.reward,
+      status: 'active',
+      trackingType: template.trackingType,
+      createdAt: now,
+      expiresAt,
+      completedAt: null,
+      expiredAt: null,
+      lastProgressDate: now,
+      progressMetadata: { uniqueDays: [] }  // Add this line
+    };
 
     await questRef.set(quest);
     generatedQuests.push({ id: questRef.id, ...quest });
@@ -3547,6 +3595,119 @@ router.get("/quests/active", verifyToken, async (req, res) => {
  * POST /journal/quests/progress
  * Update progress for a specific quest
  */
+// router.post("/quests/progress", verifyToken, async (req, res) => {
+//   try {
+//     const userId = req.uid;
+//     const { questType, progress, date, metadata } = req.body;
+
+//     if (!questType || progress === undefined) {
+//       return res.status(400).json({ error: "Missing required fields" });
+//     }
+
+//     const userRef = db.collection("users").doc(userId);
+//     const questsRef = userRef.collection("quests");
+    
+//     // Find active quest of this type
+//     const snapshot = await questsRef
+//       .where("status", "==", "active")
+//       .where("trackingType", "==", questType)
+//       .get();
+
+//     if (snapshot.empty) {
+//       return res.json({ message: "No active quest found for this type" });
+//     }
+
+//     const completedQuests = [];
+
+//     for (const doc of snapshot.docs) {
+//       const quest = doc.data();
+//       const questRef = questsRef.doc(doc.id);
+
+//       // Check if quest is expired
+//       const expiresAt = quest.expiresAt.toDate ? quest.expiresAt.toDate() : new Date(quest.expiresAt);
+//       if (expiresAt < new Date()) {
+//         continue;
+//       }
+
+//       // Update progress
+//       // const newProgress = Math.min(quest.progress + progress, quest.target);
+//       // const completed = newProgress >= quest.target;
+
+//       // await questRef.update({
+//       //   progress: newProgress,
+//       //   status: completed ? "completed" : "active",
+//       //   completedAt: completed ? new Date() : null
+//       // });
+//       // For daily quests, check if we need to reset progress for a new day
+// let currentProgress = quest.progress;
+// const today = new Date();
+// today.setHours(0, 0, 0, 0);
+
+// if (quest.type === 'daily' && quest.lastProgressDate) {
+//   const lastProgressDate = quest.lastProgressDate.toDate ? 
+//     quest.lastProgressDate.toDate() : new Date(quest.lastProgressDate);
+//   lastProgressDate.setHours(0, 0, 0, 0);
+  
+//   // Reset progress if it's a new day
+//   if (lastProgressDate.getTime() < today.getTime()) {
+//     currentProgress = 0;
+//   }
+// }
+
+// // Update progress
+// const newProgress = Math.min(currentProgress + progress, quest.target);
+// const completed = newProgress >= quest.target;
+
+// await questRef.update({
+//   progress: newProgress,
+//   lastProgressDate: new Date(), // Track when progress was last updated
+//   status: completed ? "completed" : "active",
+//   completedAt: completed ? new Date() : null
+// });
+
+
+//       // Award XP if completed
+//       if (completed && quest.status !== "completed") {
+//         const userDoc = await userRef.get();
+//         const userData = userDoc.exists ? userDoc.data() : {
+//           totalXP: 0,
+//           currentLevel: 1,
+//           questsCompleted: 0
+//         };
+
+//         const newTotalXP = (userData.totalXP || 0) + quest.reward.xp;
+//         const currentLevel = calculateLevel(newTotalXP);
+//         const leveledUp = currentLevel > (userData.currentLevel || 1);
+
+//         await userRef.set({
+//           totalXP: newTotalXP,
+//           currentLevel,
+//           questsCompleted: (userData.questsCompleted || 0) + 1
+//         }, { merge: true });
+
+//         completedQuests.push({
+//           id: doc.id,
+//           title: quest.title,
+//           reward: quest.reward,
+//           leveledUp,
+//           newLevel: leveledUp ? currentLevel : null
+//         });
+//       }
+//     }
+
+//     res.json({
+//       success: true,
+//       completedQuests
+//     });
+//   } catch (err) {
+//     console.error("Error updating quest progress:", err);
+//     res.status(500).json({ error: "Failed to update quest progress" });
+//   }
+// });
+/***
+ * POST /journal/quests/progress
+ * Update progress for a specific quest
+ */
 router.post("/quests/progress", verifyToken, async (req, res) => {
   try {
     const userId = req.uid;
@@ -3558,7 +3719,7 @@ router.post("/quests/progress", verifyToken, async (req, res) => {
 
     const userRef = db.collection("users").doc(userId);
     const questsRef = userRef.collection("quests");
-    
+
     // Find active quest of this type
     const snapshot = await questsRef
       .where("status", "==", "active")
@@ -3581,42 +3742,89 @@ router.post("/quests/progress", verifyToken, async (req, res) => {
         continue;
       }
 
-      // Update progress
-      // const newProgress = Math.min(quest.progress + progress, quest.target);
-      // const completed = newProgress >= quest.target;
+      // Determine current progress based on quest type
+      let currentProgress = quest.progress;
+      const now = new Date();
+      
+      // For daily quests, reset progress if it's a new day
+      if (quest.type === 'daily' && quest.lastProgressDate) {
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        
+        const lastProgressDate = quest.lastProgressDate.toDate ? 
+          quest.lastProgressDate.toDate() : new Date(quest.lastProgressDate);
+        lastProgressDate.setHours(0, 0, 0, 0);
+        
+        // Reset progress if it's a new day
+        if (lastProgressDate.getTime() < today.getTime()) {
+          currentProgress = 0;
+        }
+      }
+      
+      // For weekly quests that track unique days (journal_days, streak_days)
+      if (quest.type === 'weekly' && (quest.trackingType === 'journal_days' || quest.trackingType === 'streak_days')) {
+        const progressMetadata = quest.progressMetadata || { uniqueDays: [] };
+        const todayString = now.toISOString().split('T')[0]; // YYYY-MM-DD
+        
+        // Only increment if this day hasn't been counted yet
+        if (!progressMetadata.uniqueDays.includes(todayString)) {
+          progressMetadata.uniqueDays.push(todayString);
+          currentProgress = progressMetadata.uniqueDays.length;
+          
+          const completed = currentProgress >= quest.target;
+          
+          await questRef.update({
+            progress: currentProgress,
+            progressMetadata,
+            lastProgressDate: now,
+            status: completed ? "completed" : "active",
+            completedAt: completed ? now : null
+          });
+          
+          // Award XP if completed
+          if (completed && quest.status !== "completed") {
+            const userDoc = await userRef.get();
+            const userData = userDoc.exists ? userDoc.data() : {
+              totalXP: 0,
+              currentLevel: 1,
+              questsCompleted: 0
+            };
+            
+            const newTotalXP = (userData.totalXP || 0) + quest.reward.xp;
+            const currentLevel = calculateLevel(newTotalXP);
+            const leveledUp = currentLevel > (userData.currentLevel || 1);
+            
+            await userRef.set({
+              totalXP: newTotalXP,
+              currentLevel,
+              questsCompleted: (userData.questsCompleted || 0) + 1
+            }, { merge: true });
+            
+            completedQuests.push({
+              id: doc.id,
+              title: quest.title,
+              reward: quest.reward,
+              leveledUp,
+              newLevel: leveledUp ? currentLevel : null
+            });
+          }
+          continue; // Skip the normal progress update below
+        } else {
+          // Day already counted, don't update
+          continue;
+        }
+      }
 
-      // await questRef.update({
-      //   progress: newProgress,
-      //   status: completed ? "completed" : "active",
-      //   completedAt: completed ? new Date() : null
-      // });
-      // For daily quests, check if we need to reset progress for a new day
-let currentProgress = quest.progress;
-const today = new Date();
-today.setHours(0, 0, 0, 0);
+      // For all other quests (accumulative tracking)
+      const newProgress = Math.min(currentProgress + progress, quest.target);
+      const completed = newProgress >= quest.target;
 
-if (quest.type === 'daily' && quest.lastProgressDate) {
-  const lastProgressDate = quest.lastProgressDate.toDate ? 
-    quest.lastProgressDate.toDate() : new Date(quest.lastProgressDate);
-  lastProgressDate.setHours(0, 0, 0, 0);
-  
-  // Reset progress if it's a new day
-  if (lastProgressDate.getTime() < today.getTime()) {
-    currentProgress = 0;
-  }
-}
-
-// Update progress
-const newProgress = Math.min(currentProgress + progress, quest.target);
-const completed = newProgress >= quest.target;
-
-await questRef.update({
-  progress: newProgress,
-  lastProgressDate: new Date(), // Track when progress was last updated
-  status: completed ? "completed" : "active",
-  completedAt: completed ? new Date() : null
-});
-
+      await questRef.update({
+        progress: newProgress,
+        lastProgressDate: now,
+        status: completed ? "completed" : "active",
+        completedAt: completed ? now : null
+      });
 
       // Award XP if completed
       if (completed && quest.status !== "completed") {
@@ -3626,17 +3834,17 @@ await questRef.update({
           currentLevel: 1,
           questsCompleted: 0
         };
-
+        
         const newTotalXP = (userData.totalXP || 0) + quest.reward.xp;
         const currentLevel = calculateLevel(newTotalXP);
         const leveledUp = currentLevel > (userData.currentLevel || 1);
-
+        
         await userRef.set({
           totalXP: newTotalXP,
           currentLevel,
           questsCompleted: (userData.questsCompleted || 0) + 1
         }, { merge: true });
-
+        
         completedQuests.push({
           id: doc.id,
           title: quest.title,
