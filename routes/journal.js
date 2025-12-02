@@ -5,6 +5,8 @@ import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { zonedTimeToUtc, utcToZonedTime, format } from 'date-fns-tz';
+import { endOfDay, endOfWeek, endOfMonth, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
 const router = express.Router();
 
 // 🔐 Middleware
@@ -3690,8 +3692,7 @@ router.post("/user/update-timezone", verifyToken, async (req, res) => {
 //       return false;
 //   }
 // }
-const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
-const { endOfDay, endOfWeek, endOfMonth, startOfDay, startOfWeek, startOfMonth, isSameDay, isSameWeek, isSameMonth } = require('date-fns');
+
 
 /**
  * Calculate expiration date for quest period based on user's timezone
