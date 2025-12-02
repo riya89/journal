@@ -2129,18 +2129,47 @@ router.post("/assistant/speak-edge", verifyToken, async (req, res) => {
 // });
 
 
+// router.get("/user/xp", verifyToken, async (req, res) => {
+//   try {
+//     const userDoc = await db.collection("users").doc(req.uid).get();
+//     const userData = userDoc.data() || { totalXP: 0, currentLevel: 1 };
+    
+//     const xpForNextLevel = userData.currentLevel * 100;
+    
+//     res.json({
+//       totalXP: userData.totalXP,
+//       currentLevel: userData.currentLevel,
+//       xpForNextLevel,
+//       xpProgress: userData.totalXP,
+//       levelUpThreshold: xpForNextLevel
+//     });
+//   } catch (err) {
+//     console.error("Error fetching XP:", err);
+//     res.status(500).json({ error: "Failed to fetch XP" });
+//   }
+// });
 router.get("/user/xp", verifyToken, async (req, res) => {
   try {
     const userDoc = await db.collection("users").doc(req.uid).get();
-    const userData = userDoc.data() || { totalXP: 0, currentLevel: 1 };
+    const userData = userDoc.data() || { totalXP: 0 };
     
-    const xpForNextLevel = userData.currentLevel * 100;
+    const totalXP = userData.totalXP || 0;
+    
+    // Calculate current level from total XP
+    // Level 1: 0-99, Level 2: 100-199, Level 3: 200-299, etc.
+    const currentLevel = Math.floor(totalXP / 100) + 1;
+    
+    // XP needed for next level (cumulative)
+    const xpForNextLevel = currentLevel * 100;
+    
+    // Current XP progress (same as totalXP for cumulative display)
+    const xpProgress = totalXP;
     
     res.json({
-      totalXP: userData.totalXP,
-      currentLevel: userData.currentLevel,
-      xpForNextLevel,
-      xpProgress: userData.totalXP,
+      totalXP: totalXP,
+      currentLevel: currentLevel,
+      xpForNextLevel: xpForNextLevel,
+      xpProgress: xpProgress,
       levelUpThreshold: xpForNextLevel
     });
   } catch (err) {
