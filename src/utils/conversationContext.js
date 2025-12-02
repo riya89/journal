@@ -84,7 +84,7 @@ export class ConversationContext {
     try {
       // Load from backend API instead of Firebase directly
       const response = await fetch(
-        `http://localhost:8000/journal/assistant/context?sessionId=${sessionId}`,
+        `https://journal-6xfj.onrender.com/journal/assistant/context?sessionId=${sessionId}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

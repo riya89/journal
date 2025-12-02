@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
       // Fetch avatar from backend
       let avatarURL = null;
       try {
-        const response = await fetch('http://localhost:8000/journal/avatar', {
+        const response = await fetch('https://journal-6xfj.onrender.com/journal/avatar', {
           headers: {
             Authorization: `Bearer ${token}`,
           },

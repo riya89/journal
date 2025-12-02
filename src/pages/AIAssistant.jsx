@@ -128,7 +128,7 @@
 // // //   // 🤖 Call Raindrop AI backend (mock endpoint)
 // // //   const fetchAiReply = async (userText) => {
 // // //     try {
-// // //       const res = await fetch("http://localhost:8000/assistant/reply", {
+// // //       const res = await fetch("https://journal-6xfj.onrender.com/assistant/reply", {
 // // //         method: "POST",
 // // //         headers: { "Content-Type": "application/json" },
 // // //         body: JSON.stringify({ message: userText }),
@@ -146,7 +146,7 @@
 // // //     spawnParticles();
 
 // // //     try {
-// // //       const res = await fetch("http://localhost:8000/assistant/speak", {
+// // //       const res = await fetch("https://journal-6xfj.onrender.com/assistant/speak", {
 // // //         method: "POST",
 // // //         headers: { "Content-Type": "application/json" },
 // // //         body: JSON.stringify({ text }),
@@ -806,7 +806,7 @@ export default function AIAssistant({ theme }) {
       setMessages((prev) => [...prev, { sender: "ai", text: "", streaming: true }]);
 
       // 1️⃣ Fetch AI text reply WITH CONTEXT
-      const replyRes = await apiPost("http://localhost:8000/journal/assistant/reply-with-context", { 
+      const replyRes = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/reply-with-context", { 
         message: userText,
         sessionId: sessionId,
         includeHistory: true
@@ -884,7 +884,7 @@ export default function AIAssistant({ theme }) {
       // Fallback to old endpoint if new one fails
       try {
         console.log("🔄 Falling back to old endpoint...");
-        const fallbackRes = await apiPost("http://localhost:8000/journal/assistant/reply", { 
+        const fallbackRes = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/reply", { 
           message: userText 
         });
         const fallbackData = await fallbackRes.json();
@@ -929,7 +929,7 @@ export default function AIAssistant({ theme }) {
       
       // Try Michelle (Edge TTS) first
       try {
-        const edgeRes = await apiPost("http://localhost:8000/journal/assistant/speak-edge", { 
+        const edgeRes = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/speak-edge", { 
           text,
           voice: "en-US-MichelleNeural", // Michelle's voice
           rate: "0.80" // Slower speech rate for better listening
@@ -961,11 +961,11 @@ export default function AIAssistant({ theme }) {
       // Fallback to ElevenLabs if Michelle fails
       console.log("🔄 Falling back to premium voice...");
       
-      let res = await apiPost("http://localhost:8000/journal/assistant/speak-stream", { text });
+      let res = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/speak-stream", { text });
 
       if (!res.ok) {
         console.warn("⚠️ Premium voice streaming failed, trying regular endpoint");
-        res = await apiPost("http://localhost:8000/journal/assistant/speak", { text });
+        res = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/speak", { text });
       }
 
       if (!res.ok) {
@@ -1228,8 +1228,8 @@ export default function AIAssistant({ theme }) {
           <div className={`text-center py-12 opacity-60 ${
             theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#6c7a5b]"
           }`}>
-            <p className={`text-lg mb-2 ${theme === "dark" ? "font-spooky-header" : ""}`}>✨ Welcome to your AI companion</p>
-            <p className={`text-sm ${theme === "dark" ? "font-gothic-body" : ""}`}>Share what's on your mind, and I'll listen with care</p>
+            <p className={`text-lg mb-2 ${theme === "dark" ? "font-spooky-header" : ""}`}>✨ Welcome to Echo.</p>
+            <p className={`text-sm ${theme === "dark" ? "font-gothic-body" : ""}`}>Let your mind wander; I’ll stay with you.</p>
           </div>
         )}
         

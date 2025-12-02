@@ -27,8 +27,8 @@ export default function AffirmationCard({ theme }) {
       }
 
       const url = forceRefresh
-        ? 'http://localhost:8000/journal/affirmation/personalized?forceRefresh=true'
-        : 'http://localhost:8000/journal/affirmation/personalized';
+        ? 'https://journal-6xfj.onrender.com/journal/affirmation/personalized?forceRefresh=true'
+        : 'https://journal-6xfj.onrender.com/journal/affirmation/personalized';
 
       const response = await apiGet(url);
 

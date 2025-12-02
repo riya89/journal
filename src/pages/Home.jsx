@@ -91,7 +91,7 @@
 // //   const fetchAvatar = async () => {
 // //     const token = localStorage.getItem("token");
 // //     if (!token) return;
-// //     const res = await fetch("http://localhost:8000/journal/avatar", {
+// //     const res = await fetch("https://journal-6xfj.onrender.com/journal/avatar", {
 // //       headers: { Authorization: `Bearer ${token}` },
 // //     });
 // //     const data = await res.json();
@@ -223,7 +223,7 @@ import StreakRecoveryModal from "../components/StreakRecoveryModal";
 import { apiGet } from "../utils/api";
 import { checkAndRotateQuests } from "../utils/questExpiration";
 
-export default function Home({ user, theme, setTheme }) {
+export default function Home({ user, theme }) {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -273,7 +273,7 @@ export default function Home({ user, theme, setTheme }) {
         }
 
         // Fetch recovery message from backend
-        const response = await apiGet('http://localhost:8000/journal/streak/recovery-message');
+        const response = await apiGet('https://journal-6xfj.onrender.com/journal/streak/recovery-message');
         
         if (response.ok) {
           const data = await response.json();
@@ -369,7 +369,6 @@ export default function Home({ user, theme, setTheme }) {
       {/* 🕰 Header */}
       <Header
         theme={theme}
-        setTheme={setTheme}
         user={user}
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
@@ -419,7 +418,7 @@ export default function Home({ user, theme, setTheme }) {
       theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#7A916C]"
     }`}
   >
-    AI Friend
+    Companion
   </p>
 </div>
 

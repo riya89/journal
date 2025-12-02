@@ -22,7 +22,7 @@ export default function QuestPanel({ theme, userId, compact = false }) {
     try {
       setLoading(true);
       // Fetch all quests (including completed ones for today)
-      const response = await apiGet(`http://localhost:8000/journal/quests/all?uid=${userId}`);
+      const response = await apiGet(`https://journal-6xfj.onrender.com/journal/quests/all?uid=${userId}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch quests');

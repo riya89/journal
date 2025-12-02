@@ -26,7 +26,7 @@
 //       if (!token) return;
 
 //       try {
-//         const res = await fetch("http://localhost:8000/journal/dates/all", {
+//         const res = await fetch("https://journal-6xfj.onrender.com/journal/dates/all", {
 //           headers: { Authorization: `Bearer ${token}` },
 //         });
 //         const data = await res.json();
@@ -66,7 +66,7 @@ export default function Layout({ theme, onCardClick, selectedMonth, selectedYear
       if (!token) return;
 
       try {
-        const res = await apiGet("http://localhost:8000/journal/dates/all");
+        const res = await apiGet("https://journal-6xfj.onrender.com/journal/dates/all");
         const data = await res.json();
         setJournalDates(data.dates || []);
       } catch (err) {

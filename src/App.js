@@ -71,7 +71,7 @@
 // //     const fetchAvatar = async () => {
 // //       try {
 // //         const token = await user.getIdToken();
-// //         const res = await fetch("http://localhost:8000/journal/avatar", {
+// //         const res = await fetch("https://journal-6xfj.onrender.com/journal/avatar", {
 // //           headers: { Authorization: `Bearer ${token}` },
 // //         });
 // //         const data = await res.json();
@@ -94,7 +94,7 @@
 // //   const handleAvatarSelect = async (url) => {
 // //     try {
 // //       const token = await user.getIdToken();
-// //       await fetch("http://localhost:8000/journal/avatar", {
+// //       await fetch("https://journal-6xfj.onrender.com/journal/avatar", {
 // //         method: "POST",
 // //         headers: {
 // //           "Content-Type": "application/json",
@@ -169,7 +169,7 @@
 //         const token = localStorage.getItem("token");
 //         if (!token) return;
 
-//         const res = await fetch("http://localhost:8000/journal/avatar", {
+//         const res = await fetch("https://journal-6xfj.onrender.com/journal/avatar", {
 //           headers: { Authorization: `Bearer ${token}` },
 //         });
 //         const data = await res.json();
@@ -197,7 +197,7 @@
 //   const handleAvatarSelect = async (url) => {
 //     try {
 //       const token = localStorage.getItem("token");
-//       const res = await fetch("http://localhost:8000/journal/avatar", {
+//       const res = await fetch("https://journal-6xfj.onrender.com/journal/avatar", {
 //         method: "POST",
 //         headers: {
 //           "Content-Type": "application/json",
@@ -281,17 +281,13 @@ import UserManual from "./pages/UserManual";
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const theme = "dark"; // Always dark theme
 
-  // Sync theme with DOM
+  // Set dark theme on mount
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    document.body.dataset.theme = theme;
-  }, [theme]);
+    document.documentElement.classList.add("dark");
+    document.body.dataset.theme = "dark";
+  }, []);
 
   if (loading) {
     return (
@@ -302,14 +298,14 @@ function AppContent() {
   }
 
   if (!user) {
-    return <Login theme={theme} setTheme={setTheme} />;
+    return <Login theme={theme} />;
   }
 
   return (
     <Routes>
       <Route
         path="/"
-        element={<Home user={user} theme={theme} setTheme={setTheme} />}
+        element={<Home user={user} theme={theme} />}
       />
       <Route 
         path="/growth-garden" 
@@ -318,7 +314,7 @@ function AppContent() {
       <Route path="/ai-assistant" element={<AIAssistant theme={theme} />} />
       <Route
         path="/mood-dashboard"
-        element={<MoodDashboard user={user} theme={theme} setTheme={setTheme} />}
+        element={<MoodDashboard user={user} theme={theme} />}
       />
       <Route
         path="/monthly-planner"

@@ -25,7 +25,7 @@ export default function XPBar({ theme }) {
   const fetchXPData = async () => {
     try {
       setLoading(true);
-      const response = await apiGet('http://localhost:8000/journal/user/xp');
+      const response = await apiGet('https://journal-6xfj.onrender.com/journal/user/xp');
       
       if (!response.ok) {
         throw new Error('Failed to fetch XP data');

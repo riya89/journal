@@ -24,7 +24,7 @@ export default function TemplatesModal({
   const fetchTemplates = async () => {
     setIsLoading(true);
     try {
-      const response = await apiGet("http://localhost:8000/journal/planner/templates");
+      const response = await apiGet("https://journal-6xfj.onrender.com/journal/planner/templates");
 
       if (!response.ok) {
         throw new Error("Failed to fetch templates");

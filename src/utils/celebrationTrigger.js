@@ -8,7 +8,7 @@ import { apiGet } from './api';
 export const checkCelebrationTrigger = async (date) => {
   try {
     const response = await apiGet(
-      `http://localhost:8000/journal/planner/daily-status?date=${date}`
+      `https://journal-6xfj.onrender.com/journal/planner/daily-status?date=${date}`
     );
     
     if (!response.ok) {

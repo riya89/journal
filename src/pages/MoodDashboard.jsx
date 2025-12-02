@@ -155,7 +155,7 @@
 //   const [newBadge, setNewBadge] = useState(null);
 // const [streaks, setStreaks] = useState({ currentStreak: 0, longestStreak: 0, totalEntries: 0 });
 
-//   const BASE = "http://localhost:8000/raindrop";
+//   const BASE = "https://journal-6xfj.onrender.com/raindrop";
 
 //   useEffect(() => {
 //     if (!user) return;
@@ -437,7 +437,7 @@ export default function MoodDashboard({ user, theme }) {
   });
   const [earnedBadges, setEarnedBadges] = useState([]);
 
-  const BASE = "http://localhost:8000/raindrop";
+  const BASE = "https://journal-6xfj.onrender.com/raindrop";
   
 
   // ---------- FETCH DATA ----------
@@ -479,7 +479,7 @@ export default function MoodDashboard({ user, theme }) {
       });
 
     // Fetch earned badges for gamification
-    apiGet('http://localhost:8000/journal/user/stats')
+    apiGet('https://journal-6xfj.onrender.com/journal/user/stats')
       .then((r) => r.json())
       .then((d) => {
         setEarnedBadges(d.earnedBadges || []);
@@ -664,7 +664,7 @@ export default function MoodDashboard({ user, theme }) {
             <h2 className={`text-lg font-semibold mb-4 text-center ${
               theme === "dark" ? "text-[#EBDDBF] font-spooky-header" : "text-[#6B7A59]"
             }`}>
-              Extended Mood History 📊
+              Mood History 
             </h2>
             <ExtendedMoodDashboard user={user} theme={theme} />
           </div>

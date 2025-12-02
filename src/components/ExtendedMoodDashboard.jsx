@@ -43,7 +43,7 @@ export default function ExtendedMoodDashboard({ user, theme }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const BASE = "http://localhost:8000/raindrop";
+  const BASE = "https://journal-6xfj.onrender.com/raindrop";
 
   useEffect(() => {
     if (!user) return;

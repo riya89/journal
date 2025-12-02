@@ -514,7 +514,7 @@
 // //   const handleAvatarPick = async (url) => {
 // //     try {
 // //       const token = localStorage.getItem("token");
-// //       await fetch("http://localhost:8000/journal/avatar", {
+// //       await fetch("https://journal-6xfj.onrender.com/journal/avatar", {
 // //         method: "POST",
 // //         headers: {
 // //           "Content-Type": "application/json",
@@ -616,7 +616,7 @@
 // //     try {
 // //       setLoading(true);
 // //       const token = localStorage.getItem("token");
-// //       const res = await fetch("http://localhost:8000/journal/avatar", {
+// //       const res = await fetch("https://journal-6xfj.onrender.com/journal/avatar", {
 // //         method: "POST",
 // //         headers: {
 // //           "Content-Type": "application/json",
@@ -666,7 +666,7 @@
 //     try {
 //       setLoading(true);
 //       const token = localStorage.getItem("token");
-//       const res = await fetch("http://localhost:8000/journal/avatar", {
+//       const res = await fetch("https://journal-6xfj.onrender.com/journal/avatar", {
 //         method: "POST",
 //         headers: {
 //           "Content-Type": "application/json",
@@ -812,7 +812,7 @@ import { useNavigate } from "react-router-dom";
 import { apiPost } from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
 
-export default function Header({ theme, setTheme, user, onLogout, selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }) {
+export default function Header({ theme, user, onLogout, selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }) {
   const { logout, updateUser } = useAuth();
   const navigate = useNavigate();
   const [time, setTime] = useState("");
@@ -894,28 +894,14 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
           </button>
 
           <button
-            onClick={() => {
-              const next = theme === "dark" ? "light" : "dark";
-              setTheme(next);
-              localStorage.setItem("theme", next);
-              document.body.dataset.theme = next;
-              if (next === "dark") {
-                document.documentElement.classList.add("dark");
-              } else {
-                document.documentElement.classList.remove("dark");
-              }
-            }}
-            className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 transition-all hover:scale-110"
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
-
-          <button
-            className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 relative"
+            className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 relative transition-all hover:scale-110"
             onClick={() => setMenuOpen((p) => !p)}
+            title="Settings"
           >
-            ⚙️
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
           </button>
 
           {menuOpen && (
@@ -964,28 +950,14 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
             </button>
 
             <button
-              onClick={() => {
-                const next = theme === "dark" ? "light" : "dark";
-                setTheme(next);
-                localStorage.setItem("theme", next);
-                document.body.dataset.theme = next;
-                if (next === "dark") {
-                  document.documentElement.classList.add("dark");
-                } else {
-                  document.documentElement.classList.remove("dark");
-                }
-              }}
-              className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 transition-all"
-              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {theme === "dark" ? "☀️" : "🌙"}
-            </button>
-
-            <button
-              className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 relative"
+              className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 relative transition-all hover:scale-110"
               onClick={() => setMenuOpen((p) => !p)}
+              title="Settings"
             >
-              ⚙️
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
             </button>
 
             {menuOpen && (
@@ -1086,7 +1058,7 @@ function ProfileModal({ user, theme, logout, onClose, updateUser }) {
   const handleAvatarPick = async (url) => {
     try {
       setLoading(true);
-      const res = await apiPost("http://localhost:8000/journal/avatar", { avatarURL: url });
+      const res = await apiPost("https://journal-6xfj.onrender.com/journal/avatar", { avatarURL: url });
 
       const data = await res.json();
       if (data.success) {

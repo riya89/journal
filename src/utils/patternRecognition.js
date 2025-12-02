@@ -5,7 +5,7 @@
 
 import { getAuth } from 'firebase/auth';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://journal-6xfj.onrender.com';
 
 /**
  * Analyze conversation patterns for the current user

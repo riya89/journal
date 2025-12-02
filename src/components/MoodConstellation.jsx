@@ -11,7 +11,7 @@ export default function MoodConstellation({ user, theme }) {
   const animationFrameRef = useRef(null);
   const shootingStarsRef = useRef([]);
 
-  const BASE = "http://localhost:8000/raindrop";
+  const BASE = "https://journal-6xfj.onrender.com/raindrop";
 
   // Load mood data for last 90 days
   useEffect(() => {

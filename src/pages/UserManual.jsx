@@ -32,7 +32,7 @@ export default function UserManual({ theme }) {
             Your guide to {theme === 'dark' ? 'Echo' : 'Opal'}
           </p>
           <p className={`text-sm text-[#6c7a5b]/70 dark:text-[#EBDDBF]/70 italic mt-2 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-            A quiet space to understand yourself — one thought, one page, one day at a time.
+            A quiet space where your thoughts can breathe in the dark.
           </p>
         </div>
 
@@ -52,7 +52,8 @@ export default function UserManual({ theme }) {
                 Home Page
               </h3>
               <p className={`text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                Click on any date in the calendar to open your daily page. Write freely, note your mood, and build your streaks.
+                Open any date and write what stays on your mind.
+Let your words settle and your streaks grow naturally.
               </p>
             </div>
 
@@ -65,7 +66,8 @@ export default function UserManual({ theme }) {
                 Monthly Planner
               </h3>
               <p className={`text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                Create small plans or long-term goals. Organize by category, set gentle reminders, and celebrate completions.
+                Plan without pressure.
+Set reminders, create small goals, and finish what feels right.
               </p>
             </div>
 
@@ -75,10 +77,11 @@ export default function UserManual({ theme }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
               <h3 className={`text-xl font-semibold text-[#6c7a5b] dark:text-[#EBDDBF] mb-2 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                AI Companion
+                 Companion
               </h3>
               <p className={`text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                Chat when you need clarity or kindness. Get reflections, suggestions, or simple affirmations.
+                When thoughts get heavy, speak to Echo.
+It listens softly, offering calm and clarity when you need it most.
               </p>
             </div>
 
@@ -91,7 +94,8 @@ export default function UserManual({ theme }) {
                 Mood Dashboard
               </h3>
               <p className={`text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                Watch your moods form patterns over time. Earn XP, complete quests, and unlock milestones.
+                Watch your moods take shape over time.
+Earn XP, complete quests, and notice your steady rhythm.
               </p>
             </div>
 
@@ -104,7 +108,8 @@ export default function UserManual({ theme }) {
                 Gratitude Jar
               </h3>
               <p className={`text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                Add things that made you smile today. When you need a lift, open your jar and read a few back.
+                Add moments that bring light.
+Revisit them whenever the world feels too quiet.
               </p>
             </div>
 
@@ -117,7 +122,8 @@ export default function UserManual({ theme }) {
                 Time Capsule
               </h3>
               <p className={`text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                Write a note to your future self. Choose when to open it and see how much you've grown.
+                Write to your future self or the version of you who’s already at peace.
+Your words will wait until it’s time to return.
               </p>
             </div>
           </div>
@@ -137,25 +143,24 @@ export default function UserManual({ theme }) {
             <div className={`flex gap-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               <span className="text-[#7A916C] dark:text-[#d4a574] font-bold">•</span>
               <p className="text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80">
-                <strong>Be consistent.</strong> A few words each day matter more than perfection.
+                <strong>Be consistent.</strong> A few honest words each day keep your rhythm alive. </p>
+            </div>
+            <div className={`flex gap-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+              <span className="text-[#7A916C] dark:text-[#d4a574] font-bold">•</span>
+              <p className="text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80">
+                <strong>Explore freely.</strong> Journal, plan, or whisper your gratitude, follow what feels right.
               </p>
             </div>
             <div className={`flex gap-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               <span className="text-[#7A916C] dark:text-[#d4a574] font-bold">•</span>
               <p className="text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80">
-                <strong>Explore freely.</strong> Try journaling, planning, and gratitude — find what feels right.
+                <strong>Track gently.</strong> Your mood dashboard isn't about numbers, it's about awareness.
               </p>
             </div>
             <div className={`flex gap-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               <span className="text-[#7A916C] dark:text-[#d4a574] font-bold">•</span>
               <p className="text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80">
-                <strong>Track gently.</strong> Your mood dashboard isn't about numbers — it's about awareness.
-              </p>
-            </div>
-            <div className={`flex gap-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-              <span className="text-[#7A916C] dark:text-[#d4a574] font-bold">•</span>
-              <p className="text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80">
-                <strong>Use support.</strong> Talk to your AI companion when you need a calm moment.
+                <strong>Use support.</strong> Speak to Echo when thoughts feel heavy.
               </p>
             </div>
             <div className={`flex gap-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
@@ -173,7 +178,7 @@ export default function UserManual({ theme }) {
             <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
           </svg>
           <p className={`text-sm text-[#6c7a5b]/70 dark:text-[#EBDDBF]/70 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-            Made for your wellbeing
+            Made with calm, for the nights you choose to stay with yourself. 
           </p>
         </div>
       </div>

@@ -25,7 +25,7 @@ export default function PostJournalCheckModal({ date, onClose, theme, user }) {
     setLoading(true);
     try {
       const response = await apiGet(
-        `http://localhost:8000/journal/post-save-check?uid=${user.uid}&date=${date}`
+        `https://journal-6xfj.onrender.com/journal/post-save-check?uid=${user.uid}&date=${date}`
       );
       const data = await response.json();
 
@@ -71,7 +71,7 @@ export default function PostJournalCheckModal({ date, onClose, theme, user }) {
   const saveAndClose = async () => {
     setSaving(true);
     try {
-      await apiPost("http://localhost:8000/journal/quick-complete-tasks", {
+      await apiPost("https://journal-6xfj.onrender.com/journal/quick-complete-tasks", {
         uid: user.uid,
         date,
         taskIds: selectedTasks

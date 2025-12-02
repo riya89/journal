@@ -22,7 +22,7 @@
 // // //     setLoading(true);
 // // //     const token = localStorage.getItem("token");
 // // //     try {
-// // //       const res = await fetch(`http://localhost:8000/journal/${selectedDate}`, {
+// // //       const res = await fetch(`https://journal-6xfj.onrender.com/journal/${selectedDate}`, {
 // // //         headers: { Authorization: `Bearer ${token}` },
 // // //       });
 // // //       const data = await res.json();
@@ -46,7 +46,7 @@
 
 // // //   const fetchPrompts = async () => {
 // // //     try {
-// // //       const res = await fetch("http://localhost:8000/prompts/daily");
+// // //       const res = await fetch("https://journal-6xfj.onrender.com/prompts/daily");
 // // //       const data = await res.json();
 // // //       setPrompts(data.prompts || []);
 // // //     } catch {
@@ -65,7 +65,7 @@
 // // //     const token = localStorage.getItem("token");
 
 // // //     try {
-// // //       const res = await fetch("http://localhost:8000/journal/add", {
+// // //       const res = await fetch("https://journal-6xfj.onrender.com/journal/add", {
 // // //         method: "POST",
 // // //         headers: {
 // // //           "Content-Type": "application/json",
@@ -250,7 +250,7 @@
 // //     setLoading(true);
 // //     const token = localStorage.getItem("token");
 // //     try {
-// //       const res = await fetch(`http://localhost:8000/journal/${selectedDate}`, {
+// //       const res = await fetch(`https://journal-6xfj.onrender.com/journal/${selectedDate}`, {
 // //         headers: { Authorization: `Bearer ${token}` },
 // //       });
 // //       const data = await res.json();
@@ -278,7 +278,7 @@
 // //     const token = localStorage.getItem("token");
 
 // //     try {
-// //       const res = await fetch("http://localhost:8000/journal/add", {
+// //       const res = await fetch("https://journal-6xfj.onrender.com/journal/add", {
 // //         method: "POST",
 // //         headers: {
 // //           "Content-Type": "application/json",
@@ -489,7 +489,7 @@
 //     setLoading(true);
 //     const token = localStorage.getItem("token");
 //     try {
-//       const res = await fetch(`http://localhost:8000/journal/${selectedDate}`, {
+//       const res = await fetch(`https://journal-6xfj.onrender.com/journal/${selectedDate}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 //       const data = await res.json();
@@ -515,7 +515,7 @@
 //     setSaving(true);
 //     const token = localStorage.getItem("token");
 //     try {
-//       const res = await fetch("http://localhost:8000/journal/add", {
+//       const res = await fetch("https://journal-6xfj.onrender.com/journal/add", {
 //         method: "POST",
 //         headers: {
 //           "Content-Type": "application/json",
@@ -1072,7 +1072,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   const fetchJournal = async () => {
     setLoading(true);
     try {
-      const res = await apiGet(`http://localhost:8000/journal/${selectedDate}`);
+      const res = await apiGet(`https://journal-6xfj.onrender.com/journal/${selectedDate}`);
       const data = await res.json();
       if (data) {
         setTitle(data.title || "");
@@ -1129,7 +1129,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   //       }
   //     }
 
-  //     const res = await fetch("http://localhost:8000/journal/add", {
+  //     const res = await fetch("https://journal-6xfj.onrender.com/journal/add", {
   //       method: "POST",
   //       headers: {
   //         "Content-Type": "application/json",
@@ -1195,7 +1195,7 @@ const analyzeForTaskSuggestions = async (journalText, moodValue, date) => {
 
     console.log('🎯 Analyzing journal for task suggestions...');
 
-    const response = await apiPost("http://localhost:8000/journal/analyze-for-tasks", {
+    const response = await apiPost("https://journal-6xfj.onrender.com/journal/analyze-for-tasks", {
       journalText: journalText.trim(),
       mood: moodValue,
       date: date
@@ -1248,7 +1248,7 @@ const handleAddSuggestedTasks = async (selectedTasks, makeRecurring = false, tar
           recurrenceDays: [0, 1, 2, 3, 4, 5, 6], // All days
           yearMonth
         };
-        await apiPost("http://localhost:8000/journal/planner/task", taskData);
+        await apiPost("https://journal-6xfj.onrender.com/journal/planner/task", taskData);
       } else {
         // Create as one-time task for selected date (doesn't count in graph)
         const taskData = {
@@ -1260,7 +1260,7 @@ const handleAddSuggestedTasks = async (selectedTasks, makeRecurring = false, tar
           specificDate: taskDate,  // Only show on this specific date
           completed: false
         };
-        await apiPost("http://localhost:8000/journal/planner/task", taskData);
+        await apiPost("https://journal-6xfj.onrender.com/journal/planner/task", taskData);
       }
     }
 
@@ -1293,7 +1293,7 @@ const handleSave = async () => {
     }
 
     // 1️⃣ Save to your NODE backend
-    const res = await apiPost("http://localhost:8000/journal/add", {
+    const res = await apiPost("https://journal-6xfj.onrender.com/journal/add", {
       title,
       content,
       mood,
@@ -1306,7 +1306,7 @@ const handleSave = async () => {
     await res.json();
 
     // 2️⃣ Sync to RAINDROP analytics backend
-    await apiPost("http://localhost:8000/raindrop/sync", {
+    await apiPost("https://journal-6xfj.onrender.com/raindrop/sync", {
       uid: user.uid,
       date: selectedDate,
       title,
@@ -1545,7 +1545,7 @@ const handleSave = async () => {
                     : "bg-[#7A916C] text-white hover:bg-[#6c7a5b]"
                 } ${saving ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                {saving ? "Saving..." : saved ? "Saved ✅" : "Save Entry"}
+                {saving ? "Saving..." : saved ? "Saved" : "Save Entry"}
               </button>
             </div>
           )}

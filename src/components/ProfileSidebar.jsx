@@ -132,7 +132,7 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
           return;
         }
 
-        const res = await apiGet("http://localhost:8000/journal/affirmation/personalized");
+        const res = await apiGet("https://journal-6xfj.onrender.com/journal/affirmation/personalized");
 
         if (res.ok) {
           const data = await res.json();

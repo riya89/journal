@@ -969,7 +969,7 @@
 //       const token = localStorage.getItem("token");
 //       const yearMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`;
       
-//       const res = await fetch(`http://localhost:8000/journal/dates/month/${yearMonth}`, {
+//       const res = await fetch(`https://journal-6xfj.onrender.com/journal/dates/month/${yearMonth}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
       
@@ -1268,7 +1268,7 @@ export default function GrowthGarden({ theme = "light" }) {
     try {
       const yearMonth = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}`;
 
-      const res = await apiGet(`http://localhost:8000/journal/dates/month/${yearMonth}`);
+      const res = await apiGet(`https://journal-6xfj.onrender.com/journal/dates/month/${yearMonth}`);
 
       const data = await res.json();
 

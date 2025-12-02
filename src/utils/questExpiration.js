@@ -15,7 +15,7 @@ export const checkAndRotateQuests = async (userId) => {
   try {
     console.log('🔄 Checking for expired quests...');
     
-    const response = await apiPost('http://localhost:8000/journal/quests/check-expiration', {
+    const response = await apiPost('https://journal-6xfj.onrender.com/journal/quests/check-expiration', {
       uid: userId
     });
 
@@ -57,7 +57,7 @@ export const checkAndRotateQuests = async (userId) => {
  */
 export const getLastQuestGeneration = async (userId) => {
   try {
-    const response = await apiGet(`http://localhost:8000/journal/quests/last-generation?uid=${userId}`);
+    const response = await apiGet(`https://journal-6xfj.onrender.com/journal/quests/last-generation?uid=${userId}`);
 
     if (!response.ok) {
       throw new Error('Failed to get last quest generation');
@@ -84,7 +84,7 @@ export const getLastQuestGeneration = async (userId) => {
  */
 export const rotateQuestsForPeriod = async (userId, period) => {
   try {
-    const response = await apiPost('http://localhost:8000/journal/quests/rotate', {
+    const response = await apiPost('https://journal-6xfj.onrender.com/journal/quests/rotate', {
       uid: userId,
       period
     });
