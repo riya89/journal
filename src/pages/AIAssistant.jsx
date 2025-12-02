@@ -791,12 +791,10 @@ export default function AIAssistant({ theme }) {
   };
 
   // -------------------------------------------------
-  // 🔊 Streaming AI reply with SIMULTANEOUS text and voice
+  // 💬 Text-only AI reply (no voice)
   // -------------------------------------------------
   const sendToBackend = async (userText) => {
     try {
-      const token = await auth.currentUser.getIdToken();
-
       // Add user message to context
       if (conversationContextRef.current) {
         conversationContextRef.current.addMessage('user', userText);
@@ -806,7 +804,7 @@ export default function AIAssistant({ theme }) {
       const aiMessageIndex = messages.length + 1;
       setMessages((prev) => [...prev, { sender: "ai", text: "", streaming: true }]);
 
-      // 1️⃣ Fetch AI text reply WITH CONTEXT
+      // Fetch AI text reply WITH CONTEXT
       const replyRes = await apiPost(`${API_BASE_URL}/assistant/reply-with-context`, { 
         message: userText,
         sessionId: sessionId,
@@ -833,14 +831,7 @@ export default function AIAssistant({ theme }) {
         });
       }
 
-      // 2️⃣ Start voice generation IMMEDIATELY (parallel with text animation)
-      // Don't await - let it run in parallel
-      speakStreaming(fullText, token);
-
-      // 3️⃣ Wait 2 seconds for audio to start generating
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // 4️⃣ Now animate text word-by-word (should sync with audio)
+      // Animate text word-by-word
       const words = fullText.split(' ');
       
       // Show first word
@@ -868,8 +859,7 @@ export default function AIAssistant({ theme }) {
           return newMessages;
         });
 
-        // Slower animation to match speech pace - 1100ms per word
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       // Mark streaming as complete
@@ -882,40 +872,16 @@ export default function AIAssistant({ theme }) {
     } catch (e) {
       console.error("Backend error:", e);
 
-      // Fallback to old endpoint if new one fails
-      try {
-        console.log("🔄 Falling back to old endpoint...");
-        const fallbackRes = await apiPost(`${API_BASE_URL}/assistant/reply`, { 
-          message: userText 
-        });
-        const fallbackData = await fallbackRes.json();
-        const fallbackText = fallbackData.reply || "I'm here with you 🌿 I'm listening.";
-
-        setMessages((prev) => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1] = { sender: "ai", text: fallbackText, streaming: false };
-          return newMessages;
-        });
-
-        // Add to context
-        if (conversationContextRef.current) {
-          conversationContextRef.current.addMessage('assistant', fallbackText);
-        }
-
-        const token = await auth.currentUser.getIdToken();
-        speakStreaming(fallbackText, token);
-      } catch (fallbackError) {
-        console.error("Fallback also failed:", fallbackError);
-        
-        const fallback = "I'm here with you 🌿 I'm listening.";
-        setMessages((prev) => {
-          const newMessages = [...prev];
-          newMessages[newMessages.length - 1] = { sender: "ai", text: fallback, streaming: false };
-          return newMessages;
-        });
-        
-        const token = await auth.currentUser.getIdToken();
-        speakStreaming(fallback, token);
+      // Fallback
+      const fallback = "I'm here with you 🌿 I'm listening.";
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        newMessages[newMessages.length - 1] = { sender: "ai", text: fallback, streaming: false };
+        return newMessages;
+      });
+      
+      if (conversationContextRef.current) {
+        conversationContextRef.current.addMessage('assistant', fallback);
       }
     }
   };
@@ -923,83 +889,7 @@ export default function AIAssistant({ theme }) {
   // -------------------------------------------------
   // 🔈 Michelle TTS with ElevenLabs Fallback
   // -------------------------------------------------
-  const speakStreaming = async (text, token) => {
-    try {
-      setIsSpeaking(true);
-      console.log("🔊 Speaking:", text.substring(0, 50));
-      
-      // Wait for voices to load
-      let voices = speechSynthesis.getVoices();
-      
-      // If voices not loaded yet, wait for them
-      if (voices.length === 0) {
-        await new Promise(resolve => {
-          speechSynthesis.onvoiceschanged = () => {
-            voices = speechSynthesis.getVoices();
-            resolve();
-          };
-        });
-      }
-      
-      console.log("📋 Available voices:", voices.map(v => v.name));
-      
-      // Priority list of female voices for macOS/iOS
-      const femaleVoiceNames = [
-        'Samantha',           // macOS default female
-        'Victoria',           // macOS British female
-        'Karen',              // macOS Australian female  
-        'Moira',              // macOS Irish female
-        'Fiona',              // macOS Scottish female
-        'Google US English Female', // Chrome
-        'Microsoft Zira Desktop',   // Windows
-        'Microsoft Zira',           // Windows
-      ];
-      
-      // Find first available female voice
-      let femaleVoice = null;
-      for (const name of femaleVoiceNames) {
-        femaleVoice = voices.find(v => v.name === name);
-        if (femaleVoice) break;
-      }
-      
-      // Fallback: any voice with "female" in the name
-      if (!femaleVoice) {
-        femaleVoice = voices.find(v => 
-          v.name.toLowerCase().includes('female') ||
-          v.name.toLowerCase().includes('woman')
-        );
-      }
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      
-      if (femaleVoice) {
-        utterance.voice = femaleVoice;
-        console.log("✅ Using female voice:", femaleVoice.name);
-      } else {
-        console.warn("⚠️ No female voice found, using default");
-      }
-      
-      utterance.rate = 0.9;
-      utterance.pitch = 1.2; // Higher pitch for more feminine sound
-      utterance.volume = 1.0;
-      
-      utterance.onend = () => {
-        console.log("🔇 Speech finished");
-        setIsSpeaking(false);
-      };
-      
-      utterance.onerror = (e) => {
-        console.error("❌ Speech error:", e);
-        setIsSpeaking(false);
-      };
-      
-      speechSynthesis.speak(utterance);
-      
-    } catch (err) {
-      console.error("❌ Speech failed:", err);
-      setIsSpeaking(false);
-    }
-  };
+  // Voice functionality removed - text only
 
   // -------------------------------------------------
   // ✉️ Sending Message
