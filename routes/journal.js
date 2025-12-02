@@ -2016,60 +2016,76 @@ router.put("/planner/task/reorder", verifyToken, async (req, res) => {
 //   }
 // });
 // 7. Get all recurring task templates
+// 7. Get all recurring task templates
 router.get("/planner/templates", verifyToken, async (req, res) => {
   try {
     const userRef = db.collection("users").doc(req.uid);
+    const templates = [];
+    
+    console.log(`📋 Fetching templates for user: ${req.uid}`);
     
     // Try to get from taskTemplates collection first
     const templatesRef = userRef.collection("taskTemplates");
-    const snapshot = await templatesRef.orderBy("sortOrder", "asc").get();
+    const snapshot = await templatesRef.get();
     
-    const templates = [];
+    console.log(`Found ${snapshot.size} documents in taskTemplates collection`);
+    
     snapshot.forEach(doc => {
-      templates.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      console.log(`Template found: ${data.name} (${data.recurrenceType})`);
+      templates.push({ id: doc.id, ...data });
     });
     
-    // If no templates found, check if they're in planners collection (legacy)
-    if (templates.length === 0) {
-      console.log("No templates in taskTemplates, checking planners collection...");
-      
-      const plannersRef = userRef.collection("planners");
-      const plannersSnapshot = await plannersRef.get();
-      
-      const seenTemplates = new Set();
-      
-      plannersSnapshot.forEach(doc => {
-        const data = doc.data();
-        const tasks = data.tasks || [];
-        
-        tasks.forEach(task => {
-          if (task.isRecurring && task.recurrenceType && task.recurrenceType !== 'none') {
-            const uniqueKey = `${task.name}_${task.recurrenceType}`;
-            
-            if (!seenTemplates.has(uniqueKey)) {
-              seenTemplates.add(uniqueKey);
-              templates.push({
-                id: task.id,
-                name: task.name,
-                category: task.category,
-                recurrenceType: task.recurrenceType,
-                recurrenceDays: task.recurrenceDays || [],
-                timeEstimate: task.timeEstimate,
-                isRecurring: true,
-                createdAt: task.createdAt || new Date().toISOString()
-              });
-            }
-          }
-        });
-      });
-    }
+    // ALSO check planners collection for recurring tasks (they might be stored there)
+    console.log("Checking planners collection for recurring tasks...");
+    const plannersRef = userRef.collection("planners");
+    const plannersSnapshot = await plannersRef.get();
     
+    console.log(`Found ${plannersSnapshot.size} planner documents`);
+    
+    const seenTemplateIds = new Set(templates.map(t => t.id));
+    
+    plannersSnapshot.forEach(doc => {
+      const data = doc.data();
+      const tasks = data.tasks || [];
+      console.log(`Planner ${doc.id} has ${tasks.length} tasks`);
+      
+      tasks.forEach(task => {
+        // Check if this is a recurring task that's not already in templates
+        if (task.isRecurring && 
+            task.recurrenceType && 
+            task.recurrenceType !== 'none' && 
+            !seenTemplateIds.has(task.id)) {
+          console.log(`Found recurring task in planner: ${task.name} (${task.recurrenceType})`);
+          templates.push({
+            id: task.id,
+            name: task.name,
+            category: task.category,
+            recurrenceType: task.recurrenceType,
+            recurrenceDays: task.recurrenceDays || [],
+            timeEstimate: task.timeEstimate,
+            isRecurring: true,
+            sortOrder: task.sortOrder || 0,
+            createdAt: task.createdAt || new Date().toISOString(),
+            updatedAt: task.updatedAt || new Date().toISOString()
+          });
+          seenTemplateIds.add(task.id);
+        }
+      });
+    });
+    
+    // Sort by sortOrder
+    templates.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    
+    console.log(`✅ Returning ${templates.length} total templates`);
     res.json({ templates });
+    
   } catch (err) {
-    console.error("Error fetching templates:", err);
+    console.error("❌ Error fetching templates:", err);
     res.status(500).json({ error: "Failed to fetch templates" });
   }
 });
+
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
