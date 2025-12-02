@@ -4803,41 +4803,49 @@ router.post("/quests/check-completions", verifyToken, async (req, res) => {
 router.post("/quests/check-expiration", verifyToken, async (req, res) => {
   try {
     const userId = req.uid;
-    const now = new Date();
     const userRef = db.collection("users").doc(userId);
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    
+    // Get user's timezone
+    const userTimezone = userData.timezone || 'UTC';
+    const now = new Date();
+    
+    // Get current time in user's timezone for logging
+    const nowInUserTZ = utcToZonedTime(now, userTimezone);
+    console.log(`🕐 Checking expiration for user ${userId} at ${format(nowInUserTZ, 'yyyy-MM-dd HH:mm:ss zzz', { timeZone: userTimezone })}`);
+    
+    // Find expired quests
     const questsRef = userRef.collection("quests");
-
-    // Find all active quests
     const activeQuests = await questsRef
       .where("status", "==", "active")
       .get();
-
+    
     const expiredQuests = [];
-
-    // Check each quest for expiration
-    for (const doc of activeQuests.docs) {
+    const batch = db.batch();
+    
+    activeQuests.forEach(doc => {
       const quest = doc.data();
       const expiresAt = quest.expiresAt.toDate ? quest.expiresAt.toDate() : new Date(quest.expiresAt);
       
-      if (now > expiresAt) {
-        // Mark quest as expired
-        await questsRef.doc(doc.id).update({
+      // Check if quest has expired (expiresAt is in UTC)
+      if (expiresAt <= now) {
+        console.log(`⏰ Quest expired: ${quest.title} (expired at ${expiresAt.toISOString()})`);
+        batch.update(doc.ref, {
           status: 'expired',
           expiredAt: now
         });
-        
-        expiredQuests.push({
-          id: doc.id,
-          type: quest.type,
-          title: quest.title,
-          status: 'expired'
-        });
+        expiredQuests.push({ id: doc.id, ...quest });
       }
-    }
-
+    });
+    
+    await batch.commit();
+    
     // Generate new quests if needed
     const newQuests = await checkAndGenerateQuests(userId);
-
+    
+    console.log(`✅ Expired ${expiredQuests.length} quest(s), generated ${newQuests.length} new quest(s)`);
+    
     res.json({
       success: true,
       expiredQuests,
@@ -4849,6 +4857,55 @@ router.post("/quests/check-expiration", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to check quest expiration" });
   }
 });
+// router.post("/quests/check-expiration", verifyToken, async (req, res) => {
+//   try {
+//     const userId = req.uid;
+//     const now = new Date();
+//     const userRef = db.collection("users").doc(userId);
+//     const questsRef = userRef.collection("quests");
+
+//     // Find all active quests
+//     const activeQuests = await questsRef
+//       .where("status", "==", "active")
+//       .get();
+
+//     const expiredQuests = [];
+
+//     // Check each quest for expiration
+//     for (const doc of activeQuests.docs) {
+//       const quest = doc.data();
+//       const expiresAt = quest.expiresAt.toDate ? quest.expiresAt.toDate() : new Date(quest.expiresAt);
+      
+//       if (now > expiresAt) {
+//         // Mark quest as expired
+//         await questsRef.doc(doc.id).update({
+//           status: 'expired',
+//           expiredAt: now
+//         });
+        
+//         expiredQuests.push({
+//           id: doc.id,
+//           type: quest.type,
+//           title: quest.title,
+//           status: 'expired'
+//         });
+//       }
+//     }
+
+//     // Generate new quests if needed
+//     const newQuests = await checkAndGenerateQuests(userId);
+
+//     res.json({
+//       success: true,
+//       expiredQuests,
+//       newQuests,
+//       message: `Expired ${expiredQuests.length} quest(s) and generated ${newQuests.length} new quest(s)`
+//     });
+//   } catch (err) {
+//     console.error("Error checking quest expiration:", err);
+//     res.status(500).json({ error: "Failed to check quest expiration" });
+//   }
+// });
 
 /**
  * GET /journal/quests/last-generation
