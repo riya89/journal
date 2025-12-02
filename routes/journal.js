@@ -5440,10 +5440,43 @@ router.post("/user/badge/award", verifyToken, async (req, res) => {
  * GET /journal/streak/recovery-message
  * Get compassionate message for broken streak
  */
+// router.get("/streak/recovery-message", verifyToken, async (req, res) => {
+//   try {
+//     // Fetch streak data from Raindrop
+//     const streakResponse = await fetch(`${process.env.RAINDROP_URL}/analytics/streaks?uid=${req.uid}`);
+    
+//     if (!streakResponse.ok) {
+//       throw new Error('Failed to fetch streak data');
+//     }
+
+//     const streakData = await streakResponse.json();
+
+//     if (!streakData.streakBroken) {
+//       return res.json({ message: null });
+//     }
+
+//     const messages = {
+//       title: "Hey, are you okay? 💙",
+//       body: "We noticed you missed yesterday. Life happens, and that's completely okay.",
+//       encouragement: `Your ${streakData.previousStreak}-day streak was amazing! Ready to start fresh today?`,
+//       previousStreak: streakData.previousStreak
+//     };
+
+//     res.json(messages);
+//   } catch (err) {
+//     console.error("Error generating recovery message:", err);
+//     res.status(500).json({ error: "Failed to generate recovery message" });
+//   }
+// });
 router.get("/streak/recovery-message", verifyToken, async (req, res) => {
   try {
-    // Fetch streak data from Raindrop
-    const streakResponse = await fetch(`${process.env.RAINDROP_URL}/analytics/streaks?uid=${req.uid}`);
+    // Get user's timezone (you can get this from user profile or detect it)
+    const userTimezone = req.query.timezone || "Asia/Kolkata"; // Default to IST or get from user profile
+    
+    // Fetch streak data from Raindrop WITH timezone
+    const streakResponse = await fetch(
+      `${process.env.RAINDROP_URL}/analytics/streaks?uid=${req.uid}&timezone=${encodeURIComponent(userTimezone)}`
+    );
     
     if (!streakResponse.ok) {
       throw new Error('Failed to fetch streak data');
@@ -5468,6 +5501,7 @@ router.get("/streak/recovery-message", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to generate recovery message" });
   }
 });
+
 // ===========================================
 // 🕰️ TIME CAPSULE FEATURE
 // ===========================================
