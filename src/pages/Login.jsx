@@ -1,10 +1,9 @@
 import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../lib/firebase";
-import { Sun, Moon } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import WaterRippleEffect from "../components/WaterRippleEffect";
 import { AUTH_BASE_URL } from "../config/api";
+import logo from "../assets/dark_logo.png";
 
 export default function Login({ onLoginSuccess, theme }) {
   const { login } = useAuth();
@@ -74,6 +73,12 @@ export default function Login({ onLoginSuccess, theme }) {
           ? 'bg-[#2b241c]/60 border border-[#5b4a3d]/30'
           : 'bg-white/70 border border-[#7A916C]/20'
       }`}>
+        {/* Logo */}
+        <img 
+          src={logo} 
+          alt="Echo Logo" 
+          className="w-40 h-40 mx-auto mb-4 object-contain"
+        />
         <h1 className="text-6xl mb-4 text-[#EBDDBF] tracking-widest font-['Creepster',cursive]">
           Echo
         </h1>

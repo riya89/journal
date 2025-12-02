@@ -124,6 +124,16 @@ export default function JournalGrid({ theme, onCardClick, selectedMonth, selecte
   const ord = (n) => ({ 1: '1st', 2: '2nd', 3: '3rd' }[n] || `${n}th`);
   const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 
+  // Optimize click handler to prevent blocking UI
+  const handleCardClick = (dateStr, isFuture) => {
+    if (isFuture) return;
+    
+    // Defer the callback to next frame to prevent blocking
+    requestAnimationFrame(() => {
+      onCardClick(dateStr);
+    });
+  };
+
   return (
     <section className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 gap-2 sm:gap-3 md:gap-[8px] w-full max-w-[1200px] mx-auto px-3 sm:px-4 mb-12 sm:mb-16 md:mb-[80px]">
       {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -139,12 +149,13 @@ export default function JournalGrid({ theme, onCardClick, selectedMonth, selecte
         return (
           <div
             key={day}
-            onClick={() => !isFuture && onCardClick(dateStr)}
+            onClick={() => handleCardClick(dateStr, isFuture)}
             className={`bg-white dark:bg-[#151515] rounded-lg sm:rounded-[10px] shadow-soft flex flex-col w-full transition-all
               ${isFuture 
                 ? 'cursor-not-allowed' 
                 : 'cursor-pointer hover:-translate-y-[2px] hover:shadow-md'
               }`}
+            style={{ willChange: 'transform' }}
             title={isFuture ? "Future dates cannot be accessed" : "Click to open journal"}
           >
             {/* Image container with fixed aspect ratio */}
@@ -152,6 +163,8 @@ export default function JournalGrid({ theme, onCardClick, selectedMonth, selecte
               <img
                 src={arr[i % arr.length]}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
