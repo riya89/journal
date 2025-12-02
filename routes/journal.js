@@ -4505,5 +4505,38 @@ router.get("/gratitude/all", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch gratitudes" });
   }
 });
+// Delete gratitude entry
+router.delete("/gratitude/:gratitudeId", verifyToken, async (req, res) => {
+  try {
+    const { gratitudeId } = req.params;
+    
+    if (!gratitudeId) {
+      return res.status(400).json({ error: "Gratitude ID required" });
+    }
+
+    const gratitudeRef = db
+      .collection("users")
+      .doc(req.uid)
+      .collection("gratitudeEntries")
+      .doc(gratitudeId);
+
+    const doc = await gratitudeRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Gratitude not found" });
+    }
+
+    await gratitudeRef.delete();
+
+    res.json({
+      success: true,
+      message: "Gratitude deleted successfully"
+    });
+  } catch (err) {
+    console.error("Error deleting gratitude:", err);
+    res.status(500).json({ error: "Failed to delete gratitude" });
+  }
+});
+
 export default router;
 
