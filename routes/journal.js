@@ -3007,26 +3007,19 @@ router.get("/quests/all", verifyToken, async (req, res) => {
     const userId = req.uid;
     const now = new Date();
     
-    // Check and generate new quests if needed
     await checkAndGenerateQuests(userId);
     
-    // Get ALL quests (both active and completed) that haven't expired
     const userRef = db.collection("users").doc(userId);
     const questsRef = userRef.collection("quests");
-    
-    // Fetch quests that are either:
-    // 1. Active and not expired
-    // 2. Completed today/this week/this month (depending on type)
-    const snapshot = await questsRef
-      .where("expiresAt", ">", now)
-      .get();
+    const snapshot = await questsRef.where("expiresAt", ">", now).get();
     
     const quests = { daily: [], weekly: [], monthly: [] };
+    const seenTitles = { daily: new Set(), weekly: new Set(), monthly: new Set() };
     
     snapshot.forEach(doc => {
       const quest = { id: doc.id, ...doc.data() };
       
-      // Convert Firestore Timestamp to ISO string
+      // Convert timestamps
       if (quest.createdAt && quest.createdAt.toDate) {
         quest.createdAt = quest.createdAt.toDate().toISOString();
       }
@@ -3037,9 +3030,11 @@ router.get("/quests/all", verifyToken, async (req, res) => {
         quest.completedAt = quest.completedAt.toDate().toISOString();
       }
       
-      // Include both active and completed quests
-      if (quest.status === "active" || quest.status === "completed") {
+      // Only include if we haven't seen this title in this period yet
+      if ((quest.status === "active" || quest.status === "completed") && 
+          !seenTitles[quest.type].has(quest.title)) {
         quests[quest.type].push(quest);
+        seenTitles[quest.type].add(quest.title);
       }
     });
     
@@ -3049,6 +3044,54 @@ router.get("/quests/all", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch quests" });
   }
 });
+
+// router.get("/quests/all", verifyToken, async (req, res) => {
+//   try {
+//     const userId = req.uid;
+//     const now = new Date();
+    
+//     // Check and generate new quests if needed
+//     await checkAndGenerateQuests(userId);
+    
+//     // Get ALL quests (both active and completed) that haven't expired
+//     const userRef = db.collection("users").doc(userId);
+//     const questsRef = userRef.collection("quests");
+    
+//     // Fetch quests that are either:
+//     // 1. Active and not expired
+//     // 2. Completed today/this week/this month (depending on type)
+//     const snapshot = await questsRef
+//       .where("expiresAt", ">", now)
+//       .get();
+    
+//     const quests = { daily: [], weekly: [], monthly: [] };
+    
+//     snapshot.forEach(doc => {
+//       const quest = { id: doc.id, ...doc.data() };
+      
+//       // Convert Firestore Timestamp to ISO string
+//       if (quest.createdAt && quest.createdAt.toDate) {
+//         quest.createdAt = quest.createdAt.toDate().toISOString();
+//       }
+//       if (quest.expiresAt && quest.expiresAt.toDate) {
+//         quest.expiresAt = quest.expiresAt.toDate().toISOString();
+//       }
+//       if (quest.completedAt && quest.completedAt.toDate) {
+//         quest.completedAt = quest.completedAt.toDate().toISOString();
+//       }
+      
+//       // Include both active and completed quests
+//       if (quest.status === "active" || quest.status === "completed") {
+//         quests[quest.type].push(quest);
+//       }
+//     });
+    
+//     res.json(quests);
+//   } catch (err) {
+//     console.error("Error fetching all quests:", err);
+//     res.status(500).json({ error: "Failed to fetch quests" });
+//   }
+// });
 
 router.post("/quests/complete", verifyToken, async (req, res) => {
   try {
