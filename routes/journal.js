@@ -2016,7 +2016,7 @@ router.put("/planner/task/reorder", verifyToken, async (req, res) => {
 //   }
 // });
 // 7. Get all recurring task templates
-// 7. Get all recurring task templates
+// GET /planner/templates - Get all recurring task templates
 router.get("/planner/templates", verifyToken, async (req, res) => {
   try {
     const userRef = db.collection("users").doc(req.uid);
@@ -2024,7 +2024,7 @@ router.get("/planner/templates", verifyToken, async (req, res) => {
     
     console.log(`📋 Fetching templates for user: ${req.uid}`);
     
-    // Try to get from taskTemplates collection first
+    // 1. Check taskTemplates collection first
     const templatesRef = userRef.collection("taskTemplates");
     const snapshot = await templatesRef.get();
     
@@ -2036,7 +2036,7 @@ router.get("/planner/templates", verifyToken, async (req, res) => {
       templates.push({ id: doc.id, ...data });
     });
     
-    // ALSO check planners collection for recurring tasks (they might be stored there)
+    // 2. ALSO check planners collection for recurring tasks
     console.log("Checking planners collection for recurring tasks...");
     const plannersRef = userRef.collection("planners");
     const plannersSnapshot = await plannersRef.get();
