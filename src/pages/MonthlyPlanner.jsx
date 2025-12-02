@@ -5,6 +5,7 @@ import DopamineGraph from "../components/DopamineGraph";
 import TaskModal from "../components/TaskModal";
 import TemplatesModal from "../components/TemplatesModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import ErrorBoundary from "../components/ErrorBoundary";
 import {
   DndContext,
   closestCenter,
@@ -52,36 +53,43 @@ function SortableTaskRow({ task, theme, daysInMonth, yearMonth, completions, exc
 
   // Helper function to check if task applies to a specific date
   const taskAppliesOnDate = (date) => {
-    if (!task.isRecurring) {
-      // If task has a specific date, only show on that date
-      if (task.specificDate) {
-        return task.specificDate === date;
+    try {
+      if (!task || !date) return false;
+      
+      if (!task.isRecurring) {
+        // If task has a specific date, only show on that date
+        if (task.specificDate) {
+          return task.specificDate === date;
+        }
+        // Otherwise, non-recurring tasks apply to all dates in their month
+        return true;
       }
-      // Otherwise, non-recurring tasks apply to all dates in their month
-      return true;
-    }
-    
-    // For recurring tasks, check applicableDates array
-    if (!task.applicableDates || !Array.isArray(task.applicableDates)) {
-      return false;
-    }
-    
-    // Check if date is in applicableDates
-    if (!task.applicableDates.includes(date)) {
-      return false;
-    }
-    
-    // Check for exceptions
-    const taskExceptions = exceptions?.[task.id];
-    if (taskExceptions && taskExceptions[date]) {
-      const exception = taskExceptions[date];
-      // If exception marks this occurrence as deleted, don't show it
-      if (exception.isDeleted) {
+      
+      // For recurring tasks, check applicableDates array
+      if (!task.applicableDates || !Array.isArray(task.applicableDates)) {
         return false;
       }
+      
+      // Check if date is in applicableDates
+      if (!task.applicableDates.includes(date)) {
+        return false;
+      }
+      
+      // Check for exceptions
+      const taskExceptions = exceptions?.[task.id];
+      if (taskExceptions && taskExceptions[date]) {
+        const exception = taskExceptions[date];
+        // If exception marks this occurrence as deleted, don't show it
+        if (exception.isDeleted) {
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error in taskAppliesOnDate:', error, { task, date });
+      return false;
     }
-    
-    return true;
   };
 
   return (
@@ -268,13 +276,36 @@ export default function MonthlyPlanner({ theme }) {
   const fetchPlannerData = useCallback(async () => {
     try {
       const res = await apiGet(`${API_BASE_URL}/planner/${yearMonth}`);
+      
+      if (!res.ok) {
+        throw new Error(`Failed to fetch planner: ${res.status} ${res.statusText}`);
+      }
+      
       const data = await res.json();
       console.log("📋 Fetched planner data:", data);
-      setTasks(data.tasks || []);
+      
+      // Ensure tasks is always an array
+      const tasksArray = Array.isArray(data.tasks) ? data.tasks : [];
+      
+      // Validate each task has required properties
+      const validTasks = tasksArray.filter(task => {
+        if (!task || !task.id || !task.name) {
+          console.warn('Invalid task found:', task);
+          return false;
+        }
+        return true;
+      });
+      
+      setTasks(validTasks);
       setCompletions(data.completions || {});
       setExceptions(data.exceptions || {});
     } catch (err) {
       console.error("Failed to fetch planner:", err);
+      showToast("Failed to load planner data", "error");
+      // Set empty state on error
+      setTasks([]);
+      setCompletions({});
+      setExceptions({});
     }
   }, [yearMonth]);
 
@@ -536,6 +567,7 @@ export default function MonthlyPlanner({ theme }) {
   };
 
   return (
+    <ErrorBoundary>
     <div
       className={`min-h-screen p-8 transition-colors duration-500 ${
         theme === "dark" ? "bg-[#1a1410] text-[#EBDDBF]" : "bg-[#FFFBEA] text-[#7A916C]"
@@ -655,18 +687,18 @@ export default function MonthlyPlanner({ theme }) {
             </thead>
             <tbody className="group">
               <SortableContext
-                items={tasks.map((t) => t.id)}
+                items={tasks.map((t) => t?.id).filter(Boolean)}
                 strategy={verticalListSortingStrategy}
               >
-                {tasks.map((task) => (
+                {tasks.filter(task => task && task.id).map((task) => (
                   <SortableTaskRow
                     key={task.id}
                     task={task}
                     theme={theme}
                     daysInMonth={daysInMonth}
                     yearMonth={yearMonth}
-                    completions={completions}
-                    exceptions={exceptions}
+                    completions={completions || {}}
+                    exceptions={exceptions || {}}
                     handleToggleTask={handleToggleTask}
                     handleEditTask={handleEditTask}
                     handleDeleteTask={handleDeleteTask}
@@ -746,5 +778,6 @@ export default function MonthlyPlanner({ theme }) {
         />
       )}
     </div>
+    </ErrorBoundary>
   );
 }

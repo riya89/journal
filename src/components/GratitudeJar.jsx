@@ -126,30 +126,32 @@ const GratitudeJar = ({ theme }) => {
   }
 
   return (
-    <div className="gratitude-jar-container flex flex-col relative z-10 overflow-hidden" style={{ height: 'calc(100vh - 140px)' }}>
-      <div className="text-center pt-2 pb-2 px-6">
-        <h2 className={`text-xl font-bold mb-0.5 text-gray-800 dark:text-white ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
+    <div className="gratitude-jar-container flex flex-col relative z-10 h-full max-h-screen overflow-hidden">
+      <div className="text-center pt-4 pb-3 px-6 flex-shrink-0">
+        <h2 className={`text-2xl font-bold mb-1 text-gray-800 dark:text-white ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
           Gratitude Jar
         </h2>
-        <p className={`text-xs text-gray-600 dark:text-gray-400 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+        <p className={`text-sm text-gray-600 dark:text-gray-400 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
           Collect moments of gratitude and revisit them when you need a boost
         </p>
       </div>
 
       {/* Main Layout: Jar on Left, Gratitudes on Right */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 px-4 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 pb-6 overflow-hidden min-h-0">
         
         {/* Left Side: Jar Visual */}
         <div className="jar-visual-container bg-gradient-to-b from-[#EBDDBF]/20 to-[#d4a574]/20 
-                      dark:from-[#3a2e20] dark:to-[#2a1f15] rounded-2xl p-4 shadow-lg flex flex-col overflow-hidden">
+                      dark:from-[#3a2e20] dark:to-[#2a1f15] rounded-2xl p-6 shadow-lg flex flex-col min-h-0">
           <div className="flex-1 flex items-center justify-center min-h-0">
             <svg 
               viewBox="0 0 200 400" 
-              className="jar-svg w-full h-full"
+              className="jar-svg"
               style={{ 
                 filter: 'drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15))',
-                maxWidth: '260px',
-                maxHeight: '55vh'
+                width: '100%',
+                height: '100%',
+                maxWidth: '280px',
+                maxHeight: '500px'
               }}
               preserveAspectRatio="xMidYMid meet"
             >
@@ -315,23 +317,23 @@ const GratitudeJar = ({ theme }) => {
             </svg>
           </div>
           
-          <div className="text-center py-2">
-            <p className={`text-lg font-bold text-[#7A916C] dark:text-[#d4a574] mb-0.5 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+          <div className="text-center py-3 flex-shrink-0">
+            <p className={`text-xl font-bold text-[#7A916C] dark:text-[#d4a574] mb-1 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               {gratitudes.length} {gratitudes.length === 1 ? 'gratitude' : 'gratitudes'}
             </p>
-            <p className={`text-xs text-gray-600 dark:text-[#EBDDBF]/70 mb-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+            <p className={`text-sm text-gray-600 dark:text-[#EBDDBF]/70 mb-4 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               {fillPercentage.toFixed(0)}% full
             </p>
             
             {/* Action Buttons - Below jar */}
-            <div className="flex gap-2 justify-center">
+            <div className="flex gap-3 justify-center">
               <button
                 onClick={getRandomGratitude}
                 disabled={loadingRandom || gratitudes.length === 0}
-                className={`px-3 py-1.5 bg-[#6B7A59] dark:bg-[#5b4a3d] text-white text-xs rounded-lg 
+                className={`px-4 py-2 bg-[#6B7A59] dark:bg-[#5b4a3d] text-white text-sm rounded-lg 
                          hover:bg-[#5C6F4C] dark:hover:bg-[#6d5a4a] 
                          transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-                         flex items-center gap-1.5 shadow-md ${theme === 'dark' ? 'font-gothic-body' : ''}`}
+                         flex items-center gap-2 shadow-md ${theme === 'dark' ? 'font-gothic-body' : ''}`}
               >
                 {loadingRandom ? (
                   <>
@@ -340,45 +342,45 @@ const GratitudeJar = ({ theme }) => {
                   </>
                 ) : (
                   <>
-                    Random
+                    🎲 Random
                   </>
                 )}
               </button>
               <button
                 onClick={() => setShowAdd(true)}
-                className={`px-3 py-1.5 bg-[#7A916C] dark:bg-[#8b6f47] text-white text-xs rounded-lg 
+                className={`px-4 py-2 bg-[#7A916C] dark:bg-[#8b6f47] text-white text-sm rounded-lg 
                          hover:bg-[#6c7a5b] dark:hover:bg-[#9d7d52] 
-                         transition-colors flex items-center gap-1.5 shadow-md ${theme === 'dark' ? 'font-gothic-body' : ''}`}
+                         transition-colors flex items-center gap-2 shadow-md ${theme === 'dark' ? 'font-gothic-body' : ''}`}
               >
-                Add
+                ✨ Add
               </button>
             </div>
           </div>
         </div>
         
         {/* Right Side: Gratitude List */}
-        <div className="gratitude-list-section flex flex-col overflow-hidden">
+        <div className="gratitude-list-section flex flex-col min-h-0">
           {/* Recent Gratitudes List */}
           {gratitudes.length > 0 ? (
-            <div className="flex flex-col h-full overflow-hidden">
-              <h3 className={`text-lg font-semibold text-gray-800 dark:text-[#EBDDBF] mb-3 ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
+            <div className="flex flex-col h-full min-h-0">
+              <h3 className={`text-xl font-semibold text-gray-800 dark:text-[#EBDDBF] mb-4 flex-shrink-0 ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
                 Recent Gratitudes
               </h3>
-              <div className="space-y-2 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar min-h-0">
                 {gratitudes.slice(0, 10).map((gratitude) => (
                   <div
                     key={gratitude.gratitudeId}
-                    className="bg-white dark:bg-[#3a2e20] rounded-lg p-3 shadow-sm 
+                    className="bg-white dark:bg-[#3a2e20] rounded-lg p-4 shadow-sm 
                              border border-gray-200 dark:border-[#5b4a3d] hover:shadow-md 
-                             transition-shadow group"
+                             transition-shadow group flex-shrink-0"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="text-xl flex-shrink-0 opacity-60">🌙</div>
+                      <div className="text-2xl flex-shrink-0 opacity-70">🌙</div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm text-gray-800 dark:text-[#EBDDBF] mb-2 break-words ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+                        <p className={`text-base text-gray-800 dark:text-[#EBDDBF] mb-2 break-words ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                           {gratitude.gratitudeText}
                         </p>
-                        <p className={`text-xs text-gray-500 dark:text-[#EBDDBF]/60 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+                        <p className={`text-sm text-gray-500 dark:text-[#EBDDBF]/60 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                           {new Date(gratitude.date).toLocaleDateString()} • Mood: {gratitude.mood}/5
                         </p>
                       </div>
@@ -389,7 +391,7 @@ const GratitudeJar = ({ theme }) => {
                                  dark:hover:text-red-400 p-1"
                         title="Delete gratitude"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -399,20 +401,31 @@ const GratitudeJar = ({ theme }) => {
                 ))}
               </div>
               {gratitudes.length > 10 && (
-                <p className={`text-center text-sm text-gray-500 dark:text-[#EBDDBF]/60 mt-4 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+                <p className={`text-center text-sm text-gray-500 dark:text-[#EBDDBF]/60 mt-3 flex-shrink-0 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                   And {gratitudes.length - 10} more in your jar...
                 </p>
               )}
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-50 dark:bg-[#3a2e20] rounded-xl">
-              <div className="text-6xl mb-4">✨</div>
-              <h3 className={`text-xl font-semibold text-gray-800 dark:text-[#EBDDBF] mb-2 ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
-                No gratitudes yet
-              </h3>
-              <p className={`text-gray-600 dark:text-[#EBDDBF]/70 mb-6 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                Start adding moments of gratitude to fill your jar
-              </p>
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center py-12 bg-gradient-to-b from-[#EBDDBF]/10 to-[#d4a574]/10 
+                            dark:from-[#3a2e20] dark:to-[#2a1f15] rounded-2xl px-8 shadow-lg">
+                <div className="text-7xl mb-6">✨</div>
+                <h3 className={`text-2xl font-semibold text-gray-800 dark:text-[#EBDDBF] mb-3 ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
+                  No gratitudes yet
+                </h3>
+                <p className={`text-gray-600 dark:text-[#EBDDBF]/70 mb-6 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+                  Start adding moments of gratitude to fill your jar
+                </p>
+                <button
+                  onClick={() => setShowAdd(true)}
+                  className={`px-6 py-3 bg-[#7A916C] dark:bg-[#8b6f47] text-white rounded-lg 
+                           hover:bg-[#6c7a5b] dark:hover:bg-[#9d7d52] 
+                           transition-colors inline-flex items-center gap-2 shadow-md ${theme === 'dark' ? 'font-gothic-body' : ''}`}
+                >
+                  ✨ Add Your First Gratitude
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -420,31 +433,31 @@ const GratitudeJar = ({ theme }) => {
 
       {/* Random Gratitude Display - Higher z-index */}
       {randomGratitude && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
              onClick={() => setRandomGratitude(null)}>
-          <div className="random-gratitude-card bg-white dark:bg-[#3a2e20] rounded-xl p-6 
+          <div className="random-gratitude-card bg-white dark:bg-[#3a2e20] rounded-2xl p-8 
                         shadow-2xl border-2 border-[#d4a574]/30 dark:border-[#5b4a3d]
                         animate-fade-in max-w-2xl w-full"
                onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-start justify-between mb-4">
-              <h3 className={`text-lg font-semibold text-gray-800 dark:text-[#EBDDBF] ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
+            <div className="flex items-start justify-between mb-6">
+              <h3 className={`text-2xl font-semibold text-gray-800 dark:text-[#EBDDBF] ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
                 Random Gratitude ✨
               </h3>
               <button
                 onClick={() => setRandomGratitude(null)}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 
-                         dark:hover:text-gray-200 text-2xl leading-none"
+                         dark:hover:text-gray-200 text-3xl leading-none"
               >
                 ×
               </button>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="text-4xl">{moodEmojis[randomGratitude.mood - 1]}</div>
+            <div className="flex items-start gap-5">
+              <div className="text-5xl">{moodEmojis[randomGratitude.mood - 1]}</div>
               <div className="flex-1">
-                <p className={`text-lg text-gray-800 dark:text-[#EBDDBF] mb-3 italic ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+                <p className={`text-xl text-gray-800 dark:text-[#EBDDBF] mb-4 italic ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                   "{randomGratitude.gratitudeText}"
                 </p>
-                <div className={`flex items-center gap-4 text-sm text-gray-600 dark:text-[#EBDDBF]/70 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+                <div className={`flex items-center gap-4 text-base text-gray-600 dark:text-[#EBDDBF]/70 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
                   <span>📅 {new Date(randomGratitude.date).toLocaleDateString()}</span>
                   <span>•</span>
                   <span>Mood: {randomGratitude.mood}/5</span>
@@ -453,37 +466,14 @@ const GratitudeJar = ({ theme }) => {
             </div>
             <button
               onClick={getRandomGratitude}
-              className={`mt-4 text-[#7A916C] dark:text-[#d4a574] hover:text-[#6c7a5b] 
-                       dark:hover:text-[#EBDDBF] text-sm font-medium ${theme === 'dark' ? 'font-gothic-body' : ''}`}
+              className={`mt-6 text-[#7A916C] dark:text-[#d4a574] hover:text-[#6c7a5b] 
+                       dark:hover:text-[#EBDDBF] text-base font-medium ${theme === 'dark' ? 'font-gothic-body' : ''}`}
             >
-              Read Another →
+              🎲 Read Another →
             </button>
           </div>
         </div>
       )}
-
-      {/* Empty State */}
-      {gratitudes.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 dark:bg-[#3a2e20] rounded-xl">
-          <div className="text-6xl mb-4">🏺</div>
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-[#EBDDBF] mb-2">
-            Your jar is empty
-          </h3>
-          <p className="text-gray-600 dark:text-[#EBDDBF]/70 mb-6">
-            Start collecting moments of gratitude to fill your jar
-          </p>
-          <button
-            onClick={() => setShowAdd(true)}
-            className={`px-6 py-3 bg-[#7A916C] dark:bg-[#8b6f47] text-white rounded-lg 
-                     hover:bg-[#6c7a5b] dark:hover:bg-[#9d7d52] 
-                     transition-colors inline-flex items-center gap-2 ${theme === 'dark' ? 'font-gothic-body' : ''}`}
-          >
-            ✨ Add Your First Gratitude
-          </button>
-        </div>
-      )}
-
-
 
       {/* Add Gratitude Modal */}
       {showAdd && (
