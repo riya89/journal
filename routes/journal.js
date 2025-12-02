@@ -1624,35 +1624,44 @@ router.get("/planner/daily-status", verifyToken, async (req, res) => {
     const plannerData = plannerDoc.data();
     const allTasks = plannerData.tasks || [];
     
+    // Get recurring task templates
+    const templatesRef = userRef.collection("taskTemplates");
+    const templatesSnapshot = await templatesRef.get();
+    const templates = [];
+    templatesSnapshot.forEach(doc => {
+      templates.push({ id: doc.id, ...doc.data() });
+    });
+    
     // ✅ FILTER: Only get tasks that apply to this specific date
-    const dayTasks = allTasks.filter(task => {
-      // Non-recurring tasks with specific date
+    const dayTasks = [];
+    
+    // 1. Check regular tasks (non-recurring, stored in planner)
+    allTasks.forEach(task => {
       if (task.specificDate) {
-        return task.specificDate === dateStr;
-      }
-      
-      // Recurring tasks - check if date is in applicableDates
-      if (task.isRecurring && task.applicableDates) {
-        // Check if date is applicable
-        if (!task.applicableDates.includes(dateStr)) {
-          return false;
+        // Task with specific date - only applies on that date
+        if (task.specificDate === dateStr) {
+          dayTasks.push(task);
         }
+      } else if (!task.isRecurring) {
+        // ❌ REMOVE THIS - non-recurring tasks without specificDate shouldn't apply to all days
+        // They should have a specificDate set when created
+        // dayTasks.push(task);
+      }
+    });
+    
+    // 2. Check recurring tasks (templates)
+    templates.forEach(template => {
+      if (template.isRecurring) {
+        const applicableDates = getApplicableDates(template, yearMonth);
         
-        // Check for exceptions (deleted occurrences)
-        const exception = plannerData.exceptions?.[task.id]?.[dateStr];
-        if (exception && exception.isDeleted) {
-          return false;
+        if (applicableDates.includes(dateStr)) {
+          // Check for exceptions (deleted occurrences)
+          const exception = plannerData.exceptions?.[template.id]?.[dateStr];
+          if (!exception || !exception.isDeleted) {
+            dayTasks.push(template);
+          }
         }
-        
-        return true;
       }
-      
-      // Regular tasks (no specific date, not recurring) - apply to all days
-      if (!task.isRecurring && !task.specificDate) {
-        return true;
-      }
-      
-      return false;
     });
     
     const dayCompletions = plannerData.completions?.[dateStr] || [];
@@ -1664,6 +1673,13 @@ router.get("/planner/daily-status", verifyToken, async (req, res) => {
     
     // ✅ Only true if there are tasks AND all are completed
     const allTasksComplete = totalTasks > 0 && completedTasks === totalTasks;
+    
+    console.log(`📊 Daily Status for ${dateStr}:`, {
+      totalTasks,
+      completedTasks,
+      allTasksComplete,
+      taskIds: dayTasks.map(t => t.id)
+    });
     
     // Calculate total time (only for tasks that apply today)
     let totalMinutes = 0;
