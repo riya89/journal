@@ -46,15 +46,26 @@ app.post("/raindrop/sync", async (req, res) => {
   }
 });
 
+// // ---- Proxy: Streaks ----
+// app.get("/raindrop/streaks", async (req, res) => {
+//   const uid = req.query.uid;
+//   const response = await fetch(
+//     `https://hello-service.01k9ppzcfjfvyc4cwm4p0ccypp.lmapp.run/analytics/streaks?uid=${uid}`
+//   );
+//   const data = await response.json();
+//   res.json(data);
+// });
 // ---- Proxy: Streaks ----
 app.get("/raindrop/streaks", async (req, res) => {
   const uid = req.query.uid;
+  const timezone = req.query.timezone || "UTC"; // Accept timezone from frontend
   const response = await fetch(
-    `https://hello-service.01k9ppzcfjfvyc4cwm4p0ccypp.lmapp.run/analytics/streaks?uid=${uid}`
+    `https://hello-service.01k9ppzcfjfvyc4cwm4p0ccypp.lmapp.run/analytics/streaks?uid=${uid}&timezone=${encodeURIComponent(timezone)}`
   );
   const data = await response.json();
   res.json(data);
 });
+
 
 // ---- Proxy: Badges ----
 app.get("/raindrop/badges", async (req, res) => {
