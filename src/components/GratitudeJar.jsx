@@ -140,8 +140,8 @@ const GratitudeJar = ({ theme }) => {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 pb-6 overflow-hidden min-h-0">
         
         {/* Left Side: Jar Visual */}
-        <div className="jar-visual-container flex flex-col min-h-0">
-          <div className="flex-1 flex items-center justify-center min-h-0">
+        <div className="jar-visual-container flex flex-col justify-center items-center min-h-0 gap-2">
+          <div className="flex items-center justify-center">
             <svg 
               viewBox="0 0 200 400" 
               className="jar-svg"
@@ -316,11 +316,11 @@ const GratitudeJar = ({ theme }) => {
             </svg>
           </div>
           
-          <div className="text-center py-3 flex-shrink-0">
-            <p className={`text-xl font-bold text-[#7A916C] dark:text-[#d4a574] mb-1 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+          <div className="text-center flex-shrink-0">
+            <p className={`text-xl font-bold text-[#7A916C] dark:text-[#d4a574] mb-0.5 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               {gratitudes.length} {gratitudes.length === 1 ? 'gratitude' : 'gratitudes'}
             </p>
-            <p className={`text-sm text-gray-600 dark:text-[#EBDDBF]/70 mb-4 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+            <p className={`text-sm text-gray-600 dark:text-[#EBDDBF]/70 mb-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               {fillPercentage.toFixed(0)}% full
             </p>
             
