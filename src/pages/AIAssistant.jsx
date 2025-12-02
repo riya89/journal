@@ -933,7 +933,7 @@ export default function AIAssistant({ theme }) {
         const edgeRes = await apiPost(`${API_BASE_URL}/assistant/speak-edge`, { 
           text,
           voice: "en-US-MichelleNeural", // Michelle's voice
-          rate: "0.80" // Slower speech rate for better listening
+          rate: "+0%" // Normal speech rate
         });
 
         if (edgeRes.ok) {
