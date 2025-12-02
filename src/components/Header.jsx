@@ -893,29 +893,25 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
             </svg>
           </button>
 
-          <button
-            onClick={() => {
-              const next = theme === "dark" ? "light" : "dark";
-              setTheme(next);
-              localStorage.setItem("theme", next);
-              document.body.dataset.theme = next;
-              if (next === "dark") {
-                document.documentElement.classList.add("dark");
-              } else {
-                document.documentElement.classList.remove("dark");
-              }
-            }}
-            className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 transition-all hover:scale-110"
-            title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {theme === "dark" ? "☀️" : "🌙"}
-          </button>
+          {/* Theme toggle removed - light theme only */}
 
           <button
             className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 relative"
             onClick={() => setMenuOpen((p) => !p)}
           >
-            ⚙️
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className="w-5 h-5 text-leaf2 dark:text-sage"
+            >
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/>
+            </svg>
           </button>
 
           {menuOpen && (
@@ -963,23 +959,7 @@ export default function Header({ theme, setTheme, user, onLogout, selectedMonth,
               </svg>
             </button>
 
-            <button
-              onClick={() => {
-                const next = theme === "dark" ? "light" : "dark";
-                setTheme(next);
-                localStorage.setItem("theme", next);
-                document.body.dataset.theme = next;
-                if (next === "dark") {
-                  document.documentElement.classList.add("dark");
-                } else {
-                  document.documentElement.classList.remove("dark");
-                }
-              }}
-              className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 transition-all"
-              title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {theme === "dark" ? "☀️" : "🌙"}
-            </button>
+            {/* Theme toggle removed - light theme only */}
 
             <button
               className="w-9 h-9 rounded-full border-2 border-leaf2 dark:border-sage grid place-items-center shadow-soft bg-white/60 dark:bg-white/10 relative"

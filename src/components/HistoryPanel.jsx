@@ -292,7 +292,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
                 {searchQuery ? 'No conversations found' : filterArchived ? 'No archived conversations' : 'No conversations yet'}
               </p>
               <p className="text-sm">
-                {searchQuery ? 'Try a different search term' : 'Start chatting with your AI companion to create conversation history'}
+                {searchQuery ? 'Try a different search term' : 'Start chatting with your companion to create conversation history'}
               </p>
             </div>
           ) : (

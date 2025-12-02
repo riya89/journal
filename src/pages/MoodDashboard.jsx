@@ -463,20 +463,13 @@ export default function MoodDashboard({ user, theme }) {
 
     // Mood data is now handled by ExtendedMoodDashboard component
 
-    // Insights
-    apiGet(`${BASE}/insights?uid=${user.uid}`)
+    // Insights - use fresh insights from main backend
+    apiGet('http://localhost:8000/journal/insights/fresh')
       .then((r) => r.json())
       .then((d) => {
-        let parsed = [];
-        if (typeof d.insights === "string") {
-          try {
-            parsed = JSON.parse(d.insights).insights || [];
-          } catch {}
-        } else if (Array.isArray(d.insights)) {
-          parsed = d.insights;
-        }
-        setInsights(parsed);
-      });
+        setInsights(d.insights || []);
+      })
+      .catch((err) => console.error('Error fetching insights:', err));
 
     // Fetch earned badges for gamification
     apiGet('http://localhost:8000/journal/user/stats')

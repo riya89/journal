@@ -53,6 +53,13 @@ export default function ExtendedMoodDashboard({ user, theme }) {
       setError(null);
       
       try {
+        // Load streak data first
+        const streakResponse = await apiGet(`${BASE}/streaks?uid=${user.uid}`);
+        let streakInfo = null;
+        if (streakResponse.ok) {
+          streakInfo = await streakResponse.json();
+        }
+
         // Load current period data
         const response = await apiGet(
           `${BASE}/analytics/mood/extended?uid=${user.uid}&days=${period}`
@@ -96,11 +103,12 @@ export default function ExtendedMoodDashboard({ user, theme }) {
           }
         }
 
-        // Generate insights with comparison data
+        // Generate insights with comparison data and actual streak info
         const generatedInsights = generateInsights(
           result.stats,
           comparisonResult,
-          result.moodData
+          result.moodData,
+          streakInfo
         );
         setInsights(generatedInsights);
         

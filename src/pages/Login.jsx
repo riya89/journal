@@ -1,18 +1,11 @@
 import { signInWithPopup } from "firebase/auth";
 import { auth, provider } from "../lib/firebase";
-import { Sun, Moon } from "lucide-react";
-import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import WaterRippleEffect from "../components/WaterRippleEffect";
 
-export default function Login({ onLoginSuccess, theme, setTheme }) {
+export default function Login({ onLoginSuccess, theme }) {
   const { login } = useAuth();
-
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-  };
+  // Theme is always light - no toggle needed
   const handleGoogleLogin = async () => {
     try {
       const userCred = await signInWithPopup(auth, provider);
@@ -71,18 +64,7 @@ export default function Login({ onLoginSuccess, theme, setTheme }) {
           : 'bg-gradient-to-br from-[#E6F0D1]/40 via-[#FFFBEA]/50 to-[#F3EFE2]/40'
       }`}></div>
 
-      {/* Theme Toggle Button */}
-      <button
-        onClick={toggleTheme}
-        className={`absolute top-6 right-6 z-20 p-3 rounded-full backdrop-blur-md transition-all duration-300 hover:scale-110 ${
-          theme === 'dark'
-            ? 'bg-[#2b241c]/60 border border-[#5b4a3d]/30 text-[#EBDDBF]'
-            : 'bg-white/70 border border-[#7A916C]/20 text-[#7A916C]'
-        }`}
-        aria-label="Toggle theme"
-      >
-        {theme === 'dark' ? <Sun size={24} /> : <Moon size={24} />}
-      </button>
+      {/* Theme toggle removed - light theme only */}
 
       {/* Main Content */}
       <div className={`relative z-10 text-center px-6 py-10 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] max-w-lg mx-auto ${
@@ -90,16 +72,16 @@ export default function Login({ onLoginSuccess, theme, setTheme }) {
           ? 'bg-[#2b241c]/60 border border-[#5b4a3d]/30'
           : 'bg-white/70 border border-[#7A916C]/20'
       }`}>
-        <h1 className={`text-4xl font-bold mb-4 font-['Shantell_Sans'] ${
+        <h1 className={`text-5xl font-bold mb-4 font-['Cormorant_Garamond'] ${
           theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#7A916C]'
         }`}>
-          Echo
+          Opal
         </h1>
-        <p className={`text-lg mb-8 font-['Shantell_Sans'] ${
+        <p className={`text-lg mb-8 font-['Inter'] ${
           theme === 'dark' ? 'text-[#EBDDBF]/80' : 'text-[#6c7a5b]'
         }`}>
-          Find peace in your pages 🌿<br />
-          Start your day with calm reflection.
+          Every page is a soft beginning. 🌿<br />
+          You can start just as you are.
         </p>
 
         {/* Google Sign-In Button */}
@@ -116,7 +98,7 @@ export default function Login({ onLoginSuccess, theme, setTheme }) {
             alt="Google"
             className="w-6 h-6"
           />
-          <span className={`font-semibold text-lg ${
+          <span className={`font-semibold text-lg font-['Quicksand'] ${
             theme === 'dark' ? 'text-[#EBDDBF]' : 'text-white'
           }`}>
             Continue with Google
@@ -124,10 +106,10 @@ export default function Login({ onLoginSuccess, theme, setTheme }) {
         </button>
 
         {/* Footer Text */}
-        <p className={`mt-8 text-sm font-['Shantell_Sans'] ${
+        <p className={`mt-8 text-sm font-['Quicksand'] ${
           theme === 'dark' ? 'text-[#EBDDBF]/60' : 'text-[#6c7a5b]/70'
         }`}>
-          Crafted with 🌙 and calm • Riya’s Journal
+          Crafted with care • Riya’s Journal
         </p>
       </div>
 

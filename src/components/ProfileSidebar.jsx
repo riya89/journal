@@ -199,7 +199,7 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
 
       {/* 🌿 Affirmation Box */}
       <div className="bg-[#E6F0D1] dark:bg-[#3a2e20] text-[#7A916C] dark:text-[#EBDDBF] rounded-[14px] shadow-soft p-3 flex flex-col">
-        <h4 className={`text-[15px] font-semibold mb-1.5 ${theme === "dark" ? "font-spooky-header" : ""}`}>Affirmation of the day..</h4>
+        <h4 className={`text-[15px] font-semibold mb-1.5 ${theme === "dark" ? "font-spooky-header" : ""}`}>Today’s Affirmation</h4>
         {loadingAffirmation ? (
           <p className="leading-relaxed text-[13px] opacity-60 animate-pulse">Loading...</p>
         ) : (

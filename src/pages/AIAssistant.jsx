@@ -925,12 +925,16 @@ export default function AIAssistant({ theme }) {
   const speakStreaming = async (text, token) => {
     try {
       setIsSpeaking(true);
-      console.log("🔊 Michelle speaking:", text);
+      
+      // Remove emojis from text before speaking (so TTS doesn't say "winking face" etc)
+      const cleanText = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+      
+      console.log("🔊 Michelle speaking:", cleanText);
       
       // Try Michelle (Edge TTS) first
       try {
         const edgeRes = await apiPost("http://localhost:8000/journal/assistant/speak-edge", { 
-          text,
+          text: cleanText,
           voice: "en-US-MichelleNeural", // Michelle's voice
           rate: "0.80" // Slower speech rate for better listening
         });
@@ -961,11 +965,11 @@ export default function AIAssistant({ theme }) {
       // Fallback to ElevenLabs if Michelle fails
       console.log("🔄 Falling back to premium voice...");
       
-      let res = await apiPost("http://localhost:8000/journal/assistant/speak-stream", { text });
+      let res = await apiPost("http://localhost:8000/journal/assistant/speak-stream", { text: cleanText });
 
       if (!res.ok) {
         console.warn("⚠️ Premium voice streaming failed, trying regular endpoint");
-        res = await apiPost("http://localhost:8000/journal/assistant/speak", { text });
+        res = await apiPost("http://localhost:8000/journal/assistant/speak", { text: cleanText });
       }
 
       if (!res.ok) {
@@ -995,7 +999,8 @@ export default function AIAssistant({ theme }) {
       
       // Final fallback to browser voice
       console.log("🔄 Using browser voice as final fallback");
-      const utterance = new SpeechSynthesisUtterance(text);
+      const cleanText = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.rate = 0.8; // Slower rate
       utterance.pitch = 1.1;
       utterance.onend = () => setIsSpeaking(false);
@@ -1228,8 +1233,8 @@ export default function AIAssistant({ theme }) {
           <div className={`text-center py-12 opacity-60 ${
             theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#6c7a5b]"
           }`}>
-            <p className={`text-lg mb-2 ${theme === "dark" ? "font-spooky-header" : ""}`}>✨ Welcome to your AI companion</p>
-            <p className={`text-sm ${theme === "dark" ? "font-gothic-body" : ""}`}>Share what's on your mind, and I'll listen with care</p>
+            <p className={`text-lg mb-2 ${theme === "dark" ? "font-spooky-header" : ""}`}>✨ It’s good to see you here.</p>
+            <p className={`text-sm ${theme === "dark" ? "font-gothic-body" : ""}`}>You can share what’s on your mind,<br />I’m here to listen.</p>
           </div>
         )}
         
@@ -1258,15 +1263,6 @@ export default function AIAssistant({ theme }) {
             </div>
           </div>
         ))}
-        
-        {/* FOLLOW-UP SUGGESTIONS */}
-        {followUpSuggestions.length > 0 && (
-          <FollowUpSuggestions
-            suggestions={followUpSuggestions}
-            onSelect={handleFollowUpSelect}
-            theme={theme}
-          />
-        )}
         
         <div ref={chatEndRef}></div>
       </div>

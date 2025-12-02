@@ -391,7 +391,7 @@ export default function Home({ user, theme, setTheme }) {
       
       {/* ⏳ Monthly Planner Icon */}
 <div
-  className="fixed bottom-[70px] right-[500px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
+  className="fixed bottom-[70px] right-[490px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
   onClick={() => navigate("/monthly-planner")}
 >
   <div className="w-[75px] h-[75px] flex items-end justify-center">
@@ -408,7 +408,7 @@ export default function Home({ user, theme, setTheme }) {
 
       {/* 🔮 AI Assistant Floating Icon */}
 <div
-  className="fixed bottom-[70px] right-[410px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
+  className="fixed bottom-[70px] right-[420px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
   onClick={() => navigate("/ai-assistant")}
 >
   <div className="w-[75px] h-[75px] flex items-end justify-center">
@@ -419,13 +419,13 @@ export default function Home({ user, theme, setTheme }) {
       theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#7A916C]"
     }`}
   >
-    AI Friend
+    Companion
   </p>
 </div>
 
 {/* 🌙 Mood Dashboard Icon */}
 <div
-  className="fixed bottom-[70px] right-[325px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
+  className="fixed bottom-[70px] right-[333px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
   onClick={() => navigate("/mood-dashboard")}
 >
   <div className="w-[75px] h-[75px] flex items-end justify-center">
@@ -436,13 +436,13 @@ export default function Home({ user, theme, setTheme }) {
       theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#7A916C]"
     }`}
   >
-    Moodboard
+    Reflections
   </p>
 </div>
 
 {/* 🍄 Growth Garden Icon */}
 <div
-  className="fixed bottom-[70px] right-[223px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
+  className="fixed bottom-[70px] right-[229px] cursor-pointer group transition-transform duration-300 hover:scale-105 z-10 flex flex-col items-center animate-floatSlow"
   onClick={() => navigate("/growth-garden")}
 >
   <div className="w-[75px] h-[75px] flex items-end justify-center">
@@ -470,7 +470,7 @@ export default function Home({ user, theme, setTheme }) {
       theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#7A916C]"
     }`}
   >
-    Gratitude
+    Gratitude Jar
   </p>
 </div>
 

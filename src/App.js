@@ -281,17 +281,15 @@ import UserManual from "./pages/UserManual";
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  // Force light theme only
+  const theme = "light";
+  const setTheme = () => {}; // No-op function to prevent errors
 
-  // Sync theme with DOM
+  // Sync theme with DOM - always light
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    document.body.dataset.theme = theme;
-  }, [theme]);
+    document.documentElement.classList.remove("dark");
+    document.body.dataset.theme = "light";
+  }, []);
 
   if (loading) {
     return (
