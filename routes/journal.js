@@ -1506,64 +1506,246 @@ router.get("/planner/templates", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch templates" });
   }
 });
+router.get("/planner/daily-status", verifyToken, async (req, res) => {
+  try {
+    const userId = req.uid;
+    const dateParam = req.query.date;
+    const yearMonth = dateParam ? dateParam.substring(0, 7) : new Date().toISOString().substring(0, 7);
+    const dateStr = dateParam || new Date().toISOString().split('T')[0];
 
-// 1. Get planner data for a specific month (ENHANCED)
-router.get("/planner/:yearMonth", verifyToken, async (req, res) => {
+    const userRef = db.collection("users").doc(userId);
+    const plannerRef = userRef.collection("planners").doc(yearMonth);
+    const plannerDoc = await plannerRef.get();
+
+    if (!plannerDoc.exists) {
+      return res.json({
+        allTasksComplete: false,
+        stats: {
+          totalTime: "0h 0m",
+          tasksCompleted: 0,
+          totalTasks: 0,
+          streakDays: 0
+        },
+        reward: null
+      });
+    }
+
+    const plannerData = plannerDoc.data();
+    const dayTasks = plannerData.tasks || [];
+    const dayCompletions = plannerData.completions?.[dateStr] || [];
+
+    const totalTasks = dayTasks.length;
+    const completedTasks = dayCompletions.length;
+    const allTasksComplete = totalTasks > 0 && completedTasks === totalTasks;
+
+    // Calculate total time
+    let totalMinutes = 0;
+    dayTasks.forEach(task => {
+      if (dayCompletions.includes(task.id)) {
+        totalMinutes += task.timeEstimate || 0;
+      }
+    });
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const totalTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+    // Get streak from user data
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const streakDays = userData.currentStreak || 0;
+
+    // Award Perfect Day badge if all tasks complete
+    let reward = null;
+    if (allTasksComplete) {
+      const earnedBadges = userData.earnedBadges || [];
+      const perfectDayBadgeId = `perfect_day_${dateStr}`;
+      
+      if (!earnedBadges.includes(perfectDayBadgeId)) {
+        reward = {
+          type: "badge",
+          name: "Perfect Day",
+          icon: "⭐",
+          rarity: "rare"
+        };
+
+        earnedBadges.push(perfectDayBadgeId);
+        const currentPerfectDays = userData.stats?.perfectDays || 0;
+
+        await userRef.set({
+          earnedBadges,
+          stats: {
+            ...userData.stats,
+            perfectDays: currentPerfectDays + 1
+          }
+        }, { merge: true });
+      }
+    }
+
+    res.json({
+      allTasksComplete,
+      stats: {
+        totalTime,
+        tasksCompleted: completedTasks,
+        totalTasks,
+        streakDays
+      },
+      reward
+    });
+  } catch (err) {
+    console.error("Error checking daily status:", err);
+    res.status(500).json({ error: "Failed to check daily status" });
+  }
+});
+router.get("/planner/stats/:yearMonth", verifyToken, async (req, res) => {
   try {
     const { yearMonth } = req.params;
     const userRef = db.collection("users").doc(req.uid);
-    
-    // Get month-specific planner
+
     const plannerRef = userRef.collection("planners").doc(yearMonth);
     const doc = await plannerRef.get();
-    
-    // Get recurring task templates (stored separately)
+
     const templatesRef = userRef.collection("taskTemplates");
     const templatesSnapshot = await templatesRef.get();
-    
+
     const monthData = doc.exists ? doc.data() : { yearMonth, tasks: [], completions: {}, exceptions: {} };
     const templates = [];
-    
     templatesSnapshot.forEach(doc => {
       templates.push({ id: doc.id, ...doc.data() });
     });
-    
-    // Combine regular tasks and recurring tasks
-    const allTasks = [...monthData.tasks];
-    
-    // Add recurring tasks with their applicable dates
-    templates.forEach(template => {
-      const applicableDates = getApplicableDates(template, yearMonth);
+
+    const dailyStats = [];
+    const [year, month] = yearMonth.split('-');
+    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = `${yearMonth}-${String(day).padStart(2, '0')}`;
+
+      // Get ONLY recurring/regular tasks (exclude specificDate tasks)
+      const recurringTasks = monthData.tasks.filter(task => !task.specificDate);
       
-      // Filter out deleted dates from exceptions
-      const filteredDates = applicableDates.filter(date => {
-        const exception = monthData.exceptions?.[template.id]?.[date];
-        return !exception || !exception.isDeleted;
+      templates.forEach(template => {
+        const applicableDates = getApplicableDates(template, yearMonth);
+        if (applicableDates.includes(date)) {
+          const exception = monthData.exceptions?.[template.id]?.[date];
+          if (!exception || !exception.isDeleted) {
+            recurringTasks.push(template);
+          }
+        }
       });
-      
-      if (filteredDates.length > 0) {
-        allTasks.push({
-          ...template,
-          applicableDates: filteredDates
-        });
-      }
-    });
-    
-    // Sort by sortOrder
-    allTasks.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-    
-    res.json({
-      yearMonth,
-      tasks: allTasks,
-      completions: monthData.completions || {},
-      exceptions: monthData.exceptions || {}
-    });
+
+      // Count completions ONLY for recurring tasks
+      const completedRecurringTasks = recurringTasks.filter(task => 
+        monthData.completions[date]?.includes(task.id)
+      );
+
+      const totalEstimatedTime = recurringTasks.reduce((sum, task) => {
+        return sum + (task.timeEstimate || 0);
+      }, 0);
+
+      const completedTime = completedRecurringTasks.reduce((sum, task) => 
+        sum + (task.timeEstimate || 0), 0
+      );
+
+      dailyStats.push({
+        date,
+        day,
+        planned: recurringTasks.length,  // Only recurring tasks
+        completed: completedRecurringTasks.length,  // Only recurring completions
+        totalEstimatedTime,
+        completedTime
+      });
+    }
+
+    res.json({ dailyStats });
   } catch (err) {
-    console.error("Error fetching planner:", err);
-    res.status(500).json({ error: "Failed to fetch planner" });
+    console.error("Error fetching stats:", err);
+    res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
+// 4. Toggle task completion
+router.post("/planner/toggle", verifyToken, async (req, res) => {
+  try {
+    const { yearMonth, taskId, date, completed } = req.body;
+    
+    if (!yearMonth || !taskId || !date) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
+    const userRef = db.collection("users").doc(req.uid);
+    const plannerRef = userRef.collection("planners").doc(yearMonth);
+    const doc = await plannerRef.get();
+    const data = doc.exists ? doc.data() : { yearMonth, tasks: [], completions: {}, exceptions: {} };
+
+    if (!data.completions[date]) {
+      data.completions[date] = [];
+    }
+
+    const wasCompleted = data.completions[date].includes(taskId);
+
+    if (completed) {
+      if (!wasCompleted) {
+        data.completions[date].push(taskId);
+        
+        // ✨ UPDATE QUEST PROGRESS (only when completing, not uncompleting)
+        try {
+          const questsRef = userRef.collection("quests");
+          const taskQuestSnapshot = await questsRef
+            .where("status", "==", "active")
+            .where("trackingType", "==", "task_completion")
+            .get();
+
+          for (const questDoc of taskQuestSnapshot.docs) {
+            const quest = questDoc.data();
+            const newProgress = Math.min(quest.progress + 1, quest.target);
+            const questCompleted = newProgress >= quest.target;
+
+            await questDoc.ref.update({
+              progress: newProgress,
+              status: questCompleted ? "completed" : "active",
+              completedAt: questCompleted ? new Date() : null
+            });
+
+            // Award XP if quest completed
+            if (questCompleted && quest.status !== "completed") {
+              const userDoc = await userRef.get();
+              const userData = userDoc.exists ? userDoc.data() : { totalXP: 0, currentLevel: 1, questsCompleted: 0 };
+              const newTotalXP = (userData.totalXP || 0) + quest.reward.xp;
+              const currentLevel = calculateLevel(newTotalXP);
+
+              await userRef.set({
+                totalXP: newTotalXP,
+                currentLevel,
+                questsCompleted: (userData.questsCompleted || 0) + 1
+              }, { merge: true });
+            }
+          }
+        } catch (questErr) {
+          console.error("Error updating task quest:", questErr);
+        }
+
+        // Update user stats
+        const userDoc = await userRef.get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        
+        await userRef.set({
+          stats: {
+            ...userData.stats,
+            totalTasksCompleted: (userData.stats?.totalTasksCompleted || 0) + 1
+          }
+        }, { merge: true });
+      }
+    } else {
+      data.completions[date] = data.completions[date].filter(id => id !== taskId);
+    }
+
+    await plannerRef.set(data);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error toggling task:", err);
+    res.status(500).json({ error: "Failed to toggle task" });
+  }
+});
 // 2. Add/Update task (ENHANCED)
 router.post("/planner/task", verifyToken, async (req, res) => {
   try {
@@ -1749,7 +1931,50 @@ router.post("/planner/task", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to save task" });
   }
 });
-
+// 6. NEW: Reorder tasks
+router.put("/planner/task/reorder", verifyToken, async (req, res) => {
+  try {
+    const { yearMonth, taskOrders } = req.body;
+    
+    if (!taskOrders || !Array.isArray(taskOrders)) {
+      return res.status(400).json({ error: "taskOrders array required" });
+    }
+    
+    const userRef = db.collection("users").doc(req.uid);
+    const batch = db.batch();
+    
+    // Update both regular tasks and templates
+    for (const { taskId, sortOrder } of taskOrders) {
+      // Check if it's a template
+      const templateRef = userRef.collection("taskTemplates").doc(taskId);
+      const templateDoc = await templateRef.get();
+      
+      if (templateDoc.exists) {
+        batch.update(templateRef, { sortOrder });
+      } else {
+        // It's a regular task - update in planner document
+        const plannerRef = userRef.collection("planners").doc(yearMonth);
+        const plannerDoc = await plannerRef.get();
+        
+        if (plannerDoc.exists) {
+          const data = plannerDoc.data();
+          const taskIndex = data.tasks.findIndex(t => t.id === taskId);
+          
+          if (taskIndex !== -1) {
+            data.tasks[taskIndex].sortOrder = sortOrder;
+            batch.set(plannerRef, data);
+          }
+        }
+      }
+    }
+    
+    await batch.commit();
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error reordering tasks:", err);
+    res.status(500).json({ error: "Failed to reorder tasks" });
+  }
+});
 // 3. Delete task (ENHANCED)
 router.delete("/planner/task/:yearMonth/:taskId", verifyToken, async (req, res) => {
   try {
@@ -1868,6 +2093,63 @@ router.delete("/planner/task/:yearMonth/:taskId", verifyToken, async (req, res) 
     res.status(500).json({ error: "Failed to delete task" });
   }
 });
+// 1. Get planner data for a specific month (ENHANCED)
+router.get("/planner/:yearMonth", verifyToken, async (req, res) => {
+  try {
+    const { yearMonth } = req.params;
+    const userRef = db.collection("users").doc(req.uid);
+    
+    // Get month-specific planner
+    const plannerRef = userRef.collection("planners").doc(yearMonth);
+    const doc = await plannerRef.get();
+    
+    // Get recurring task templates (stored separately)
+    const templatesRef = userRef.collection("taskTemplates");
+    const templatesSnapshot = await templatesRef.get();
+    
+    const monthData = doc.exists ? doc.data() : { yearMonth, tasks: [], completions: {}, exceptions: {} };
+    const templates = [];
+    
+    templatesSnapshot.forEach(doc => {
+      templates.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Combine regular tasks and recurring tasks
+    const allTasks = [...monthData.tasks];
+    
+    // Add recurring tasks with their applicable dates
+    templates.forEach(template => {
+      const applicableDates = getApplicableDates(template, yearMonth);
+      
+      // Filter out deleted dates from exceptions
+      const filteredDates = applicableDates.filter(date => {
+        const exception = monthData.exceptions?.[template.id]?.[date];
+        return !exception || !exception.isDeleted;
+      });
+      
+      if (filteredDates.length > 0) {
+        allTasks.push({
+          ...template,
+          applicableDates: filteredDates
+        });
+      }
+    });
+    
+    // Sort by sortOrder
+    allTasks.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    
+    res.json({
+      yearMonth,
+      tasks: allTasks,
+      completions: monthData.completions || {},
+      exceptions: monthData.exceptions || {}
+    });
+  } catch (err) {
+    console.error("Error fetching planner:", err);
+    res.status(500).json({ error: "Failed to fetch planner" });
+  }
+});
+
 router.get("/planner/stats/:yearMonth", verifyToken, async (req, res) => {
   try {
     const { yearMonth } = req.params;
@@ -2016,51 +2298,6 @@ router.post("/planner/toggle", verifyToken, async (req, res) => {
   } catch (err) {
     console.error("Error toggling task:", err);
     res.status(500).json({ error: "Failed to toggle task" });
-  }
-});
-
-// 6. NEW: Reorder tasks
-router.put("/planner/task/reorder", verifyToken, async (req, res) => {
-  try {
-    const { yearMonth, taskOrders } = req.body;
-    
-    if (!taskOrders || !Array.isArray(taskOrders)) {
-      return res.status(400).json({ error: "taskOrders array required" });
-    }
-    
-    const userRef = db.collection("users").doc(req.uid);
-    const batch = db.batch();
-    
-    // Update both regular tasks and templates
-    for (const { taskId, sortOrder } of taskOrders) {
-      // Check if it's a template
-      const templateRef = userRef.collection("taskTemplates").doc(taskId);
-      const templateDoc = await templateRef.get();
-      
-      if (templateDoc.exists) {
-        batch.update(templateRef, { sortOrder });
-      } else {
-        // It's a regular task - update in planner document
-        const plannerRef = userRef.collection("planners").doc(yearMonth);
-        const plannerDoc = await plannerRef.get();
-        
-        if (plannerDoc.exists) {
-          const data = plannerDoc.data();
-          const taskIndex = data.tasks.findIndex(t => t.id === taskId);
-          
-          if (taskIndex !== -1) {
-            data.tasks[taskIndex].sortOrder = sortOrder;
-            batch.set(plannerRef, data);
-          }
-        }
-      }
-    }
-    
-    await batch.commit();
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Error reordering tasks:", err);
-    res.status(500).json({ error: "Failed to reorder tasks" });
   }
 });
 
@@ -4437,97 +4674,6 @@ router.post("/user/badge/award", verifyToken, async (req, res) => {
  * GET /journal/planner/daily-status
  * Check if all tasks are completed for a specific day
  */
-router.get("/planner/daily-status", verifyToken, async (req, res) => {
-  try {
-    const userId = req.uid;
-    const dateParam = req.query.date;
-    const yearMonth = dateParam ? dateParam.substring(0, 7) : new Date().toISOString().substring(0, 7);
-    const dateStr = dateParam || new Date().toISOString().split('T')[0];
-
-    const userRef = db.collection("users").doc(userId);
-    const plannerRef = userRef.collection("planners").doc(yearMonth);
-    const plannerDoc = await plannerRef.get();
-
-    if (!plannerDoc.exists) {
-      return res.json({
-        allTasksComplete: false,
-        stats: {
-          totalTime: "0h 0m",
-          tasksCompleted: 0,
-          totalTasks: 0,
-          streakDays: 0
-        },
-        reward: null
-      });
-    }
-
-    const plannerData = plannerDoc.data();
-    const dayTasks = plannerData.tasks || [];
-    const dayCompletions = plannerData.completions?.[dateStr] || [];
-
-    const totalTasks = dayTasks.length;
-    const completedTasks = dayCompletions.length;
-    const allTasksComplete = totalTasks > 0 && completedTasks === totalTasks;
-
-    // Calculate total time
-    let totalMinutes = 0;
-    dayTasks.forEach(task => {
-      if (dayCompletions.includes(task.id)) {
-        totalMinutes += task.timeEstimate || 0;
-      }
-    });
-
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const totalTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-
-    // Get streak from user data
-    const userDoc = await userRef.get();
-    const userData = userDoc.exists ? userDoc.data() : {};
-    const streakDays = userData.currentStreak || 0;
-
-    // Award Perfect Day badge if all tasks complete
-    let reward = null;
-    if (allTasksComplete) {
-      const earnedBadges = userData.earnedBadges || [];
-      const perfectDayBadgeId = `perfect_day_${dateStr}`;
-      
-      if (!earnedBadges.includes(perfectDayBadgeId)) {
-        reward = {
-          type: "badge",
-          name: "Perfect Day",
-          icon: "⭐",
-          rarity: "rare"
-        };
-
-        earnedBadges.push(perfectDayBadgeId);
-        const currentPerfectDays = userData.stats?.perfectDays || 0;
-
-        await userRef.set({
-          earnedBadges,
-          stats: {
-            ...userData.stats,
-            perfectDays: currentPerfectDays + 1
-          }
-        }, { merge: true });
-      }
-    }
-
-    res.json({
-      allTasksComplete,
-      stats: {
-        totalTime,
-        tasksCompleted: completedTasks,
-        totalTasks,
-        streakDays
-      },
-      reward
-    });
-  } catch (err) {
-    console.error("Error checking daily status:", err);
-    res.status(500).json({ error: "Failed to check daily status" });
-  }
-});
 
 // ==========================================
 // 💙 STREAK RECOVERY ENDPOINT
