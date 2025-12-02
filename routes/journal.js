@@ -3701,7 +3701,7 @@ router.post("/user/update-timezone", verifyToken, async (req, res) => {
  */
 function calculateExpirationDate(period, userTimezone = 'UTC') {
   // Get current time in user's timezone
-  const nowInUserTZ = utcToZonedTime(new Date(), userTimezone);
+  const nowInUserTZ = toZonedTime(new Date(), userTimezone);
   
   let endTime;
   
@@ -3726,7 +3726,7 @@ function calculateExpirationDate(period, userTimezone = 'UTC') {
   }
   
   // Convert back to UTC for storage
-  return zonedTimeToUtc(endTime, userTimezone);
+  return fromZonedTime(endTime, userTimezone);
 }
 
 /**
@@ -3739,8 +3739,8 @@ function shouldGenerateNewQuests(lastGeneration, period, userTimezone = 'UTC') {
   const lastGen = new Date(lastGeneration);
   
   // Convert both to user's timezone
-  const nowInUserTZ = utcToZonedTime(now, userTimezone);
-  const lastGenInUserTZ = utcToZonedTime(lastGen, userTimezone);
+  const nowInUserTZ = toZonedTime(now, userTimezone);
+  const lastGenInUserTZ = toZonedTime(lastGen, userTimezone);
   
   switch (period) {
     case 'daily':
@@ -4814,7 +4814,7 @@ router.post("/quests/check-expiration", verifyToken, async (req, res) => {
     const now = new Date();
     
     // Get current time in user's timezone for logging
-    const nowInUserTZ = utcToZonedTime(now, userTimezone);
+    const nowInUserTZ = toZonedTime(now, userTimezone);
     console.log(`🕐 Checking expiration for user ${userId} at ${format(nowInUserTZ, 'yyyy-MM-dd HH:mm:ss zzz', { timeZone: userTimezone })}`);
     
     // Find expired quests
