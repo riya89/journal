@@ -10,9 +10,16 @@ export default function DopamineGraph({ dailyStats, theme }) {
   // Find max value for Y-axis (excluding one-time spikes from specific-date tasks)
   // Use the most common task count (mode) or minimum non-zero value as baseline
   const taskCounts = dailyStats.map(s => s.planned).filter(count => count > 0);
-  const minPlanned = Math.min(...taskCounts);
+  const minPlanned = taskCounts.length > 0 ? Math.min(...taskCounts) : 1;
   // Use minimum as the consistent baseline (this is your recurring task count)
   const maxPlanned = Math.max(minPlanned, 1);
+  
+  // Safety check: ensure maxPlanned is a valid number
+  const safeMaxPlanned = (Number.isFinite(maxPlanned) && maxPlanned > 0 && maxPlanned <= 100) 
+    ? maxPlanned 
+    : 10; // Default to 10 if invalid
+  
+  console.log('DopamineGraph:', { taskCounts, minPlanned, maxPlanned, safeMaxPlanned });
   
   const graphHeight = 300;
   const graphWidth = dailyStats.length * 30;
@@ -20,7 +27,7 @@ export default function DopamineGraph({ dailyStats, theme }) {
   // Calculate points for the line
   const points = dailyStats.map((stat, index) => {
     const x = index * 30 + 15;
-    const y = graphHeight - (stat.completed / maxPlanned) * (graphHeight - 40);
+    const y = graphHeight - (stat.completed / safeMaxPlanned) * (graphHeight - 40);
     return { x, y, ...stat };
   });
 
@@ -42,8 +49,8 @@ export default function DopamineGraph({ dailyStats, theme }) {
           className="mx-auto"
         >
           {/* Y-axis labels */}
-          {Array.from({ length: maxPlanned + 1 }, (_, i) => {
-            const y = graphHeight - (i / maxPlanned) * (graphHeight - 40);
+          {Array.from({ length: safeMaxPlanned + 1 }, (_, i) => {
+            const y = graphHeight - (i / safeMaxPlanned) * (graphHeight - 40);
             return (
               <g key={i}>
                 <line
