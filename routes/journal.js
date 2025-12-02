@@ -3603,6 +3603,187 @@ router.get("/assistant/context", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch context" });
   }
 });
+// Add this to your user registration/login endpoint
+router.post("/user/update-timezone", verifyToken, async (req, res) => {
+  try {
+    const { timezone } = req.body; // e.g., "Asia/Kolkata"
+    
+    const userRef = db.collection("users").doc(req.uid);
+    await userRef.set({
+      timezone
+    }, { merge: true });
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error updating timezone:", err);
+    res.status(500).json({ error: "Failed to update timezone" });
+  }
+});
+/**
+ * Calculate expiration date for quest period based on user's timezone
+ * @param {string} period - 'daily', 'weekly', or 'monthly'
+ * @param {string} userTimezone - IANA timezone string (e.g., 'Asia/Kolkata')
+ */
+function calculateExpirationDate(period, userTimezone = 'UTC') {
+  const now = new Date();
+  
+  // Get current time in user's timezone
+  const userTime = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+  
+  switch (period) {
+    case 'daily':
+      // End of day in user's timezone
+      const endOfDay = new Date(userTime);
+      endOfDay.setHours(23, 59, 59, 999);
+      return endOfDay;
+      
+    case 'weekly':
+      const endOfWeek = new Date(userTime);
+      const daysUntilSaturday = 6 - userTime.getDay();
+      endOfWeek.setDate(userTime.getDate() + daysUntilSaturday);
+      endOfWeek.setHours(23, 59, 59, 999);
+      return endOfWeek;
+      
+    case 'monthly':
+      const endOfMonth = new Date(userTime.getFullYear(), userTime.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+      return endOfMonth;
+      
+    default:
+      return now;
+  }
+}
+
+/**
+ * Check if new quests should be generated for a period
+ */
+function shouldGenerateNewQuests(lastGeneration, period, userTimezone = 'UTC') {
+  if (!lastGeneration) return true;
+
+  const now = new Date();
+  const lastGen = new Date(lastGeneration);
+  
+  // Convert both to user's timezone for comparison
+  const nowInUserTZ = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+  const lastGenInUserTZ = new Date(lastGen.toLocaleString('en-US', { timeZone: userTimezone }));
+
+  switch (period) {
+    case 'daily':
+      return nowInUserTZ.toDateString() !== lastGenInUserTZ.toDateString();
+      
+    case 'weekly':
+      const nowWeekStart = new Date(nowInUserTZ);
+      nowWeekStart.setDate(nowInUserTZ.getDate() - nowInUserTZ.getDay());
+      nowWeekStart.setHours(0, 0, 0, 0);
+      
+      const lastWeekStart = new Date(lastGenInUserTZ);
+      lastWeekStart.setDate(lastGenInUserTZ.getDate() - lastGenInUserTZ.getDay());
+      lastWeekStart.setHours(0, 0, 0, 0);
+      
+      return nowWeekStart.getTime() > lastWeekStart.getTime();
+      
+    case 'monthly':
+      return nowInUserTZ.getMonth() !== lastGenInUserTZ.getMonth() || 
+             nowInUserTZ.getFullYear() !== lastGenInUserTZ.getFullYear();
+      
+    default:
+      return false;
+  }
+}
+
+/**
+ * Generate quests for a specific period with user timezone
+ */
+async function generateQuestsForPeriod(userId, period, userTimezone = 'UTC') {
+  const userRef = db.collection("users").doc(userId);
+  const questsRef = userRef.collection("quests");
+  const generatedQuests = [];
+  const now = new Date();
+  
+  let templates, count;
+  if (period === 'daily') {
+    templates = selectRandomTemplates(DAILY_QUEST_TEMPLATES, 2);
+  } else if (period === 'weekly') {
+    templates = selectRandomTemplates(WEEKLY_QUEST_TEMPLATES, 2);
+  } else if (period === 'monthly') {
+    templates = selectRandomTemplates(MONTHLY_QUEST_TEMPLATES, 1);
+  }
+  
+  const expiresAt = calculateExpirationDate(period, userTimezone);
+  
+  for (const template of templates) {
+    const questRef = questsRef.doc();
+    const quest = {
+      userId,
+      type: period,
+      title: template.title,
+      description: template.description,
+      target: template.target,
+      progress: 0,
+      reward: template.reward,
+      status: 'active',
+      trackingType: template.trackingType,
+      createdAt: now,
+      expiresAt,
+      completedAt: null,
+      expiredAt: null,
+      lastProgressDate: now,
+      progressMetadata: { uniqueDays: [] }
+    };
+    
+    await questRef.set(quest);
+    generatedQuests.push({ id: questRef.id, ...quest });
+  }
+  
+  return generatedQuests;
+}
+
+/**
+ * Check and generate new quests if needed (with timezone support)
+ */
+async function checkAndGenerateQuests(userId) {
+  const now = new Date();
+  const userRef = db.collection("users").doc(userId);
+  const userDoc = await userRef.get();
+  const userData = userDoc.exists ? userDoc.data() : {};
+  
+  // Get user's timezone (default to UTC if not set)
+  const userTimezone = userData.timezone || 'UTC';
+  
+  const lastGen = userData.lastQuestGeneration || {};
+  const newQuests = [];
+
+  // Check daily
+  if (shouldGenerateNewQuests(lastGen.daily, 'daily', userTimezone)) {
+    const dailyQuests = await generateQuestsForPeriod(userId, 'daily', userTimezone);
+    newQuests.push(...dailyQuests);
+    lastGen.daily = now.toISOString();
+  }
+
+  // Check weekly
+  if (shouldGenerateNewQuests(lastGen.weekly, 'weekly', userTimezone)) {
+    const weeklyQuests = await generateQuestsForPeriod(userId, 'weekly', userTimezone);
+    newQuests.push(...weeklyQuests);
+    lastGen.weekly = now.toISOString();
+  }
+
+  // Check monthly
+  if (shouldGenerateNewQuests(lastGen.monthly, 'monthly', userTimezone)) {
+    const monthlyQuests = await generateQuestsForPeriod(userId, 'monthly', userTimezone);
+    newQuests.push(...monthlyQuests);
+    lastGen.monthly = now.toISOString();
+  }
+
+  // Update last generation timestamps
+  if (newQuests.length > 0) {
+    await userRef.set({
+      lastQuestGeneration: lastGen
+    }, { merge: true });
+  }
+
+  return newQuests;
+}
+
 // ==========================================
 // 🎮 QUEST SYSTEM ENDPOINTS
 // ==========================================
@@ -3990,64 +4171,64 @@ function selectRandomTemplates(templates, count) {
 /**
  * Calculate expiration date for quest period
  */
-function calculateExpirationDate(period) {
-  const now = new Date();
+// function calculateExpirationDate(period) {
+//   const now = new Date();
   
-  switch (period) {
-    case 'daily':
-      const endOfDay = new Date(now);
-      endOfDay.setHours(23, 59, 59, 999);
-      return endOfDay;
+//   switch (period) {
+//     case 'daily':
+//       const endOfDay = new Date(now);
+//       endOfDay.setHours(23, 59, 59, 999);
+//       return endOfDay;
     
-    case 'weekly':
-      const endOfWeek = new Date(now);
-      const daysUntilSaturday = 6 - now.getDay();
-      endOfWeek.setDate(now.getDate() + daysUntilSaturday);
-      endOfWeek.setHours(23, 59, 59, 999);
-      return endOfWeek;
+//     case 'weekly':
+//       const endOfWeek = new Date(now);
+//       const daysUntilSaturday = 6 - now.getDay();
+//       endOfWeek.setDate(now.getDate() + daysUntilSaturday);
+//       endOfWeek.setHours(23, 59, 59, 999);
+//       return endOfWeek;
     
-    case 'monthly':
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      endOfMonth.setHours(23, 59, 59, 999);
-      return endOfMonth;
+//     case 'monthly':
+//       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+//       endOfMonth.setHours(23, 59, 59, 999);
+//       return endOfMonth;
     
-    default:
-      return now;
-  }
-}
+//     default:
+//       return now;
+//   }
+// }
 
 /**
  * Check if new quests should be generated for a period
  */
-function shouldGenerateNewQuests(lastGeneration, period) {
-  if (!lastGeneration) return true;
+// function shouldGenerateNewQuests(lastGeneration, period) {
+//   if (!lastGeneration) return true;
 
-  const now = new Date();
-  const lastGen = new Date(lastGeneration);
+//   const now = new Date();
+//   const lastGen = new Date(lastGeneration);
 
-  switch (period) {
-    case 'daily':
-      return now.toDateString() !== lastGen.toDateString();
+//   switch (period) {
+//     case 'daily':
+//       return now.toDateString() !== lastGen.toDateString();
     
-    case 'weekly':
-      const nowWeekStart = new Date(now);
-      nowWeekStart.setDate(now.getDate() - now.getDay());
-      nowWeekStart.setHours(0, 0, 0, 0);
+//     case 'weekly':
+//       const nowWeekStart = new Date(now);
+//       nowWeekStart.setDate(now.getDate() - now.getDay());
+//       nowWeekStart.setHours(0, 0, 0, 0);
       
-      const lastWeekStart = new Date(lastGen);
-      lastWeekStart.setDate(lastGen.getDate() - lastGen.getDay());
-      lastWeekStart.setHours(0, 0, 0, 0);
+//       const lastWeekStart = new Date(lastGen);
+//       lastWeekStart.setDate(lastGen.getDate() - lastGen.getDay());
+//       lastWeekStart.setHours(0, 0, 0, 0);
       
-      return nowWeekStart.getTime() > lastWeekStart.getTime();
+//       return nowWeekStart.getTime() > lastWeekStart.getTime();
     
-    case 'monthly':
-      return now.getMonth() !== lastGen.getMonth() || 
-             now.getFullYear() !== lastGen.getFullYear();
+//     case 'monthly':
+//       return now.getMonth() !== lastGen.getMonth() || 
+//              now.getFullYear() !== lastGen.getFullYear();
     
-    default:
-      return false;
-  }
-}
+//     default:
+//       return false;
+//   }
+// }
 
 /**
  * Generate quests for a specific period
@@ -4101,95 +4282,95 @@ function shouldGenerateNewQuests(lastGeneration, period) {
 
 //   return generatedQuests;
 // }
-async function generateQuestsForPeriod(userId, period) {
-  const userRef = db.collection("users").doc(userId);
-  const questsRef = userRef.collection("quests");
-  const generatedQuests = [];
-  const now = new Date();
+// async function generateQuestsForPeriod(userId, period) {
+//   const userRef = db.collection("users").doc(userId);
+//   const questsRef = userRef.collection("quests");
+//   const generatedQuests = [];
+//   const now = new Date();
 
-  let templates, count;
-  if (period === 'daily') {
-    templates = selectRandomTemplates(DAILY_QUEST_TEMPLATES, 2);
-    count = 2;
-  } else if (period === 'weekly') {
-    templates = selectRandomTemplates(WEEKLY_QUEST_TEMPLATES, 2);
-    count = 2;
-  } else if (period === 'monthly') {
-    templates = selectRandomTemplates(MONTHLY_QUEST_TEMPLATES, 1);
-    count = 1;
-  }
+//   let templates, count;
+//   if (period === 'daily') {
+//     templates = selectRandomTemplates(DAILY_QUEST_TEMPLATES, 2);
+//     count = 2;
+//   } else if (period === 'weekly') {
+//     templates = selectRandomTemplates(WEEKLY_QUEST_TEMPLATES, 2);
+//     count = 2;
+//   } else if (period === 'monthly') {
+//     templates = selectRandomTemplates(MONTHLY_QUEST_TEMPLATES, 1);
+//     count = 1;
+//   }
 
-  const expiresAt = calculateExpirationDate(period);
+//   const expiresAt = calculateExpirationDate(period);
 
-  for (const template of templates) {
-    const questRef = questsRef.doc();
-    const quest = {
-      userId,
-      type: period,
-      title: template.title,
-      description: template.description,
-      target: template.target,
-      progress: 0,
-      reward: template.reward,
-      status: 'active',
-      trackingType: template.trackingType,
-      createdAt: now,
-      expiresAt,
-      completedAt: null,
-      expiredAt: null,
-      lastProgressDate: now,
-      progressMetadata: { uniqueDays: [] }  // Add this line
-    };
+//   for (const template of templates) {
+//     const questRef = questsRef.doc();
+//     const quest = {
+//       userId,
+//       type: period,
+//       title: template.title,
+//       description: template.description,
+//       target: template.target,
+//       progress: 0,
+//       reward: template.reward,
+//       status: 'active',
+//       trackingType: template.trackingType,
+//       createdAt: now,
+//       expiresAt,
+//       completedAt: null,
+//       expiredAt: null,
+//       lastProgressDate: now,
+//       progressMetadata: { uniqueDays: [] }  // Add this line
+//     };
 
-    await questRef.set(quest);
-    generatedQuests.push({ id: questRef.id, ...quest });
-  }
+//     await questRef.set(quest);
+//     generatedQuests.push({ id: questRef.id, ...quest });
+//   }
 
-  return generatedQuests;
-}
+//   return generatedQuests;
+// }
 
 /**
  * Check and generate new quests if needed
  */
-async function checkAndGenerateQuests(userId) {
-  const now = new Date();
-  const userRef = db.collection("users").doc(userId);
-  const userDoc = await userRef.get();
-  const userData = userDoc.exists ? userDoc.data() : {};
+// async function checkAndGenerateQuests(userId) {
+//   const now = new Date();
+//   const userRef = db.collection("users").doc(userId);
+//   const userDoc = await userRef.get();
+//   const userData = userDoc.exists ? userDoc.data() : {};
   
-  const lastGen = userData.lastQuestGeneration || {};
-  const newQuests = [];
+//   const lastGen = userData.lastQuestGeneration || {};
+//   const newQuests = [];
 
-  // Check daily
-  if (shouldGenerateNewQuests(lastGen.daily, 'daily')) {
-    const dailyQuests = await generateQuestsForPeriod(userId, 'daily');
-    newQuests.push(...dailyQuests);
-    lastGen.daily = now.toISOString();
-  }
+//   // Check daily
+//   if (shouldGenerateNewQuests(lastGen.daily, 'daily')) {
+//     const dailyQuests = await generateQuestsForPeriod(userId, 'daily');
+//     newQuests.push(...dailyQuests);
+//     lastGen.daily = now.toISOString();
+//   }
 
-  // Check weekly
-  if (shouldGenerateNewQuests(lastGen.weekly, 'weekly')) {
-    const weeklyQuests = await generateQuestsForPeriod(userId, 'weekly');
-    newQuests.push(...weeklyQuests);
-    lastGen.weekly = now.toISOString();
-  }
+//   // Check weekly
+//   if (shouldGenerateNewQuests(lastGen.weekly, 'weekly')) {
+//     const weeklyQuests = await generateQuestsForPeriod(userId, 'weekly');
+//     newQuests.push(...weeklyQuests);
+//     lastGen.weekly = now.toISOString();
+//   }
 
-  // Check monthly
-  if (shouldGenerateNewQuests(lastGen.monthly, 'monthly')) {
-    const monthlyQuests = await generateQuestsForPeriod(userId, 'monthly');
-    newQuests.push(...monthlyQuests);
-    lastGen.monthly = now.toISOString();
-  }
+//   // Check monthly
+//   if (shouldGenerateNewQuests(lastGen.monthly, 'monthly')) {
+//     const monthlyQuests = await generateQuestsForPeriod(userId, 'monthly');
+//     newQuests.push(...monthlyQuests);
+//     lastGen.monthly = now.toISOString();
+//   }
 
-  // Update last generation timestamps
-  if (newQuests.length > 0) {
-    await userRef.set({
-      lastQuestGeneration: lastGen
-    }, { merge: true });
-  }
+//   // Update last generation timestamps
+//   if (newQuests.length > 0) {
+//     await userRef.set({
+//       lastQuestGeneration: lastGen
+//     }, { merge: true });
+//   }
 
-  return newQuests;
-}
+//   return newQuests;
+// }
 
 // ==========================================
 // 🎯 QUEST ENDPOINTS
