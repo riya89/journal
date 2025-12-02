@@ -463,14 +463,6 @@ export default function MoodDashboard({ user, theme }) {
 
     // Mood data is now handled by ExtendedMoodDashboard component
 
-    // Insights - use fresh insights from main backend
-    apiGet('http://localhost:8000/journal/insights/fresh')
-      .then((r) => r.json())
-      .then((d) => {
-        setInsights(d.insights || []);
-      })
-      .catch((err) => console.error('Error fetching insights:', err));
-
     // Fetch earned badges for gamification
     apiGet('http://localhost:8000/journal/user/stats')
       .then((r) => r.json())
