@@ -219,147 +219,147 @@ router.post("/daily-todos/add", verifyToken, async (req, res) => {
  * Keep your existing /analyze-for-tasks endpoint
  * This returns suggestions for the modal, doesn't add them automatically
  */
-router.post("/analyze-for-tasks", verifyToken, async (req, res) => {
-  try {
-    const userId = req.uid;
-    const { journalText, mood, date } = req.body;
+// router.post("/analyze-for-tasks", verifyToken, async (req, res) => {
+//   try {
+//     const userId = req.uid;
+//     const { journalText, mood, date } = req.body;
 
-    // Validate input
-    if (!journalText || journalText.trim().length < 20) {
-      return res.json({ tasksAdded: 0, message: "Journal entry too short" });
-    }
+//     // Validate input
+//     if (!journalText || journalText.trim().length < 20) {
+//       return res.json({ tasksAdded: 0, message: "Journal entry too short" });
+//     }
 
-    // Build AI prompt
-    const prompt = `You are a helpful task planning assistant. Analyze this journal entry and suggest 2-3 actionable tasks.
+//     // Build AI prompt
+//     const prompt = `You are a helpful task planning assistant. Analyze this journal entry and suggest 2-3 actionable tasks.
 
-Journal Entry:
-"${journalText}"
+// Journal Entry:
+// "${journalText}"
 
-Mood: ${mood}/5
+// Mood: ${mood}/5
 
-Based on the journal content, suggest 2-3 specific, actionable tasks that would help the person.
+// Based on the journal content, suggest 2-3 specific, actionable tasks that would help the person.
 
-Requirements:
-- Tasks should be concrete and achievable
-- Match the person's current emotional state (mood: ${mood}/5)
-- Address themes or challenges mentioned in the journal
-- Each task should take 15-60 minutes
+// Requirements:
+// - Tasks should be concrete and achievable
+// - Match the person's current emotional state (mood: ${mood}/5)
+// - Address themes or challenges mentioned in the journal
+// - Each task should take 15-60 minutes
 
-Respond in this EXACT JSON format:
-{
-  "tasks": [
-    {
-      "name": "Task name (under 50 characters)",
-      "category": "one of: self-care, exercise, productivity, social, creative, personal-growth",
-      "timeEstimate": 30,
-      "reason": "Why this task would help (one sentence)"
-    }
-  ]
-}
+// Respond in this EXACT JSON format:
+// {
+//   "tasks": [
+//     {
+//       "name": "Task name (under 50 characters)",
+//       "category": "one of: self-care, exercise, productivity, social, creative, personal-growth",
+//       "timeEstimate": 30,
+//       "reason": "Why this task would help (one sentence)"
+//     }
+//   ]
+// }
 
-Generate 2-3 tasks now:`;
+// Generate 2-3 tasks now:`;
 
-    // Call Gemini AI
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 500,
-          }
-        })
-      }
-    );
+//     // Call Gemini AI
+//     const response = await fetch(
+//       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${process.env.GEMINI_API_KEY}`,
+//       {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           contents: [{ parts: [{ text: prompt }] }],
+//           generationConfig: {
+//             temperature: 0.7,
+//             maxOutputTokens: 500,
+//           }
+//         })
+//       }
+//     );
 
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
-    }
+//     if (!response.ok) {
+//       throw new Error(`Gemini API error: ${response.status}`);
+//     }
 
-    const data = await response.json();
-    const aiResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+//     const data = await response.json();
+//     const aiResponse = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!aiResponse) {
-      throw new Error("No response from AI");
-    }
+//     if (!aiResponse) {
+//       throw new Error("No response from AI");
+//     }
 
-    // Parse JSON from AI response
-    let suggestedTasks = [];
-    try {
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        suggestedTasks = parsed.tasks || [];
-      }
-    } catch (parseErr) {
-      console.error("Failed to parse AI response:", parseErr);
-      return res.json({ tasksAdded: 0, message: "Could not parse task suggestions" });
-    }
+//     // Parse JSON from AI response
+//     let suggestedTasks = [];
+//     try {
+//       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+//       if (jsonMatch) {
+//         const parsed = JSON.parse(jsonMatch[0]);
+//         suggestedTasks = parsed.tasks || [];
+//       }
+//     } catch (parseErr) {
+//       console.error("Failed to parse AI response:", parseErr);
+//       return res.json({ tasksAdded: 0, message: "Could not parse task suggestions" });
+//     }
 
-    // Validate tasks
-    const validTasks = suggestedTasks
-      .filter(task => task.name && task.category)
-      .map(task => ({
-        name: task.name.substring(0, 100),
-        category: task.category,
-        timeEstimate: task.timeEstimate || 30,
-        reason: task.reason || "Suggested based on your journal entry"
-      }))
-      .slice(0, 3); // Max 3 tasks
+//     // Validate tasks
+//     const validTasks = suggestedTasks
+//       .filter(task => task.name && task.category)
+//       .map(task => ({
+//         name: task.name.substring(0, 100),
+//         category: task.category,
+//         timeEstimate: task.timeEstimate || 30,
+//         reason: task.reason || "Suggested based on your journal entry"
+//       }))
+//       .slice(0, 3); // Max 3 tasks
 
-    if (validTasks.length === 0) {
-      return res.json({ tasksAdded: 0, message: "No valid tasks generated" });
-    }
+//     if (validTasks.length === 0) {
+//       return res.json({ tasksAdded: 0, message: "No valid tasks generated" });
+//     }
 
-    // Get user's existing daily todos
-    const userRef = db.collection("users").doc(userId);
-    const todosRef = userRef.collection("dailyTodos");
+//     // Get user's existing daily todos
+//     const userRef = db.collection("users").doc(userId);
+//     const todosRef = userRef.collection("dailyTodos");
     
-    // Remove completed tasks older than 24 hours
-    const oneDayAgo = new Date();
-    oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+//     // Remove completed tasks older than 24 hours
+//     const oneDayAgo = new Date();
+//     oneDayAgo.setHours(oneDayAgo.getHours() - 24);
     
-    const oldCompletedSnapshot = await todosRef
-      .where("completed", "==", true)
-      .where("createdAt", "<", oneDayAgo)
-      .get();
+//     const oldCompletedSnapshot = await todosRef
+//       .where("completed", "==", true)
+//       .where("createdAt", "<", oneDayAgo)
+//       .get();
     
-    const batch = db.batch();
-    oldCompletedSnapshot.forEach(doc => {
-      batch.delete(doc.ref);
-    });
+//     const batch = db.batch();
+//     oldCompletedSnapshot.forEach(doc => {
+//       batch.delete(doc.ref);
+//     });
 
-    // Add new tasks
-    const now = new Date();
-    for (const task of validTasks) {
-      const todoRef = todosRef.doc();
-      batch.set(todoRef, {
-        ...task,
-        completed: false,
-        createdAt: now,
-        expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
-      });
-    }
+//     // Add new tasks
+//     const now = new Date();
+//     for (const task of validTasks) {
+//       const todoRef = todosRef.doc();
+//       batch.set(todoRef, {
+//         ...task,
+//         completed: false,
+//         createdAt: now,
+//         expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24 hours from now
+//       });
+//     }
 
-    await batch.commit();
+//     await batch.commit();
 
-    console.log(`✅ Added ${validTasks.length} daily tasks for user ${userId}`);
+//     console.log(`✅ Added ${validTasks.length} daily tasks for user ${userId}`);
 
-    res.json({
-      tasksAdded: validTasks.length,
-      message: `Added ${validTasks.length} task(s) to your daily to-do list`
-    });
-  } catch (err) {
-    console.error("Task analysis error:", err);
-    res.json({
-      tasksAdded: 0,
-      message: "Task analysis unavailable"
-    });
-  }
-});
+//     res.json({
+//       tasksAdded: validTasks.length,
+//       message: `Added ${validTasks.length} task(s) to your daily to-do list`
+//     });
+//   } catch (err) {
+//     console.error("Task analysis error:", err);
+//     res.json({
+//       tasksAdded: 0,
+//       message: "Task analysis unavailable"
+//     });
+//   }
+// });
 
 /**
  * GET /journal/daily-todos
@@ -426,185 +426,185 @@ router.post("/daily-todos/:todoId/toggle", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to toggle todo" });
   }
 });
-// 📖 Fetch journal entry for a specific date
-router.get("/:date", verifyToken, async (req, res) => {
-  try {
-    const { date } = req.params;
-    const userRef = db.collection("users").doc(req.uid);
-    const journalRef = userRef.collection("journals").doc(date);
+// // 📖 Fetch journal entry for a specific date
+// router.get("/:date", verifyToken, async (req, res) => {
+//   try {
+//     const { date } = req.params;
+//     const userRef = db.collection("users").doc(req.uid);
+//     const journalRef = userRef.collection("journals").doc(date);
 
-    const doc = await journalRef.get();
+//     const doc = await journalRef.get();
 
-    // ✅ If journal exists — return it directly
-    if (doc.exists) {
-      console.log(`📖 Returning existing journal for ${date}`);
-      return res.json(doc.data());
-    }
+//     // ✅ If journal exists — return it directly
+//     if (doc.exists) {
+//       console.log(`📖 Returning existing journal for ${date}`);
+//       return res.json(doc.data());
+//     }
 
-    // 🆕 No journal yet → Check if prompts already generated for today globally
-    const promptCacheRef = db.collection("dailyPrompts").doc(date);
-    const promptCache = await promptCacheRef.get();
+//     // 🆕 No journal yet → Check if prompts already generated for today globally
+//     const promptCacheRef = db.collection("dailyPrompts").doc(date);
+//     const promptCache = await promptCacheRef.get();
 
-    let prompts;
-    if (promptCache.exists) {
-      // ✅ Reuse today's prompts to keep consistent daily reflections
-      prompts = promptCache.data().prompts;
-      console.log(`♻️ Using cached prompts for ${date}`);
-    } else {
-      // 🧠 Generate new ones and store globally
-      prompts = await generateNewPrompts();
-      await promptCacheRef.set({
-        date,
-        prompts,
-        createdAt: new Date(),
-      });
-      console.log(`✨ New prompts generated and cached for ${date}`);
-    }
+//     let prompts;
+//     if (promptCache.exists) {
+//       // ✅ Reuse today's prompts to keep consistent daily reflections
+//       prompts = promptCache.data().prompts;
+//       console.log(`♻️ Using cached prompts for ${date}`);
+//     } else {
+//       // 🧠 Generate new ones and store globally
+//       prompts = await generateNewPrompts();
+//       await promptCacheRef.set({
+//         date,
+//         prompts,
+//         createdAt: new Date(),
+//       });
+//       console.log(`✨ New prompts generated and cached for ${date}`);
+//     }
 
-    // Return unsaved journal object (don’t save yet)
-    // const newJournal = {
-    //   title: "",
-    //   content: "",
-    //   mood: "",
-    //   date,
-    //   prompts,
-    //   answers: ["", ""],
-    // };
-    const newJournal = {
-  title: "",
-  content: "",
-  mood: "",
-  date,
-  prompts,
-  answers: ["", ""],
-  photoURL: null,  // ← ADD THIS LINE
-};
+//     // Return unsaved journal object (don’t save yet)
+//     // const newJournal = {
+//     //   title: "",
+//     //   content: "",
+//     //   mood: "",
+//     //   date,
+//     //   prompts,
+//     //   answers: ["", ""],
+//     // };
+//     const newJournal = {
+//   title: "",
+//   content: "",
+//   mood: "",
+//   date,
+//   prompts,
+//   answers: ["", ""],
+//   photoURL: null,  // ← ADD THIS LINE
+// };
 
-    return res.json(newJournal);
-  } catch (err) {
-    console.error("Error fetching journal:", err);
-    res.status(500).json({ error: "Failed to fetch journal" });
-  }
-});
-router.post("/add", verifyToken, async (req, res) => {
-  const { title, content, mood, date, prompts = [], answers = [], photoURL = null } = req.body;
+//     return res.json(newJournal);
+//   } catch (err) {
+//     console.error("Error fetching journal:", err);
+//     res.status(500).json({ error: "Failed to fetch journal" });
+//   }
+// });
+// router.post("/add", verifyToken, async (req, res) => {
+//   const { title, content, mood, date, prompts = [], answers = [], photoURL = null } = req.body;
   
-  if (!date) return res.status(400).json({ error: "Missing date field" });
+//   if (!date) return res.status(400).json({ error: "Missing date field" });
 
-  try {
-    const userRef = db.collection("users").doc(req.uid);
-    const journalRef = userRef.collection("journals").doc(date);
+//   try {
+//     const userRef = db.collection("users").doc(req.uid);
+//     const journalRef = userRef.collection("journals").doc(date);
 
-    // Save journal entry
-    await journalRef.set({
-      title,
-      content,
-      mood,
-      date,
-      prompts,
-      answers,
-      photoURL,
-      updatedAt: new Date(),
-    });
+//     // Save journal entry
+//     await journalRef.set({
+//       title,
+//       content,
+//       mood,
+//       date,
+//       prompts,
+//       answers,
+//       photoURL,
+//       updatedAt: new Date(),
+//     });
 
-    // ✨ UPDATE QUEST PROGRESS
+//     // ✨ UPDATE QUEST PROGRESS
 
-    // 1. Journal entry quest
-    try {
-      const questsRef = userRef.collection("quests");
-      const journalQuestSnapshot = await questsRef
-        .where("status", "==", "active")
-        .where("trackingType", "==", "journal_entry")
-        .get();
+//     // 1. Journal entry quest
+//     try {
+//       const questsRef = userRef.collection("quests");
+//       const journalQuestSnapshot = await questsRef
+//         .where("status", "==", "active")
+//         .where("trackingType", "==", "journal_entry")
+//         .get();
 
-      for (const doc of journalQuestSnapshot.docs) {
-        const quest = doc.data();
-        const newProgress = Math.min(quest.progress + 1, quest.target);
-        const completed = newProgress >= quest.target;
+//       for (const doc of journalQuestSnapshot.docs) {
+//         const quest = doc.data();
+//         const newProgress = Math.min(quest.progress + 1, quest.target);
+//         const completed = newProgress >= quest.target;
 
-        await doc.ref.update({
-          progress: newProgress,
-          status: completed ? "completed" : "active",
-          completedAt: completed ? new Date() : null
-        });
+//         await doc.ref.update({
+//           progress: newProgress,
+//           status: completed ? "completed" : "active",
+//           completedAt: completed ? new Date() : null
+//         });
 
-        // Award XP if completed
-        if (completed && quest.status !== "completed") {
-          await awardQuestXP(userRef, quest.reward.xp);
-        }
-      }
-    } catch (questErr) {
-      console.error("Error updating journal quest:", questErr);
-    }
+//         // Award XP if completed
+//         if (completed && quest.status !== "completed") {
+//           await awardQuestXP(userRef, quest.reward.xp);
+//         }
+//       }
+//     } catch (questErr) {
+//       console.error("Error updating journal quest:", questErr);
+//     }
 
-    // 2. ✅ FIXED: Word count quest
-    if (content) {
-      const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+//     // 2. ✅ FIXED: Word count quest
+//     if (content) {
+//       const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
       
-      if (wordCount > 0) {
-        try {
-          // ✅ Store daily word count (replaces if exists)
-          await userRef.collection("dailyWordCounts").doc(date).set({
-            date,
-            wordCount,
-            lastUpdated: new Date()
-          }); // No merge - we want to REPLACE
+//       if (wordCount > 0) {
+//         try {
+//           // ✅ Store daily word count (replaces if exists)
+//           await userRef.collection("dailyWordCounts").doc(date).set({
+//             date,
+//             wordCount,
+//             lastUpdated: new Date()
+//           }); // No merge - we want to REPLACE
 
-          // ✅ Recalculate monthly total
-          await updateMonthlyWordCountQuest(userRef);
+//           // ✅ Recalculate monthly total
+//           await updateMonthlyWordCountQuest(userRef);
           
-        } catch (questErr) {
-          console.error("Error updating word count quest:", questErr);
-        }
-      }
-    }
+//         } catch (questErr) {
+//           console.error("Error updating word count quest:", questErr);
+//         }
+//       }
+//     }
 
-    // 3. Mood log quest
-    if (mood) {
-      try {
-        const moodQuestSnapshot = await userRef.collection("quests")
-          .where("status", "==", "active")
-          .where("trackingType", "==", "mood_log")
-          .get();
+//     // 3. Mood log quest
+//     if (mood) {
+//       try {
+//         const moodQuestSnapshot = await userRef.collection("quests")
+//           .where("status", "==", "active")
+//           .where("trackingType", "==", "mood_log")
+//           .get();
 
-        for (const doc of moodQuestSnapshot.docs) {
-          const quest = doc.data();
-          const newProgress = Math.min(quest.progress + 1, quest.target);
-          const completed = newProgress >= quest.target;
+//         for (const doc of moodQuestSnapshot.docs) {
+//           const quest = doc.data();
+//           const newProgress = Math.min(quest.progress + 1, quest.target);
+//           const completed = newProgress >= quest.target;
 
-          await doc.ref.update({
-            progress: newProgress,
-            status: completed ? "completed" : "active",
-            completedAt: completed ? new Date() : null
-          });
+//           await doc.ref.update({
+//             progress: newProgress,
+//             status: completed ? "completed" : "active",
+//             completedAt: completed ? new Date() : null
+//           });
 
-          // Award XP if completed
-          if (completed && quest.status !== "completed") {
-            await awardQuestXP(userRef, quest.reward.xp);
-          }
-        }
-      } catch (questErr) {
-        console.error("Error updating mood quest:", questErr);
-      }
-    }
+//           // Award XP if completed
+//           if (completed && quest.status !== "completed") {
+//             await awardQuestXP(userRef, quest.reward.xp);
+//           }
+//         }
+//       } catch (questErr) {
+//         console.error("Error updating mood quest:", questErr);
+//       }
+//     }
 
-    // Update user stats
-    const userDoc = await userRef.get();
-    const userData = userDoc.exists ? userDoc.data() : {};
+//     // Update user stats
+//     const userDoc = await userRef.get();
+//     const userData = userDoc.exists ? userDoc.data() : {};
     
-    await userRef.set({
-      stats: {
-        ...userData.stats,
-        totalJournalEntries: (userData.stats?.totalJournalEntries || 0) + 1
-      }
-    }, { merge: true });
+//     await userRef.set({
+//       stats: {
+//         ...userData.stats,
+//         totalJournalEntries: (userData.stats?.totalJournalEntries || 0) + 1
+//       }
+//     }, { merge: true });
 
-    res.json({ message: "Journal saved successfully ✅", date });
-  } catch (err) {
-    console.error("Error saving journal:", err);
-    res.status(500).json({ error: "Failed to save journal" });
-  }
-});
+//     res.json({ message: "Journal saved successfully ✅", date });
+//   } catch (err) {
+//     console.error("Error saving journal:", err);
+//     res.status(500).json({ error: "Failed to save journal" });
+//   }
+// });
 // ✅ NEW: Helper function to update monthly word count quest
 async function updateMonthlyWordCountQuest(userRef) {
   try {
@@ -5706,6 +5706,184 @@ router.delete("/gratitude/:gratitudeId", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to delete gratitude" });
   }
 });
+// 📖 Fetch journal entry for a specific date
+router.get("/:date", verifyToken, async (req, res) => {
+  try {
+    const { date } = req.params;
+    const userRef = db.collection("users").doc(req.uid);
+    const journalRef = userRef.collection("journals").doc(date);
 
+    const doc = await journalRef.get();
+
+    // ✅ If journal exists — return it directly
+    if (doc.exists) {
+      console.log(`📖 Returning existing journal for ${date}`);
+      return res.json(doc.data());
+    }
+
+    // 🆕 No journal yet → Check if prompts already generated for today globally
+    const promptCacheRef = db.collection("dailyPrompts").doc(date);
+    const promptCache = await promptCacheRef.get();
+
+    let prompts;
+    if (promptCache.exists) {
+      // ✅ Reuse today's prompts to keep consistent daily reflections
+      prompts = promptCache.data().prompts;
+      console.log(`♻️ Using cached prompts for ${date}`);
+    } else {
+      // 🧠 Generate new ones and store globally
+      prompts = await generateNewPrompts();
+      await promptCacheRef.set({
+        date,
+        prompts,
+        createdAt: new Date(),
+      });
+      console.log(`✨ New prompts generated and cached for ${date}`);
+    }
+
+    // Return unsaved journal object (don’t save yet)
+    // const newJournal = {
+    //   title: "",
+    //   content: "",
+    //   mood: "",
+    //   date,
+    //   prompts,
+    //   answers: ["", ""],
+    // };
+    const newJournal = {
+  title: "",
+  content: "",
+  mood: "",
+  date,
+  prompts,
+  answers: ["", ""],
+  photoURL: null,  // ← ADD THIS LINE
+};
+
+    return res.json(newJournal);
+  } catch (err) {
+    console.error("Error fetching journal:", err);
+    res.status(500).json({ error: "Failed to fetch journal" });
+  }
+});
+router.post("/add", verifyToken, async (req, res) => {
+  const { title, content, mood, date, prompts = [], answers = [], photoURL = null } = req.body;
+  
+  if (!date) return res.status(400).json({ error: "Missing date field" });
+
+  try {
+    const userRef = db.collection("users").doc(req.uid);
+    const journalRef = userRef.collection("journals").doc(date);
+
+    // Save journal entry
+    await journalRef.set({
+      title,
+      content,
+      mood,
+      date,
+      prompts,
+      answers,
+      photoURL,
+      updatedAt: new Date(),
+    });
+
+    // ✨ UPDATE QUEST PROGRESS
+
+    // 1. Journal entry quest
+    try {
+      const questsRef = userRef.collection("quests");
+      const journalQuestSnapshot = await questsRef
+        .where("status", "==", "active")
+        .where("trackingType", "==", "journal_entry")
+        .get();
+
+      for (const doc of journalQuestSnapshot.docs) {
+        const quest = doc.data();
+        const newProgress = Math.min(quest.progress + 1, quest.target);
+        const completed = newProgress >= quest.target;
+
+        await doc.ref.update({
+          progress: newProgress,
+          status: completed ? "completed" : "active",
+          completedAt: completed ? new Date() : null
+        });
+
+        // Award XP if completed
+        if (completed && quest.status !== "completed") {
+          await awardQuestXP(userRef, quest.reward.xp);
+        }
+      }
+    } catch (questErr) {
+      console.error("Error updating journal quest:", questErr);
+    }
+
+    // 2. ✅ FIXED: Word count quest
+    if (content) {
+      const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+      
+      if (wordCount > 0) {
+        try {
+          // ✅ Store daily word count (replaces if exists)
+          await userRef.collection("dailyWordCounts").doc(date).set({
+            date,
+            wordCount,
+            lastUpdated: new Date()
+          }); // No merge - we want to REPLACE
+
+          // ✅ Recalculate monthly total
+          await updateMonthlyWordCountQuest(userRef);
+          
+        } catch (questErr) {
+          console.error("Error updating word count quest:", questErr);
+        }
+      }
+    }
+
+    // 3. Mood log quest
+    if (mood) {
+      try {
+        const moodQuestSnapshot = await userRef.collection("quests")
+          .where("status", "==", "active")
+          .where("trackingType", "==", "mood_log")
+          .get();
+
+        for (const doc of moodQuestSnapshot.docs) {
+          const quest = doc.data();
+          const newProgress = Math.min(quest.progress + 1, quest.target);
+          const completed = newProgress >= quest.target;
+
+          await doc.ref.update({
+            progress: newProgress,
+            status: completed ? "completed" : "active",
+            completedAt: completed ? new Date() : null
+          });
+
+          // Award XP if completed
+          if (completed && quest.status !== "completed") {
+            await awardQuestXP(userRef, quest.reward.xp);
+          }
+        }
+      } catch (questErr) {
+        console.error("Error updating mood quest:", questErr);
+      }
+    }
+
+    // Update user stats
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    
+    await userRef.set({
+      stats: {
+        ...userData.stats,
+        totalJournalEntries: (userData.stats?.totalJournalEntries || 0) + 1
+      }
+    }, { merge: true });
+
+    res.json({ message: "Journal saved successfully ✅", date });
+  } catch (err) {
+    console.error("Error saving journal:", err);
+    res.status(500).json({ error: "Failed to save journal" });
+  }
+});
 export default router;
 
