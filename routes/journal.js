@@ -1997,10 +1997,30 @@ router.put("/planner/task/reorder", verifyToken, async (req, res) => {
   }
 });
 
-// 7. NEW: Get all recurring task templates
+// // 7. NEW: Get all recurring task templates
+// router.get("/planner/templates", verifyToken, async (req, res) => {
+//   try {
+//     const userRef = db.collection("users").doc(req.uid);
+//     const templatesRef = userRef.collection("taskTemplates");
+//     const snapshot = await templatesRef.orderBy("sortOrder", "asc").get();
+    
+//     const templates = [];
+//     snapshot.forEach(doc => {
+//       templates.push({ id: doc.id, ...doc.data() });
+//     });
+    
+//     res.json({ templates });
+//   } catch (err) {
+//     console.error("Error fetching templates:", err);
+//     res.status(500).json({ error: "Failed to fetch templates" });
+//   }
+// });
+// 7. Get all recurring task templates
 router.get("/planner/templates", verifyToken, async (req, res) => {
   try {
     const userRef = db.collection("users").doc(req.uid);
+    
+    // Try to get from taskTemplates collection first
     const templatesRef = userRef.collection("taskTemplates");
     const snapshot = await templatesRef.orderBy("sortOrder", "asc").get();
     
@@ -2008,6 +2028,41 @@ router.get("/planner/templates", verifyToken, async (req, res) => {
     snapshot.forEach(doc => {
       templates.push({ id: doc.id, ...doc.data() });
     });
+    
+    // If no templates found, check if they're in planners collection (legacy)
+    if (templates.length === 0) {
+      console.log("No templates in taskTemplates, checking planners collection...");
+      
+      const plannersRef = userRef.collection("planners");
+      const plannersSnapshot = await plannersRef.get();
+      
+      const seenTemplates = new Set();
+      
+      plannersSnapshot.forEach(doc => {
+        const data = doc.data();
+        const tasks = data.tasks || [];
+        
+        tasks.forEach(task => {
+          if (task.isRecurring && task.recurrenceType && task.recurrenceType !== 'none') {
+            const uniqueKey = `${task.name}_${task.recurrenceType}`;
+            
+            if (!seenTemplates.has(uniqueKey)) {
+              seenTemplates.add(uniqueKey);
+              templates.push({
+                id: task.id,
+                name: task.name,
+                category: task.category,
+                recurrenceType: task.recurrenceType,
+                recurrenceDays: task.recurrenceDays || [],
+                timeEstimate: task.timeEstimate,
+                isRecurring: true,
+                createdAt: task.createdAt || new Date().toISOString()
+              });
+            }
+          }
+        });
+      });
+    }
     
     res.json({ templates });
   } catch (err) {
