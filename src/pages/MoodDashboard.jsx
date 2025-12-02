@@ -422,6 +422,7 @@ import Fireflies from "../components/Fireflies";
 import { apiGet } from "../utils/api";
 import XPBar from "../components/XPBar";
 import QuestPanel from "../components/QuestPanel";
+import { API_BASE_URL, RAINDROP_BASE_URL } from "../config/api";
 import BadgeGallery from "../components/BadgeGallery";
 import ExtendedMoodDashboard from "../components/ExtendedMoodDashboard";
 export default function MoodDashboard({ user, theme }) {
@@ -436,8 +437,7 @@ export default function MoodDashboard({ user, theme }) {
     totalEntries: 0,
   });
   const [earnedBadges, setEarnedBadges] = useState([]);
-
-  const BASE = "https://journal-6xfj.onrender.com/raindrop";
+  const BASE = RAINDROP_BASE_URL;
   
 
   // ---------- FETCH DATA ----------
@@ -447,7 +447,8 @@ export default function MoodDashboard({ user, theme }) {
     // Badges
     apiGet(`${BASE}/badges?uid=${user.uid}`)
       .then((r) => r.json())
-      .then((d) => setBadges(d.badges || []));
+      .then((d) => setBadges(d.badges || []))
+      .catch((err) => console.error('Error fetching badges:', err));
 
     // Streaks
     apiGet(`${BASE}/streaks?uid=${user.uid}`)
@@ -459,7 +460,8 @@ export default function MoodDashboard({ user, theme }) {
           totalEntries: d.totalEntries,
         });
         if (d.newlyEarned?.length > 0) setNewBadge(d.newlyEarned[0]);
-      });
+      })
+      .catch((err) => console.error('Error fetching streaks:', err));
 
     // Mood data is now handled by ExtendedMoodDashboard component
 
@@ -476,10 +478,11 @@ export default function MoodDashboard({ user, theme }) {
           parsed = d.insights;
         }
         setInsights(parsed);
-      });
+      })
+      .catch((err) => console.error('Error fetching insights:', err));
 
     // Fetch earned badges for gamification
-    apiGet('https://journal-6xfj.onrender.com/journal/user/stats')
+    apiGet(`${API_BASE_URL}/user/stats`)
       .then((r) => r.json())
       .then((d) => {
         setEarnedBadges(d.earnedBadges || []);

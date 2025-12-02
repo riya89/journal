@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { apiGet, apiPost } from "../utils/api";
 import { TASK_CATEGORIES } from "../constants/taskCategories";
 import { checkCelebrationTrigger } from "../utils/celebrationTrigger";
+import { API_BASE_URL } from "../config/api";
 import CelebrationModal from "./CelebrationModal";
 
 export default function PostJournalCheckModal({ date, onClose, theme, user }) {
@@ -25,7 +26,7 @@ export default function PostJournalCheckModal({ date, onClose, theme, user }) {
     setLoading(true);
     try {
       const response = await apiGet(
-        `https://journal-6xfj.onrender.com/journal/post-save-check?uid=${user.uid}&date=${date}`
+        `${API_BASE_URL}/post-save-check?uid=${user.uid}&date=${date}`
       );
       const data = await response.json();
 
@@ -71,7 +72,7 @@ export default function PostJournalCheckModal({ date, onClose, theme, user }) {
   const saveAndClose = async () => {
     setSaving(true);
     try {
-      await apiPost("https://journal-6xfj.onrender.com/journal/quick-complete-tasks", {
+      await apiPost(`${API_BASE_URL}/quick-complete-tasks`, {
         uid: user.uid,
         date,
         taskIds: selectedTasks

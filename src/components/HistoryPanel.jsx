@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiGet, apiDelete } from '../utils/api';
+import { API_BASE_URL } from '../config/api';
 
 export default function HistoryPanel({ theme, onClose, onLoadSession }) {
   const [sessions, setSessions] = useState([]);
@@ -12,7 +13,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
     try {
       setLoading(true);
       const response = await apiGet(
-        `https://journal-6xfj.onrender.com/journal/assistant/history?limit=50&offset=0${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`
+        `${API_BASE_URL}/assistant/history?limit=50&offset=0${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`
       );
       const data = await response.json();
       setSessions(data.sessions || []);
@@ -30,7 +31,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
   const viewSession = async (sessionId) => {
     try {
       const response = await apiGet(
-        `https://journal-6xfj.onrender.com/journal/assistant/history/${sessionId}`
+        `${API_BASE_URL}/assistant/history/${sessionId}`
       );
       const data = await response.json();
       setSelectedSession(data);
@@ -48,7 +49,7 @@ export default function HistoryPanel({ theme, onClose, onLoadSession }) {
 
     try {
       await apiDelete(
-        `https://journal-6xfj.onrender.com/journal/assistant/history/${sessionId}`
+        `${API_BASE_URL}/assistant/history/${sessionId}`
       );
       
       // Remove from list

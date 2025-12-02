@@ -1,4 +1,5 @@
 import { apiPost } from './api';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Quest Progress Tracking Utility
@@ -18,7 +19,7 @@ export const updateJournalQuests = async (userId, content, date) => {
     const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
 
     // Update word count quest progress
-    await apiPost('https://journal-6xfj.onrender.com/journal/quests/progress', {
+    await apiPost(`${API_BASE_URL}/quests/progress`, {
       uid: userId,
       questType: 'word_count',
       progress: wordCount,
@@ -26,7 +27,7 @@ export const updateJournalQuests = async (userId, content, date) => {
     });
 
     // Update daily entry quest progress
-    await apiPost('https://journal-6xfj.onrender.com/journal/quests/progress', {
+    await apiPost(`${API_BASE_URL}/quests/progress`, {
       uid: userId,
       questType: 'daily_entry',
       progress: 1,
@@ -57,7 +58,7 @@ export const updateTaskQuests = async (userId, taskId, category, date, completed
     }
 
     // Update task completion quest progress
-    await apiPost('https://journal-6xfj.onrender.com/journal/quests/progress', {
+    await apiPost(`${API_BASE_URL}/quests/progress`, {
       uid: userId,
       questType: 'task_completion',
       progress: 1,
@@ -70,7 +71,7 @@ export const updateTaskQuests = async (userId, taskId, category, date, completed
 
     // Update category-specific quest progress if applicable
     if (category) {
-      await apiPost('https://journal-6xfj.onrender.com/journal/quests/progress', {
+      await apiPost(`${API_BASE_URL}/quests/progress`, {
         uid: userId,
         questType: 'category_task',
         progress: 1,
@@ -97,7 +98,7 @@ export const updateTaskQuests = async (userId, taskId, category, date, completed
  */
 export const updateStreakQuests = async (userId, currentStreak, date) => {
   try {
-    await apiPost('https://journal-6xfj.onrender.com/journal/quests/progress', {
+    await apiPost(`${API_BASE_URL}/quests/progress`, {
       uid: userId,
       questType: 'streak',
       progress: currentStreak,
@@ -119,7 +120,7 @@ export const updateStreakQuests = async (userId, currentStreak, date) => {
  */
 export const checkQuestCompletions = async (userId) => {
   try {
-    const response = await apiPost('https://journal-6xfj.onrender.com/journal/quests/check-completions', {
+    const response = await apiPost(`${API_BASE_URL}/quests/check-completions`, {
       uid: userId
     });
 

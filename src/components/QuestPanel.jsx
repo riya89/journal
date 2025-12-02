@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { apiGet } from '../utils/api';
 import { checkAndRotateQuests } from '../utils/questExpiration';
 import QuestCard from './QuestCard';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * QuestPanel Component
@@ -22,7 +23,7 @@ export default function QuestPanel({ theme, userId, compact = false }) {
     try {
       setLoading(true);
       // Fetch all quests (including completed ones for today)
-      const response = await apiGet(`https://journal-6xfj.onrender.com/journal/quests/all?uid=${userId}`);
+      const response = await apiGet(`${API_BASE_URL}/quests/all?uid=${userId}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch quests');

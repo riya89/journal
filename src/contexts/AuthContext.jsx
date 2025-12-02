@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { registerLogoutHandler } from '../utils/api';
 import { showErrorToast } from '../utils/toast';
+import { API_BASE_URL } from '../config/api';
 
 const AuthContext = createContext(null);
 
@@ -28,7 +29,7 @@ export const AuthProvider = ({ children }) => {
       // Fetch avatar from backend
       let avatarURL = null;
       try {
-        const response = await fetch('https://journal-6xfj.onrender.com/journal/avatar', {
+        const response = await fetch(`${API_BASE_URL}/avatar`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

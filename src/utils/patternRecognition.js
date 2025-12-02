@@ -4,8 +4,9 @@
  */
 
 import { getAuth } from 'firebase/auth';
+import { API_BASE_URL } from '../config/api';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://journal-6xfj.onrender.com';
+const ROOT_URL = API_BASE_URL.replace('/journal', '');
 
 /**
  * Analyze conversation patterns for the current user
@@ -24,7 +25,7 @@ export async function analyzePatterns(lookbackDays = 30, minSessionCount = 3) {
 
     const token = await user.getIdToken();
 
-    const response = await fetch(`${API_BASE_URL}/journal/assistant/analyze-patterns`, {
+    const response = await fetch(`${ROOT_URL}/journal/assistant/analyze-patterns`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -64,7 +65,7 @@ export async function getCurrentPatterns() {
 
     const token = await user.getIdToken();
 
-    const response = await fetch(`${API_BASE_URL}/journal/assistant/patterns`, {
+    const response = await fetch(`${ROOT_URL}/journal/assistant/patterns`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -111,7 +112,7 @@ export async function sendMessageWithPatterns(message, sessionId, includeHistory
 
     const token = await user.getIdToken();
 
-    const response = await fetch(`${API_BASE_URL}/journal/assistant/reply-with-patterns`, {
+    const response = await fetch(`${ROOT_URL}/journal/assistant/reply-with-patterns`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -155,8 +156,8 @@ export async function deleteHistory(olderThanDays = null) {
     const token = await user.getIdToken();
 
     const url = olderThanDays 
-      ? `${API_BASE_URL}/journal/assistant/history?olderThanDays=${olderThanDays}`
-      : `${API_BASE_URL}/journal/assistant/history`;
+      ? `${ROOT_URL}/journal/assistant/history?olderThanDays=${olderThanDays}`
+      : `${ROOT_URL}/journal/assistant/history`;
 
     const response = await fetch(url, {
       method: 'DELETE',

@@ -19,6 +19,7 @@ import {
   queueBadgeNotification 
 } from '../utils/badgeManager';
 import { apiGet } from '../utils/api';
+import { API_BASE_URL } from '../config/api';
 
 export default function BadgeSystemExample({ theme = 'light' }) {
   const [earnedBadges, setEarnedBadges] = useState([]);
@@ -39,7 +40,7 @@ export default function BadgeSystemExample({ theme = 'light' }) {
   const loadUserData = async () => {
     try {
       // Fetch user stats from backend
-      const response = await apiGet('https://journal-6xfj.onrender.com/journal/user/stats');
+      const response = await apiGet(`${API_BASE_URL}/user/stats`);
       
       if (response.ok) {
         const data = await response.json();

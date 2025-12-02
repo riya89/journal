@@ -644,6 +644,7 @@ import Fireflies from "../components/Fireflies";
 import { apiPost } from "../utils/api";
 import ConversationContext from "../utils/conversationContext";
 import HistoryPanel from "../components/HistoryPanel";
+import { API_BASE_URL } from "../config/api";
 import FollowUpSuggestions from "../components/FollowUpSuggestions";
 
 export default function AIAssistant({ theme }) {
@@ -806,7 +807,7 @@ export default function AIAssistant({ theme }) {
       setMessages((prev) => [...prev, { sender: "ai", text: "", streaming: true }]);
 
       // 1️⃣ Fetch AI text reply WITH CONTEXT
-      const replyRes = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/reply-with-context", { 
+      const replyRes = await apiPost(`${API_BASE_URL}/assistant/reply-with-context`, { 
         message: userText,
         sessionId: sessionId,
         includeHistory: true
@@ -884,7 +885,7 @@ export default function AIAssistant({ theme }) {
       // Fallback to old endpoint if new one fails
       try {
         console.log("🔄 Falling back to old endpoint...");
-        const fallbackRes = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/reply", { 
+        const fallbackRes = await apiPost(`${API_BASE_URL}/assistant/reply`, { 
           message: userText 
         });
         const fallbackData = await fallbackRes.json();
@@ -929,7 +930,7 @@ export default function AIAssistant({ theme }) {
       
       // Try Michelle (Edge TTS) first
       try {
-        const edgeRes = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/speak-edge", { 
+        const edgeRes = await apiPost(`${API_BASE_URL}/assistant/speak-edge`, { 
           text,
           voice: "en-US-MichelleNeural", // Michelle's voice
           rate: "0.80" // Slower speech rate for better listening
@@ -961,11 +962,11 @@ export default function AIAssistant({ theme }) {
       // Fallback to ElevenLabs if Michelle fails
       console.log("🔄 Falling back to premium voice...");
       
-      let res = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/speak-stream", { text });
+      let res = await apiPost(`${API_BASE_URL}/assistant/speak-stream`, { text });
 
       if (!res.ok) {
         console.warn("⚠️ Premium voice streaming failed, trying regular endpoint");
-        res = await apiPost("https://journal-6xfj.onrender.com/journal/assistant/speak", { text });
+        res = await apiPost(`${API_BASE_URL}/assistant/speak`, { text });
       }
 
       if (!res.ok) {

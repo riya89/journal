@@ -809,6 +809,7 @@ import tornPageCornerLeft from "../assets/journalmodal1.png";
 import { apiGet, apiPost } from "../utils/api";
 import { updateJournalQuests } from "../utils/questProgress";
 import TaskSuggestionModal from "./TaskSuggestionModal";
+import { API_BASE_URL, RAINDROP_BASE_URL } from "../config/api";
 import PostJournalCheckModal from "./PostJournalCheckModal";
 
 export default function JournalModal({ isOpen, onClose, theme, selectedDate , user}) {
@@ -1072,7 +1073,7 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   const fetchJournal = async () => {
     setLoading(true);
     try {
-      const res = await apiGet(`https://journal-6xfj.onrender.com/journal/${selectedDate}`);
+      const res = await apiGet(`${API_BASE_URL}/${selectedDate}`);
       const data = await res.json();
       if (data) {
         setTitle(data.title || "");
@@ -1195,7 +1196,7 @@ const analyzeForTaskSuggestions = async (journalText, moodValue, date) => {
 
     console.log('🎯 Analyzing journal for task suggestions...');
 
-    const response = await apiPost("https://journal-6xfj.onrender.com/journal/analyze-for-tasks", {
+    const response = await apiPost(`${API_BASE_URL}/analyze-for-tasks`, {
       journalText: journalText.trim(),
       mood: moodValue,
       date: date
@@ -1248,7 +1249,7 @@ const handleAddSuggestedTasks = async (selectedTasks, makeRecurring = false, tar
           recurrenceDays: [0, 1, 2, 3, 4, 5, 6], // All days
           yearMonth
         };
-        await apiPost("https://journal-6xfj.onrender.com/journal/planner/task", taskData);
+        await apiPost(`${API_BASE_URL}/planner/task`, taskData);
       } else {
         // Create as one-time task for selected date (doesn't count in graph)
         const taskData = {
@@ -1260,7 +1261,7 @@ const handleAddSuggestedTasks = async (selectedTasks, makeRecurring = false, tar
           specificDate: taskDate,  // Only show on this specific date
           completed: false
         };
-        await apiPost("https://journal-6xfj.onrender.com/journal/planner/task", taskData);
+        await apiPost(`${API_BASE_URL}/planner/task`, taskData);
       }
     }
 
@@ -1293,7 +1294,7 @@ const handleSave = async () => {
     }
 
     // 1️⃣ Save to your NODE backend
-    const res = await apiPost("https://journal-6xfj.onrender.com/journal/add", {
+    const res = await apiPost(`${API_BASE_URL}/add`, {
       title,
       content,
       mood,
@@ -1306,7 +1307,7 @@ const handleSave = async () => {
     await res.json();
 
     // 2️⃣ Sync to RAINDROP analytics backend
-    await apiPost("https://journal-6xfj.onrender.com/raindrop/sync", {
+    await apiPost(`${RAINDROP_BASE_URL}/sync`, {
       uid: user.uid,
       date: selectedDate,
       title,

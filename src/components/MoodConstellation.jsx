@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { apiGet } from "../utils/api";
+import { RAINDROP_BASE_URL } from "../config/api";
 
 export default function MoodConstellation({ user, theme }) {
   const [entries, setEntries] = useState([]);
@@ -10,8 +11,7 @@ export default function MoodConstellation({ user, theme }) {
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
   const shootingStarsRef = useRef([]);
-
-  const BASE = "https://journal-6xfj.onrender.com/raindrop";
+  const BASE = RAINDROP_BASE_URL;
 
   // Load mood data for last 90 days
   useEffect(() => {

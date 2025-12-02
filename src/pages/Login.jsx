@@ -4,6 +4,7 @@ import { Sun, Moon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import WaterRippleEffect from "../components/WaterRippleEffect";
+import { AUTH_BASE_URL } from "../config/api";
 
 export default function Login({ onLoginSuccess, theme }) {
   const { login } = useAuth();
@@ -13,7 +14,7 @@ export default function Login({ onLoginSuccess, theme }) {
       
       // Send to backend to store user info
       const token = await userCred.user.getIdToken();
-      await fetch("https://journal-6xfj.onrender.com/auth/saveUser", {
+      await fetch(`${AUTH_BASE_URL}/saveUser`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

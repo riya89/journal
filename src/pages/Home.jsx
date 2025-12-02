@@ -222,6 +222,7 @@ import TimeCapsuleIcon from "../components/icons/TimeCapsuleIcon";
 import StreakRecoveryModal from "../components/StreakRecoveryModal";
 import { apiGet } from "../utils/api";
 import { checkAndRotateQuests } from "../utils/questExpiration";
+import { API_BASE_URL } from "../config/api";
 
 export default function Home({ user, theme }) {
   const navigate = useNavigate();
@@ -273,7 +274,7 @@ export default function Home({ user, theme }) {
         }
 
         // Fetch recovery message from backend
-        const response = await apiGet('https://journal-6xfj.onrender.com/journal/streak/recovery-message');
+        const response = await apiGet(`${API_BASE_URL}/streak/recovery-message`);
         
         if (response.ok) {
           const data = await response.json();

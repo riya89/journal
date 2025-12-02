@@ -5,6 +5,8 @@
  * NOTE: Persistence is handled by the backend API, not directly via Firebase
  */
 
+import { API_BASE_URL } from '../config/api';
+
 export class ConversationContext {
   constructor(sessionId, userId, maxMessages = 10) {
     this.sessionId = sessionId;
@@ -84,7 +86,7 @@ export class ConversationContext {
     try {
       // Load from backend API instead of Firebase directly
       const response = await fetch(
-        `https://journal-6xfj.onrender.com/journal/assistant/context?sessionId=${sessionId}`,
+        `${API_BASE_URL}/assistant/context?sessionId=${sessionId}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

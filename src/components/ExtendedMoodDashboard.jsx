@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { apiGet } from "../utils/api";
 import MoodChart from "./MoodChart";
 import { comparePeriods, generateInsights } from "../utils/moodInsights";
+import { RAINDROP_BASE_URL } from "../config/api";
 
 // InsightCard component for displaying individual insights
 function InsightCard({ insight, theme }) {
@@ -42,8 +43,7 @@ export default function ExtendedMoodDashboard({ user, theme }) {
   const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const BASE = "https://journal-6xfj.onrender.com/raindrop";
+  const BASE = RAINDROP_BASE_URL;
 
   useEffect(() => {
     if (!user) return;

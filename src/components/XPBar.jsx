@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiGet } from '../utils/api';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * XPBar Component
@@ -25,7 +26,7 @@ export default function XPBar({ theme }) {
   const fetchXPData = async () => {
     try {
       setLoading(true);
-      const response = await apiGet('https://journal-6xfj.onrender.com/journal/user/xp');
+      const response = await apiGet(`${API_BASE_URL}/user/xp`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch XP data');

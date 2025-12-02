@@ -1,5 +1,6 @@
 import { checkEarnedBadges, getBadgeById } from '../constants/badges';
 import { apiGet, apiPost } from './api';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Fetch user's earned badges from the backend
@@ -8,7 +9,7 @@ import { apiGet, apiPost } from './api';
  */
 export async function fetchUserBadges(userId) {
   try {
-    const response = await apiGet('https://journal-6xfj.onrender.com/journal/user/stats');
+    const response = await apiGet(`${API_BASE_URL}/user/stats`);
     
     if (response.ok) {
       const data = await response.json();
@@ -47,7 +48,7 @@ export async function awardBadge(badgeId) {
 
     // In a real implementation, this would call a backend endpoint
     // For now, we'll simulate the award
-    const response = await apiPost('https://journal-6xfj.onrender.com/journal/user/badge/award', {
+    const response = await apiPost(`${API_BASE_URL}/user/badge/award`, {
       badgeId
     });
 

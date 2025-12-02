@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost } from '../utils/api';
 import CreateCapsuleModal from './CreateCapsuleModal';
-
-const API_BASE_URL ='https://journal-6xfj.onrender.com/journal';
+import { API_BASE_URL } from '../config/api';
 
 const TimeCapsuleUI = ({ theme }) => {
   const { user } = useAuth();

@@ -24,6 +24,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { apiGet, apiPost, apiPut, apiDelete } from "../utils/api";
 import { updateTaskQuests } from "../utils/questProgress";
 import { checkCelebrationTrigger } from "../utils/celebrationTrigger";
+import { API_BASE_URL } from "../config/api";
 import { useAuth } from "../contexts/AuthContext";
 import CelebrationModal from "../components/CelebrationModal";
 
@@ -266,7 +267,7 @@ export default function MonthlyPlanner({ theme }) {
   // Fetch planner data
   const fetchPlannerData = useCallback(async () => {
     try {
-      const res = await apiGet(`https://journal-6xfj.onrender.com/journal/planner/${yearMonth}`);
+      const res = await apiGet(`${API_BASE_URL}/planner/${yearMonth}`);
       const data = await res.json();
       console.log("📋 Fetched planner data:", data);
       setTasks(data.tasks || []);
@@ -279,7 +280,7 @@ export default function MonthlyPlanner({ theme }) {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await apiGet(`https://journal-6xfj.onrender.com/journal/planner/stats/${yearMonth}`);
+      const res = await apiGet(`${API_BASE_URL}/planner/stats/${yearMonth}`);
       const data = await res.json();
       setDailyStats(data.dailyStats || []);
     } catch (err) {
@@ -296,7 +297,7 @@ export default function MonthlyPlanner({ theme }) {
   const handleAddTask = async (taskData) => {
     try {
       // Always use POST endpoint - backend handles create vs update based on taskId presence
-      const endpoint = "https://journal-6xfj.onrender.com/journal/planner/task";
+      const endpoint = `${API_BASE_URL}/planner/task`;
       
       // Add taskId to body if editing
       const requestBody = editingTask
@@ -351,7 +352,7 @@ export default function MonthlyPlanner({ theme }) {
     const isCompleted = completions[date]?.includes(taskId);
 
     try {
-      await apiPost("https://journal-6xfj.onrender.com/journal/planner/toggle", {
+      await apiPost(`${API_BASE_URL}/planner/toggle`, {
         yearMonth,
         taskId,
         date,
@@ -425,7 +426,7 @@ export default function MonthlyPlanner({ theme }) {
 
     try {
       // Build the URL with query parameters
-      let url = `https://journal-6xfj.onrender.com/journal/planner/task/${yearMonth}/${deletingTask.id}`;
+      let url = `${API_BASE_URL}/planner/task/${yearMonth}/${deletingTask.id}`;
       const params = new URLSearchParams();
       
       if (deletingTask.isRecurring) {
@@ -473,7 +474,7 @@ export default function MonthlyPlanner({ theme }) {
   // Handle delete template from TemplatesModal
   const handleDeleteTemplate = async (templateId) => {
     try {
-      const res = await apiDelete(`https://journal-6xfj.onrender.com/journal/planner/task/${yearMonth}/${templateId}?scope=all`);
+      const res = await apiDelete(`${API_BASE_URL}/planner/task/${yearMonth}/${templateId}?scope=all`);
 
       const data = await res.json();
       
@@ -514,7 +515,7 @@ export default function MonthlyPlanner({ theme }) {
 
     // Persist to backend
     try {
-      const res = await apiPut("https://journal-6xfj.onrender.com/journal/planner/task/reorder", {
+      const res = await apiPut(`${API_BASE_URL}/planner/task/reorder`, {
         yearMonth,
         taskOrders,
       });

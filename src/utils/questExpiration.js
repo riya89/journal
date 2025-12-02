@@ -1,4 +1,5 @@
 import { apiPost, apiGet } from './api';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Quest Expiration Utility
@@ -15,7 +16,7 @@ export const checkAndRotateQuests = async (userId) => {
   try {
     console.log('🔄 Checking for expired quests...');
     
-    const response = await apiPost('https://journal-6xfj.onrender.com/journal/quests/check-expiration', {
+    const response = await apiPost(`${API_BASE_URL}/quests/check-expiration`, {
       uid: userId
     });
 
@@ -57,7 +58,7 @@ export const checkAndRotateQuests = async (userId) => {
  */
 export const getLastQuestGeneration = async (userId) => {
   try {
-    const response = await apiGet(`https://journal-6xfj.onrender.com/journal/quests/last-generation?uid=${userId}`);
+    const response = await apiGet(`${API_BASE_URL}/quests/last-generation?uid=${userId}`);
 
     if (!response.ok) {
       throw new Error('Failed to get last quest generation');
@@ -84,7 +85,7 @@ export const getLastQuestGeneration = async (userId) => {
  */
 export const rotateQuestsForPeriod = async (userId, period) => {
   try {
-    const response = await apiPost('https://journal-6xfj.onrender.com/journal/quests/rotate', {
+    const response = await apiPost(`${API_BASE_URL}/quests/rotate`, {
       uid: userId,
       period
     });

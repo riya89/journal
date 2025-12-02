@@ -3,8 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost } from '../utils/api';
 import AddGratitudeModal from './AddGratitudeModal';
 import { showSuccessToast, showErrorToast } from '../utils/toast';
-
-const API_BASE_URL = 'https://journal-6xfj.onrender.com/journal';
+import { API_BASE_URL } from '../config/api';
 
 const GratitudeJar = ({ theme }) => {
   const { user } = useAuth();

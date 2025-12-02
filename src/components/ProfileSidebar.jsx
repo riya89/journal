@@ -117,6 +117,7 @@
 // }
 import { useState, useEffect } from "react";
 import { apiGet } from "../utils/api";
+import { API_BASE_URL } from "../config/api";
 
 export default function ProfileSidebar({ theme, journalDates = [], selectedMonth, selectedYear, user }) {
   const [affirmation, setAffirmation] = useState("I am grounded, calm, and present. 🌿");
@@ -132,7 +133,7 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
           return;
         }
 
-        const res = await apiGet("https://journal-6xfj.onrender.com/journal/affirmation/personalized");
+        const res = await apiGet(`${API_BASE_URL}/affirmation/personalized`);
 
         if (res.ok) {
           const data = await res.json();

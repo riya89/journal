@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { TASK_CATEGORIES } from "../constants/taskCategories";
 import { apiGet } from "../utils/api";
+import { API_BASE_URL } from "../config/api";
 
 export default function TemplatesModal({
   isOpen,
@@ -24,7 +25,7 @@ export default function TemplatesModal({
   const fetchTemplates = async () => {
     setIsLoading(true);
     try {
-      const response = await apiGet("https://journal-6xfj.onrender.com/journal/planner/templates");
+      const response = await apiGet(`${API_BASE_URL}/planner/templates`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch templates");

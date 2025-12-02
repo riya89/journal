@@ -811,6 +811,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiPost } from "../utils/api";
 import { useAuth } from "../contexts/AuthContext";
+import { API_BASE_URL } from "../config/api";
 
 export default function Header({ theme, user, onLogout, selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }) {
   const { logout, updateUser } = useAuth();
@@ -1058,7 +1059,7 @@ function ProfileModal({ user, theme, logout, onClose, updateUser }) {
   const handleAvatarPick = async (url) => {
     try {
       setLoading(true);
-      const res = await apiPost("https://journal-6xfj.onrender.com/journal/avatar", { avatarURL: url });
+      const res = await apiPost(`${API_BASE_URL}/avatar`, { avatarURL: url });
 
       const data = await res.json();
       if (data.success) {

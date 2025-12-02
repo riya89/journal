@@ -56,6 +56,7 @@ import { useEffect, useState } from "react";
 import ProfileSidebar from "./ProfileSidebar";
 import JournalGrid from "./JournalGrid";
 import { apiGet } from "../utils/api";
+import { API_BASE_URL } from "../config/api";
 
 export default function Layout({ theme, onCardClick, selectedMonth, selectedYear, user }) {
   const [journalDates, setJournalDates] = useState([]);
@@ -66,7 +67,7 @@ export default function Layout({ theme, onCardClick, selectedMonth, selectedYear
       if (!token) return;
 
       try {
-        const res = await apiGet("https://journal-6xfj.onrender.com/journal/dates/all");
+        const res = await apiGet(`${API_BASE_URL}/dates/all`);
         const data = await res.json();
         setJournalDates(data.dates || []);
       } catch (err) {

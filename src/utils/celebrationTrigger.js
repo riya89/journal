@@ -1,4 +1,5 @@
 import { apiGet } from './api';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Check if all tasks are completed for a specific date and return celebration data
@@ -8,7 +9,7 @@ import { apiGet } from './api';
 export const checkCelebrationTrigger = async (date) => {
   try {
     const response = await apiGet(
-      `https://journal-6xfj.onrender.com/journal/planner/daily-status?date=${date}`
+      `${API_BASE_URL}/planner/daily-status?date=${date}`
     );
     
     if (!response.ok) {

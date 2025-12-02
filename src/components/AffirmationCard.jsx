@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../lib/firebase';
 import { apiGet } from '../utils/api';
+import { API_BASE_URL } from '../config/api';
 
 export default function AffirmationCard({ theme }) {
   const [affirmation, setAffirmation] = useState(null);
@@ -27,8 +28,8 @@ export default function AffirmationCard({ theme }) {
       }
 
       const url = forceRefresh
-        ? 'https://journal-6xfj.onrender.com/journal/affirmation/personalized?forceRefresh=true'
-        : 'https://journal-6xfj.onrender.com/journal/affirmation/personalized';
+        ? `${API_BASE_URL}/affirmation/personalized?forceRefresh=true`
+        : `${API_BASE_URL}/affirmation/personalized`;
 
       const response = await apiGet(url);
 
