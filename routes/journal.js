@@ -1,401 +1,3 @@
-// // // // import express from "express";
-// // // // import { db, auth } from "../firebase.js";
-
-// // // // const router = express.Router();
-
-// // // // // Middleware to verify token
-// // // // async function verifyToken(req, res, next) {
-// // // //   try {
-// // // //     const token = req.headers.authorization?.split(" ")[1];
-// // // //     const decoded = await auth.verifyIdToken(token);
-// // // //     req.uid = decoded.uid;
-// // // //     next();
-// // // //   } catch {
-// // // //     res.status(401).json({ error: "Unauthorized" });
-// // // //   }
-// // // // }
-
-// // // // // Save journal entry
-// // // // router.post("/add", verifyToken, async (req, res) => {
-// // // //   const { title, content, mood } = req.body;
-// // // //   const entry = { title, content, mood, createdAt: new Date() };
-// // // //   await db.collection("users").doc(req.uid).collection("journals").add(entry);
-// // // //   res.json({ message: "Journal saved successfully ✅" });
-// // // // });
-
-// // // // // Fetch user’s journal entries
-// // // // router.get("/list", verifyToken, async (req, res) => {
-// // // //   const snapshot = await db.collection("users").doc(req.uid).collection("journals").get();
-// // // //   const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-// // // //   res.json(entries);
-// // // // });
-
-// // // // export default router;
-// // // import express from "express";
-// // // import { db, auth } from "../firebase.js";
-
-// // // const router = express.Router();
-
-// // // // Middleware to verify token
-// // // async function verifyToken(req, res, next) {
-// // //   try {
-// // //     const token = req.headers.authorization?.split(" ")[1];
-// // //     const decoded = await auth.verifyIdToken(token);
-// // //     req.uid = decoded.uid;
-// // //     next();
-// // //   } catch {
-// // //     res.status(401).json({ error: "Unauthorized" });
-// // //   }
-// // // }
-
-// // // // ✅ Save or update a journal entry (by date)
-// // // router.post("/add", verifyToken, async (req, res) => {
-// // //   const { title, content, mood, date } = req.body;
-// // //   if (!date) return res.status(400).json({ error: "Missing date field" });
-
-// // //   try {
-// // //     const userRef = db.collection("users").doc(req.uid);
-// // //     const journalRef = userRef.collection("journals").doc(date);
-
-// // //     await journalRef.set({
-// // //       title,
-// // //       content,
-// // //       mood,
-// // //       date,
-// // //       updatedAt: new Date(),
-// // //     });
-
-// // //     res.json({ message: "Journal saved successfully ✅", date });
-// // //   } catch (err) {
-// // //     console.error("Error saving journal:", err);
-// // //     res.status(500).json({ error: "Failed to save journal" });
-// // //   }
-// // // });
-
-// // // // ✅ Fetch journal entry for a specific date
-// // // router.get("/:date", verifyToken, async (req, res) => {
-// // //   try {
-// // //     const { date } = req.params;
-// // //     const doc = await db
-// // //       .collection("users")
-// // //       .doc(req.uid)
-// // //       .collection("journals")
-// // //       .doc(date)
-// // //       .get();
-
-// // //     if (!doc.exists) return res.json(null);
-// // //     res.json(doc.data());
-// // //   } catch (err) {
-// // //     console.error("Error fetching journal:", err);
-// // //     res.status(500).json({ error: "Failed to fetch journal" });
-// // //   }
-// // // });
-// // // // Save or update journal entry (by date)
-// // // router.post("/add", verifyToken, async (req, res) => {
-// // //   const { title, content, mood, date, prompts = [], answers = [] } = req.body;
-// // //   if (!date) return res.status(400).json({ error: "Missing date field" });
-
-// // //   try {
-// // //     const userRef = db.collection("users").doc(req.uid);
-// // //     const journalRef = userRef.collection("journals").doc(date);
-
-// // //     await journalRef.set({
-// // //       title,
-// // //       content,
-// // //       mood,
-// // //       date,
-// // //       prompts,     // ✅ store daily reflection questions
-// // //       answers,     // ✅ store user's responses
-// // //       updatedAt: new Date(),
-// // //     });
-
-// // //     res.json({ message: "Journal saved successfully ✅", date });
-// // //   } catch (err) {
-// // //     console.error("Error saving journal:", err);
-// // //     res.status(500).json({ error: "Failed to save journal" });
-// // //   }
-// // // });
-
-// // // export default router;
-// // import express from "express";
-// // import { db, auth } from "../firebase.js";
-// // import fetch from "node-fetch";
-
-// // const router = express.Router();
-
-// // // 🔐 Middleware: verify Firebase ID token
-// // async function verifyToken(req, res, next) {
-// //   try {
-// //     const token = req.headers.authorization?.split(" ")[1];
-// //     const decoded = await auth.verifyIdToken(token);
-// //     req.uid = decoded.uid;
-// //     next();
-// //   } catch {
-// //     res.status(401).json({ error: "Unauthorized" });
-// //   }
-// // }
-
-// // // 🎯 Fallback reflection prompts
-// // const fallbackPrompts = [
-// //   "What made you smile today?",
-// //   "What’s one thing you’re grateful for?",
-// //   "Describe your day in a color or texture.",
-// //   "What small act of kindness did you notice?",
-// //   "If your mood were weather, what would it be?",
-// // ];
-
-// // // 🧠 Helper: fetch today's reflection questions (cached in Firestore)
-// // async function getDailyPrompts() {
-// //   const dateKey = new Date().toISOString().slice(0, 10);
-// //   const promptRef = db.collection("dailyPrompts").doc(dateKey);
-// //   const existingDoc = await promptRef.get();
-
-// //   if (existingDoc.exists) {
-// //     return existingDoc.data().prompts;
-// //   }
-
-// //   let prompts = [];
-// //   try {
-// //     const response = await fetch(
-// //       `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
-// //       {
-// //         method: "POST",
-// //         headers: { "Content-Type": "application/json" },
-// //         body: JSON.stringify({
-// //           contents: [
-// //             {
-// //               parts: [
-// //                 {
-// //                   text: "Generate 2 short comforting self-reflection prompts for journaling. Each should sound natural, emotional, and under 15 words.",
-// //                 },
-// //               ],
-// //             },
-// //           ],
-// //         }),
-// //       }
-// //     );
-
-// //     const data = await response.json();
-// //     prompts =
-// //       data?.candidates?.[0]?.content?.parts?.map((p) => p.text.trim()) ||
-// //       fallbackPrompts.sort(() => 0.5 - Math.random()).slice(0, 2);
-// //   } catch {
-// //     prompts = fallbackPrompts.sort(() => 0.5 - Math.random()).slice(0, 2);
-// //   }
-
-// //   // store in Firestore for the day
-// //   await promptRef.set({
-// //     date: dateKey,
-// //     prompts,
-// //     createdAt: new Date(),
-// //   });
-
-// //   return prompts;
-// // }
-
-// // // 📝 Save or update journal entry (for a specific date)
-// // router.post("/add", verifyToken, async (req, res) => {
-// //   const { title, content, mood, date, prompts = [], answers = [] } = req.body;
-// //   if (!date) return res.status(400).json({ error: "Missing date field" });
-
-// //   try {
-// //     const userRef = db.collection("users").doc(req.uid);
-// //     const journalRef = userRef.collection("journals").doc(date);
-
-// //     await journalRef.set({
-// //       title,
-// //       content,
-// //       mood,
-// //       date,
-// //       prompts,
-// //       answers,
-// //       updatedAt: new Date(),
-// //     });
-
-// //     res.json({ message: "Journal saved successfully ✅", date });
-// //   } catch (err) {
-// //     console.error("Error saving journal:", err);
-// //     res.status(500).json({ error: "Failed to save journal" });
-// //   }
-// // });
-
-// // // 📖 Fetch journal entry (auto-attach daily prompts if not saved yet)
-// // router.get("/:date", verifyToken, async (req, res) => {
-// //   try {
-// //     const { date } = req.params;
-// //     const journalRef = db
-// //       .collection("users")
-// //       .doc(req.uid)
-// //       .collection("journals")
-// //       .doc(date);
-
-// //     const doc = await journalRef.get();
-
-// //     if (doc.exists) {
-// //       // return saved journal
-// //       return res.json(doc.data());
-// //     }
-
-// //     // no journal yet → attach that day's reflection prompts automatically
-// //     const prompts = await getDailyPrompts();
-// //     const newJournal = {
-// //       title: "",
-// //       content: "",
-// //       mood: "",
-// //       date,
-// //       prompts,
-// //       answers: ["", ""],
-// //     };
-
-// //     // save the empty journal with today's prompts for consistency
-// //     await journalRef.set(newJournal);
-// //     res.json(newJournal);
-// //   } catch (err) {
-// //     console.error("Error fetching journal:", err);
-// //     res.status(500).json({ error: "Failed to fetch journal" });
-// //   }
-// // });
-
-// // export default router;
-// import express from "express";
-// import { db, auth } from "../firebase.js";
-// import fetch from "node-fetch";
-
-// const router = express.Router();
-
-// // 🔐 Middleware
-// async function verifyToken(req, res, next) {
-//   try {
-//     const token = req.headers.authorization?.split(" ")[1];
-//     const decoded = await auth.verifyIdToken(token);
-//     req.uid = decoded.uid;
-//     next();
-//   } catch {
-//     res.status(401).json({ error: "Unauthorized" });
-//   }
-// }
-
-// // 🌿 Fallback prompts
-// const fallbackPrompts = [
-//   "What made you smile today?",
-//   "What’s one thing you’re grateful for?",
-//   "Describe your day in a color or texture.",
-//   "What small act of kindness did you notice?",
-//   "If your mood were weather, what would it be?",
-// ];
-
-// // 🧠 Helper: fetch reflection prompts (for any given date)
-// async function getDailyPromptsForDate(dateKey) {
-//   const promptRef = db.collection("dailyPrompts").doc(dateKey);
-//   const existingDoc = await promptRef.get();
-
-//   if (existingDoc.exists) {
-//     return existingDoc.data().prompts;
-//   }
-
-//   // ✨ Generate new prompts for this specific date
-//   let prompts = [];
-//   try {
-//     const response = await fetch(
-//       `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
-//       {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           contents: [
-//             {
-//               parts: [
-//                 {
-//                   text: "Generate 2 short comforting self-reflection prompts for journaling. Each should sound natural, emotional, and under 15 words.",
-//                 },
-//               ],
-//             },
-//           ],
-//         }),
-//       }
-//     );
-
-//     const data = await response.json();
-//     prompts =
-//       data?.candidates?.[0]?.content?.parts?.map((p) => p.text.trim()) ||
-//       fallbackPrompts.sort(() => 0.5 - Math.random()).slice(0, 2);
-//   } catch (err) {
-//     console.error("Gemini fetch failed:", err);
-//     prompts = fallbackPrompts.sort(() => 0.5 - Math.random()).slice(0, 2);
-//   }
-
-//   // ✅ Save new prompts for that date (so they stay same later)
-//   await promptRef.set({
-//     date: dateKey,
-//     prompts,
-//     createdAt: new Date(),
-//   });
-
-//   return prompts;
-// }
-
-// // 📝 Save or update journal entry
-// router.post("/add", verifyToken, async (req, res) => {
-//   const { title, content, mood, date, prompts = [], answers = [] } = req.body;
-//   if (!date) return res.status(400).json({ error: "Missing date field" });
-
-//   try {
-//     const userRef = db.collection("users").doc(req.uid);
-//     const journalRef = userRef.collection("journals").doc(date);
-
-//     await journalRef.set({
-//       title,
-//       content,
-//       mood,
-//       date,
-//       prompts,
-//       answers,
-//       updatedAt: new Date(),
-//     });
-
-//     res.json({ message: "Journal saved successfully ✅", date });
-//   } catch (err) {
-//     console.error("Error saving journal:", err);
-//     res.status(500).json({ error: "Failed to save journal" });
-//   }
-// });
-
-// // 📖 Fetch journal entry for a specific date
-// router.get("/:date", verifyToken, async (req, res) => {
-//   try {
-//     const { date } = req.params;
-//     const journalRef = db
-//       .collection("users")
-//       .doc(req.uid)
-//       .collection("journals")
-//       .doc(date);
-
-//     const doc = await journalRef.get();
-
-//     if (doc.exists) {
-//       return res.json(doc.data());
-//     }
-
-//     // ⏳ No journal yet for this date → generate *new unique prompts for that date*
-//     const prompts = await getDailyPromptsForDate(date);
-//     const newJournal = {
-//       title: "",
-//       content: "",
-//       mood: "",
-//       date,
-//       prompts,
-//       answers: ["", ""],
-//     };
-
-//     await journalRef.set(newJournal);
-//     res.json(newJournal);
-//   } catch (err) {
-//     console.error("Error fetching journal:", err);
-//     res.status(500).json({ error: "Failed to fetch journal" });
-//   }
-// });
-
-// export default router;
 import express from "express";
 import { db, auth } from "../firebase.js";
 import fetch from "node-fetch";
@@ -1023,61 +625,7 @@ router.get("/dates/month/:yearMonth", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch journal dates" });
   }
 });
-// -----------------------------------------
-// 🤖 AI ASSISTANT — Gemini reply
-// -----------------------------------------
-router.post("/assistant/reply", verifyToken, async (req, res) => {
-  const { message } = req.body;
 
-  if (!message || !message.trim()) {
-    return res.status(400).json({ reply: "I'm here, tell me what's on your mind 🌿" });
-  }
-
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `
-You are a soft-spoken, gentle emotional companion.
-Respond in under 2 sentences.
-Tone: calming, validating, grounding.
-User said: "${message}"
-
-Reply like:
-- “I’m here with you…”
-- “That sounds heavy…”
-- “You’re doing the best you can.”
-
-Avoid:
-- Questions unless needed
-- Long paragraphs
-- Overly formal tone
-`
-                }
-              ]
-            }
-          ]
-        })
-      }
-    );
-
-    const data = await response.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
-      "I'm here with you. Tell me more 🌿";
-
-    res.json({ reply });
-  } catch (err) {
-    console.error("AI Assistant Error:", err);
-    res.json({ reply: "I'm here for you… even if my mind is a little foggy right now 🌫️" });
-  }
-});
 // -----------------------------------------
 // 🌸 AFFIRMATION OF THE DAY - Gemini
 // -----------------------------------------
@@ -1287,6 +835,373 @@ Generate 2-3 tasks now:`;
     });
   }
 });
+// ============================================
+// 🌸 PERSONALIZED AFFIRMATIONS ENDPOINT
+// ============================================
+// Add this to your backend/routes/journal.js file
+
+/**
+ * Helper: Analyze themes from journal entries and AI chat messages
+ */
+function analyzeJournalThemes(journals) {
+  const themes = [];
+  const allText = journals.map(j => j.content || '').join(' ').toLowerCase();
+  
+  // Theme detection keywords
+  const themeKeywords = {
+    stress: ['stress', 'stressed', 'overwhelm', 'anxious', 'anxiety', 'worried', 'pressure'],
+    work: ['work', 'job', 'career', 'project', 'deadline', 'meeting', 'boss'],
+    relationships: ['friend', 'family', 'partner', 'relationship', 'love', 'conflict'],
+    growth: ['learn', 'grow', 'improve', 'progress', 'achieve', 'goal', 'success'],
+    selfCare: ['rest', 'sleep', 'exercise', 'meditate', 'relax', 'care', 'health']
+  };
+  
+  for (const [theme, keywords] of Object.entries(themeKeywords)) {
+    if (keywords.some(keyword => allText.includes(keyword))) {
+      themes.push(theme);
+    }
+  }
+  
+  return themes.length > 0 ? themes : ['general'];
+}
+
+/**
+ * Helper: Calculate mood trend
+ */
+function calculateMoodTrend(moodData) {
+  if (!moodData || moodData.length < 2) return 'stable';
+  
+  const recent = moodData.slice(-3);
+  const avgRecent = recent.reduce((sum, m) => sum + m.mood, 0) / recent.length;
+  
+  const older = moodData.slice(0, -3);
+  if (older.length === 0) return 'stable';
+  
+  const avgOlder = older.reduce((sum, m) => sum + m.mood, 0) / older.length;
+  
+  const diff = avgRecent - avgOlder;
+  
+  if (diff > 0.5) return 'improving';
+  if (diff < -0.5) return 'declining';
+  return 'stable';
+}
+
+/**
+ * Helper: Check if affirmation is too similar to recent ones
+ */
+async function isSimilarToRecent(userId, newAffirmation) {
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  
+  const recentAffirmations = await db
+    .collection('users')
+    .doc(userId)
+    .collection('affirmations')
+    .where('createdAt', '>=', twoWeeksAgo)
+    .orderBy('createdAt', 'desc')
+    .limit(10)
+    .get();
+  
+  if (recentAffirmations.empty) return false;
+  
+  // Simple similarity check - check if first 20 characters match
+  const newStart = newAffirmation.substring(0, 20).toLowerCase();
+  
+  for (const doc of recentAffirmations.docs) {
+    const oldAffirmation = doc.data().affirmation || '';
+    const oldStart = oldAffirmation.substring(0, 20).toLowerCase();
+    
+    if (newStart === oldStart) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Generate personalized affirmation based on journal entries, AI chat, and mood
+ * GET /journal/affirmation/personalized
+ */
+router.get("/affirmation/personalized", verifyToken, async (req, res) => {
+  try {
+    const userId = req.uid;
+    const forceRefresh = req.query.forceRefresh === 'true';
+    
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Check cache (unless force refresh)
+    if (!forceRefresh) {
+      const cachedRef = db
+        .collection('users')
+        .doc(userId)
+        .collection('affirmations')
+        .doc(today);
+      
+      const cachedDoc = await cachedRef.get();
+      
+      if (cachedDoc.exists) {
+        const cached = cachedDoc.data();
+        return res.json({
+          affirmation: cached.affirmation,
+          basedOn: cached.basedOn,
+          cached: true,
+          generatedAt: cached.createdAt.toDate().toISOString()
+        });
+      }
+    }
+    
+    // Fetch mood data from Raindrop (last 7 days)
+    let moodData = [];
+    let avgMood = 3; // neutral default
+    let moodTrend = 'stable';
+    
+    try {
+      const raindropUrl = process.env.RAINDROP_URL || 'http://localhost:8787';
+      const moodRes = await fetch(`${raindropUrl}/analytics/mood?uid=${userId}`);
+      
+      if (moodRes.ok) {
+        const moodJson = await moodRes.json();
+        moodData = moodJson.moodData || [];
+        
+        if (moodData.length > 0) {
+          avgMood = moodData.reduce((sum, m) => sum + m.mood, 0) / moodData.length;
+          moodTrend = calculateMoodTrend(moodData);
+        }
+      }
+    } catch (moodError) {
+      console.warn('Could not fetch mood data:', moodError);
+    }
+    
+    // Fetch recent journal entries (last 2-3 days)
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
+    
+    const journalsSnapshot = await db
+      .collection('users')
+      .doc(userId)
+      .collection('journals')
+      .where('date', '>=', threeDaysAgoStr)
+      .orderBy('date', 'desc')
+      .limit(5)
+      .get();
+    
+    const journals = journalsSnapshot.docs.map(doc => doc.data());
+    
+    // Fetch recent AI chat conversations (last 2-3 days)
+    const aiSessionsSnapshot = await db
+      .collection('users')
+      .doc(userId)
+      .collection('aiSessions')
+      .where('updatedAt', '>=', threeDaysAgo)
+      .orderBy('updatedAt', 'desc')
+      .limit(3)
+      .get();
+    
+    // Extract user messages from AI sessions
+    const aiMessages = [];
+    aiSessionsSnapshot.docs.forEach(doc => {
+      const sessionData = doc.data();
+      const messages = sessionData.messages || [];
+      
+      // Get only user messages (not AI responses)
+      const userMessages = messages
+        .filter(m => m.role === 'user')
+        .map(m => m.content)
+        .slice(-5); // Last 5 user messages per session
+      
+      aiMessages.push(...userMessages);
+    });
+    
+    // Combine journals and AI chat for theme analysis
+    const allContent = [
+      ...journals.map(j => j.content || ''),
+      ...aiMessages
+    ];
+    const themes = analyzeJournalThemes(allContent.map(c => ({ content: c })));
+    
+    // Determine mood category
+    let moodCategory = 'mixed';
+    if (avgMood < 2.5) moodCategory = 'low';
+    else if (avgMood > 3.5) moodCategory = 'positive';
+    
+    // Build richer context for AI with journal and chat content
+    const journalSnippets = journals
+      .map(j => {
+        const content = j.content || '';
+        return content.substring(0, 200);
+      })
+      .filter(s => s.length > 0)
+      .join('\n---\n');
+    
+    const chatSnippets = aiMessages
+      .slice(0, 5) // Take first 5 messages
+      .map(msg => msg.substring(0, 150))
+      .filter(s => s.length > 0)
+      .join('\n---\n');
+    
+    const context = `
+User's recent mood: ${moodCategory} (average: ${avgMood.toFixed(1)}/5)
+Mood trend: ${moodTrend}
+Recent themes: ${themes.join(', ')}
+Number of recent journal entries: ${journals.length}
+Number of recent AI conversations: ${aiMessages.length}
+
+Recent journal excerpts (last 2-3 days):
+${journalSnippets || 'No recent journal entries'}
+
+Recent AI chat messages (last 2-3 days):
+${chatSnippets || 'No recent AI conversations'}
+    `.trim();
+    
+    // Build mood-specific prompt
+    let toneGuidance = '';
+    if (moodCategory === 'low') {
+      toneGuidance = 'Be extra supportive, grounding, and compassionate. Acknowledge their struggle while offering gentle encouragement.';
+    } else if (moodCategory === 'positive') {
+      toneGuidance = 'Be celebratory and encouraging. Acknowledge their positive momentum and inspire continued growth.';
+    } else {
+      toneGuidance = 'Be balanced and validating. Acknowledge both challenges and strengths with gentle support.';
+    }
+    
+    const prompt = `Generate a SHORT, personalized affirmation in FIRST PERSON (1-2 sentences MAXIMUM, under 25 words total).
+
+${context}
+
+Tone: ${toneGuidance}
+
+STRICT RULES:
+- MAXIMUM 1-2 short sentences (under 25 words total)
+- MUST use FIRST PERSON: "I am...", "I attract...", "I deserve...", "I choose..."
+- NO second person ("you are", "your")
+- NO coaching language
+- Direct, powerful, present tense
+- Reference their actual themes/mood if available
+- NO explanations, JUST the affirmation
+
+Examples of CORRECT format:
+- "I am resilient and capable of handling whatever comes my way."
+- "I attract peace and positive energy into my life today."
+- "I am worthy of rest and self-compassion."
+- "I choose to trust my journey and embrace growth."
+- "I am stronger than my stress, and I navigate challenges with grace."
+
+Generate ONE short FIRST PERSON affirmation NOW (under 25 words):`;
+    
+    // Generate affirmation with Gemini
+    const GEMINI_KEY = process.env.GEMINI_API_KEY;
+    
+    if (!GEMINI_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
+    }
+    
+    let affirmation = '';
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    // Try to generate unique affirmation (check against recent ones)
+    while (attempts < maxAttempts) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: prompt }]
+            }],
+            generationConfig: {
+              temperature: 0.9,
+              maxOutputTokens: 50  // Reduced from 100 to force shorter responses
+            }
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      affirmation = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      
+      // Remove quotes if present
+      affirmation = affirmation.replace(/^["']|["']$/g, '');
+      
+      // Remove any coaching language that slipped through
+      affirmation = affirmation.replace(/^As your mental wellness coach,?\s*/i, '');
+      affirmation = affirmation.replace(/^I've noticed (that )?\s*/i, '');
+      affirmation = affirmation.replace(/^I want to remind you (that )?\s*/i, '');
+      
+      // If still too long (over 150 chars), truncate to first 2 sentences
+      if (affirmation.length > 150) {
+        const sentences = affirmation.match(/[^.!?]+[.!?]+/g) || [affirmation];
+        affirmation = sentences.slice(0, 2).join(' ').trim();
+      }
+      
+      // Check if similar to recent affirmations
+      const isSimilar = await isSimilarToRecent(userId, affirmation);
+      
+      if (!isSimilar || attempts === maxAttempts - 1) {
+        break;
+      }
+      
+      attempts++;
+      console.log(`Affirmation too similar, regenerating (attempt ${attempts + 1}/${maxAttempts})`);
+    }
+    
+    if (!affirmation) {
+      // Fallback affirmation (first person)
+      affirmation = "I am doing my best, and that is more than enough. I choose to be gentle with myself today. 🌿";
+    }
+    
+    // Store affirmation
+    const affirmationData = {
+      affirmation,
+      basedOn: {
+        recentMood: moodCategory,
+        themes,
+        moodTrend,
+        avgMood: parseFloat(avgMood.toFixed(1))
+      },
+      createdAt: new Date(),
+      userId
+    };
+    
+    await db
+      .collection('users')
+      .doc(userId)
+      .collection('affirmations')
+      .doc(today)
+      .set(affirmationData);
+    
+    // Return response
+    res.json({
+      affirmation,
+      basedOn: affirmationData.basedOn,
+      cached: false,
+      generatedAt: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Error generating personalized affirmation:', error);
+    
+    // Return fallback affirmation (first person)
+    res.json({
+      affirmation: "I am doing my best, and that is more than enough. I choose to be gentle with myself today. 🌿",
+      basedOn: {
+        recentMood: 'unknown',
+        themes: ['general'],
+        moodTrend: 'stable'
+      },
+      cached: false,
+      generatedAt: new Date().toISOString(),
+      error: 'Failed to generate personalized affirmation, using fallback'
+    });
+  }
+});
+
 // -----------------------------------------
 // 🔊 AI ASSISTANT — ElevenLabs TTS
 // -----------------------------------------
@@ -1886,41 +1801,6 @@ router.delete("/planner/task/:yearMonth/:taskId", verifyToken, async (req, res) 
   }
 });
 
-// // 4. Toggle task completion (UNCHANGED - works with both types)
-// router.post("/planner/toggle", verifyToken, async (req, res) => {
-//   try {
-//     const { yearMonth, taskId, date, completed } = req.body;
-    
-//     if (!yearMonth || !taskId || !date) {
-//       return res.status(400).json({ error: "Missing required fields" });
-//     }
-    
-//     const userRef = db.collection("users").doc(req.uid);
-//     const plannerRef = userRef.collection("planners").doc(yearMonth);
-//     const doc = await plannerRef.get();
-    
-//     const data = doc.exists ? doc.data() : { yearMonth, tasks: [], completions: {}, exceptions: {} };
-    
-//     if (!data.completions[date]) {
-//       data.completions[date] = [];
-//     }
-    
-//     if (completed) {
-//       if (!data.completions[date].includes(taskId)) {
-//         data.completions[date].push(taskId);
-//       }
-//     } else {
-//       data.completions[date] = data.completions[date].filter(id => id !== taskId);
-//     }
-    
-//     await plannerRef.set(data);
-//     res.json({ success: true });
-//   } catch (err) {
-//     console.error("Error toggling task:", err);
-//     res.status(500).json({ error: "Failed to toggle task" });
-//   }
-// });
-
 router.get("/planner/stats/:yearMonth", verifyToken, async (req, res) => {
   try {
     const { yearMonth } = req.params;
@@ -1987,83 +1867,7 @@ router.get("/planner/stats/:yearMonth", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
-// 5. Get stats for dopamine graph (ENHANCED with time estimates)
-// router.get("/planner/stats/:yearMonth", verifyToken, async (req, res) => {
-//   try {
-//     const { yearMonth } = req.params;
-//     const userRef = db.collection("users").doc(req.uid);
-    
-//     // Get month planner
-//     const plannerRef = userRef.collection("planners").doc(yearMonth);
-//     const doc = await plannerRef.get();
-    
-//     // Get templates
-//     const templatesRef = userRef.collection("taskTemplates");
-//     const templatesSnapshot = await templatesRef.get();
-    
-//     const monthData = doc.exists ? doc.data() : { yearMonth, tasks: [], completions: {}, exceptions: {} };
-//     const templates = [];
-    
-//     templatesSnapshot.forEach(doc => {
-//       templates.push({ id: doc.id, ...doc.data() });
-//     });
-    
-//     // Calculate stats for each day
-//     const dailyStats = [];
-//     const [year, month] = yearMonth.split('-');
-//     const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
-    
-//     for (let day = 1; day <= daysInMonth; day++) {
-//       const date = `${yearMonth}-${String(day).padStart(2, '0')}`;
-      
-//       // Get all tasks for this day (regular + recurring)
-//       // const dayTasks = [...monthData.tasks];
-//       const dayTasks = monthData.tasks.filter(task => {
-//   // Exclude tasks that have a specificDate and it's not today
-//   if (task.specificDate && task.specificDate !== date) {
-//     return false;
-//   }
-//   return true;
-// });
 
-//       templates.forEach(template => {
-//         const applicableDates = getApplicableDates(template, yearMonth);
-//         if (applicableDates.includes(date)) {
-//           // Check if not deleted via exception
-//           const exception = monthData.exceptions?.[template.id]?.[date];
-//           if (!exception || !exception.isDeleted) {
-//             dayTasks.push(template);
-//           }
-//         }
-//       });
-      
-//       const completed = monthData.completions[date]?.length || 0;
-      
-//       // Calculate time estimates
-//       const totalEstimatedTime = dayTasks.reduce((sum, task) => {
-//         return sum + (task.timeEstimate || 0);
-//       }, 0);
-      
-//       const completedTime = dayTasks
-//         .filter(task => monthData.completions[date]?.includes(task.id))
-//         .reduce((sum, task) => sum + (task.timeEstimate || 0), 0);
-      
-//       dailyStats.push({
-//         date,
-//         day,
-//         planned: dayTasks.length,
-//         completed,
-//         totalEstimatedTime,
-//         completedTime
-//       });
-//     }
-    
-//     res.json({ dailyStats });
-//   } catch (err) {
-//     console.error("Error fetching stats:", err);
-//     res.status(500).json({ error: "Failed to fetch stats" });
-//   }
-// });
 // 4. Toggle task completion
 router.post("/planner/toggle", verifyToken, async (req, res) => {
   try {
@@ -2482,6 +2286,179 @@ router.post("/timecapsule/create", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to create time capsule" });
   }
 });
+// Add this to your backend/routes/journal.js file
+
+/**
+ * GET /journal/insights/fresh
+ * Generate fresh insights based on current mood data and streaks
+ */
+router.get("/insights/fresh", verifyToken, async (req, res) => {
+  try {
+    const userId = req.uid;
+    const userRef = db.collection("users").doc(userId);
+    
+    // Fetch recent journal entries (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+    
+    const journalsSnapshot = await userRef
+      .collection("journals")
+      .where("date", ">=", thirtyDaysAgoStr)
+      .orderBy("date", "desc")
+      .get();
+    
+    const journals = [];
+    journalsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.mood) {
+        journals.push({
+          date: data.date,
+          mood: parseInt(data.mood),
+          content: data.content || ""
+        });
+      }
+    });
+    
+    if (journals.length === 0) {
+      return res.json({ insights: [] });
+    }
+    
+    // Calculate statistics
+    const moods = journals.map(j => j.mood);
+    const avgMood = moods.reduce((sum, m) => sum + m, 0) / moods.length;
+    
+    // Find best and worst days
+    const sortedByMood = [...journals].sort((a, b) => b.mood - a.mood);
+    const bestDay = sortedByMood[0];
+    const worstDay = sortedByMood[sortedByMood.length - 1];
+    
+    // Calculate current streak (consecutive days with mood >= 4)
+    let currentStreak = 0;
+    const sortedByDate = [...journals].sort((a, b) => 
+      new Date(b.date) - new Date(a.date)
+    );
+    
+    for (const entry of sortedByDate) {
+      if (entry.mood >= 4) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+    
+    // Calculate max streak in period
+    let maxStreak = 0;
+    let tempStreak = 0;
+    for (const entry of journals) {
+      if (entry.mood >= 4) {
+        tempStreak++;
+        maxStreak = Math.max(maxStreak, tempStreak);
+      } else {
+        tempStreak = 0;
+      }
+    }
+    
+    // Calculate trend
+    const recentMoods = moods.slice(0, 7);
+    const olderMoods = moods.slice(7, 14);
+    const recentAvg = recentMoods.reduce((sum, m) => sum + m, 0) / recentMoods.length;
+    const olderAvg = olderMoods.length > 0 
+      ? olderMoods.reduce((sum, m) => sum + m, 0) / olderMoods.length 
+      : recentAvg;
+    
+    let trend = 'stable';
+    if (recentAvg - olderAvg > 0.5) trend = 'improving';
+    else if (recentAvg - olderAvg < -0.5) trend = 'declining';
+    
+    // Calculate missed days
+    const totalDays = 30;
+    const missedDays = totalDays - journals.length;
+    
+    // Generate insights array
+    const insights = [];
+    
+    // Best day insight
+    if (bestDay) {
+      insights.push(
+        `Your best day was ${formatDate(bestDay.date)} with a mood of ${bestDay.mood}/5`
+      );
+    }
+    
+    // Worst day insight (with encouragement)
+    if (worstDay && worstDay.mood <= 3) {
+      insights.push(
+        `Your most challenging day was ${formatDate(worstDay.date)} with a mood of ${worstDay.mood}/5. Even on challenging days, you're tracking your progress. That's a sign of strength.`
+      );
+    }
+    
+    // Streak insight (UPDATED - uses current streak)
+    const streakToShow = currentStreak > 0 ? currentStreak : maxStreak;
+    if (streakToShow >= 3) {
+      const message = currentStreak > 0
+        ? `You have a ${currentStreak}-day streak of good moods! Keep it going! 🔥`
+        : `You had a ${maxStreak}-day streak of good moods! What were you doing during that time?`;
+      insights.push(message);
+    }
+    
+    // Trend insight
+    if (trend === 'improving') {
+      insights.push("Your mood has been improving over this period! Keep up the great work! 🌟");
+    } else if (trend === 'stable') {
+      insights.push("Your mood has been relatively stable. Consistency is a sign of balance!");
+    } else if (trend === 'declining') {
+      insights.push("It looks like things have been tough lately. Remember, it's okay to have difficult days. Consider reaching out to someone you trust.");
+    }
+    
+    // Consistency insight
+    if (missedDays > 0 && missedDays < 25) {
+      insights.push(
+        `You missed ${missedDays} ${missedDays === 1 ? 'day' : 'days'} of journaling in last 30 days. Try to journal daily to track your mood more accurately!`
+      );
+    }
+    
+    // High average mood
+    if (avgMood >= 4) {
+      insights.push("You're doing great! Reflect on what's been working well so you can continue these positive habits.");
+    }
+    
+    // Low average mood
+    if (avgMood < 3) {
+      insights.push("Your average mood has been lower. Consider prioritizing self-care activities like rest, exercise, or connecting with loved ones.");
+    }
+    
+    // Consistency suggestion
+    if (journals.length < 15) {
+      insights.push("Set a daily reminder to journal. Consistent tracking helps you understand your patterns better.");
+    }
+    
+    res.json({
+      insights,
+      stats: {
+        avgMood: Math.round(avgMood * 10) / 10,
+        currentStreak,
+        maxStreak,
+        trend,
+        daysTracked: journals.length,
+        missedDays
+      }
+    });
+    
+  } catch (err) {
+    console.error("Error generating fresh insights:", err);
+    res.status(500).json({ error: "Failed to generate insights" });
+  }
+});
+
+// Helper function to format dates
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  });
+}
 
 router.get("/timecapsule/list", verifyToken, async (req, res) => {
   try {
@@ -2590,11 +2567,77 @@ router.get("/gratitude/random", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch random gratitude" });
   }
 });
+
+const buildFriendlyPrompt = (message, conversationHistory = []) => {
+  let prompt = `You are a close friend having a genuine conversation. Not a therapist, not a coach - just a real friend who cares.
+
+PERSONALITY:
+- Warm, authentic, and relatable
+- Sometimes playful, sometimes serious - read the room
+- Share brief relatable thoughts or observations
+- Use casual language like a real friend would
+- Show genuine interest and curiosity
+- Remember what they've shared before
+
+RESPONSE STYLE:
+- Keep it conversational (1-3 sentences max)
+- Mix up your responses - don't always validate, sometimes:
+  * Share a relatable thought
+  * Ask a curious follow-up
+  * Offer a gentle perspective
+  * Just acknowledge and be present
+  * Use light humor when appropriate
+- Vary your openings - avoid always starting with "I hear you" or "That sounds..."
+
+EXAMPLES OF GOOD RESPONSES:
+User: "I'm so tired today"
+Friend: "Ugh, I feel that. Did you get any sleep last night, or was it one of those nights?"
+
+User: "I finally finished that project!"
+Friend: "Yes! That's huge! How does it feel to have it off your plate?"
+
+User: "Everyone's annoying me today"
+Friend: "One of those days where people are just... a lot? What happened?"
+
+User: "I don't know what to do about this situation"
+Friend: "That sounds confusing. Want to talk through it, or just vent for a bit?"
+
+User: "I feel like I'm failing at everything"
+Friend: "Hey, that's a rough headspace to be in. What's making you feel that way right now?"
+
+AVOID:
+- Therapist phrases: "I hear you", "That must be difficult", "How does that make you feel?"
+- Always being overly positive or validating
+- Generic responses that could apply to anything
+- Ending every message with a question
+- Being too formal or careful
+
+BE NATURAL:
+- Sometimes just say "damn" or "wow" or "oof"
+- Use casual contractions (you're, that's, it's)
+- It's okay to be brief and simple
+- Match their energy level`;
+
+  // Add conversation history if available
+  if (conversationHistory.length > 0) {
+    prompt += "\n\nPREVIOUS CONVERSATION:\n";
+    conversationHistory.forEach(msg => {
+      const role = msg.role === 'user' ? 'Friend' : 'You';
+      prompt += `${role}: ${msg.content}\n`;
+    });
+  }
+
+  prompt += `\n\nFriend just said: "${message}"\n\nRespond naturally as their friend (1-3 sentences):`;
+
+  return prompt;
+};
+
+// UPDATED ENDPOINT CODE:
 router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
   const { message, sessionId, includeHistory } = req.body;
   
   if (!message || !message.trim()) {
-    return res.status(400).json({ reply: "I'm here, tell me what's on your mind 🌿" });
+    return res.status(400).json({ reply: "Hey, what's up? 🌿" });
   }
 
   try {
@@ -2602,7 +2645,12 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
     
     // Load conversation history if requested
     if (includeHistory && sessionId) {
-      const sessionRef = db.collection("users").doc(req.uid).collection("aiSessions").doc(sessionId);
+      const sessionRef = db
+        .collection("users")
+        .doc(req.uid)
+        .collection("aiSessions")
+        .doc(sessionId);
+      
       const sessionDoc = await sessionRef.get();
       
       if (sessionDoc.exists) {
@@ -2612,35 +2660,14 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
     }
 
     // Add current message to context
-    context.push({ role: "user", content: message, timestamp: new Date().toISOString() });
+    context.push({ 
+      role: "user", 
+      content: message, 
+      timestamp: new Date().toISOString() 
+    });
 
-    // Build prompt with context
-    let contextPrompt = `You are a soft-spoken, gentle emotional companion.
-Respond in under 2 sentences.
-Tone: calming, validating, grounding.
-
-`;
-
-    // Add conversation history to prompt
-    if (context.length > 1) {
-      contextPrompt += "Previous conversation:\n";
-      context.slice(0, -1).forEach(msg => {
-        contextPrompt += `${msg.role === 'user' ? 'User' : 'You'}: ${msg.content}\n`;
-      });
-      contextPrompt += "\n";
-    }
-
-    contextPrompt += `User said: "${message}"
-
-Reply like:
-- "I'm here with you…"
-- "That sounds heavy…"
-- "You're doing the best you can."
-
-Avoid:
-- Questions unless needed
-- Long paragraphs
-- Overly formal tone`;
+    // Build the friendly prompt
+    const contextPrompt = buildFriendlyPrompt(message, context.slice(0, -1));
 
     // Call Gemini AI
     const response = await fetch(
@@ -2651,18 +2678,40 @@ Avoid:
         body: JSON.stringify({
           contents: [{
             parts: [{ text: contextPrompt }]
-          }]
+          }],
+          generationConfig: {
+            temperature: 0.9, // More creative and varied
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 150, // Keep responses concise
+          }
         })
       }
     );
 
     const data = await response.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "I'm here with you. Tell me more 🌿";
+    let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
+                "Hey, I'm here. What's going on?";
+
+    // Clean up the reply (remove quotes if AI added them)
+    reply = reply.replace(/^["']|["']$/g, '').trim();
+
+    // Generate follow-up suggestions based on context
+    const followUpSuggestions = generateFollowUpSuggestions(message, reply);
 
     // Save to session (async, don't wait)
-    context.push({ role: "assistant", content: reply, timestamp: new Date().toISOString() });
+    context.push({ 
+      role: "assistant", 
+      content: reply, 
+      timestamp: new Date().toISOString() 
+    });
     
-    const sessionRef = db.collection("users").doc(req.uid).collection("aiSessions").doc(sessionId);
+    const sessionRef = db
+      .collection("users")
+      .doc(req.uid)
+      .collection("aiSessions")
+      .doc(sessionId);
+    
     sessionRef.set({
       sessionId,
       messages: context.slice(-10), // Keep only last 10
@@ -2674,6 +2723,7 @@ Avoid:
 
     res.json({
       reply,
+      followUpSuggestions,
       sessionId,
       messageId: `msg_${Date.now()}`,
       timestamp: new Date().toISOString()
@@ -2681,9 +2731,104 @@ Avoid:
 
   } catch (err) {
     console.error("AI Assistant Error:", err);
-    res.json({ reply: "I'm here for you… even if my mind is a little foggy right now 🌫️" });
+    res.json({ 
+      reply: "Sorry, my brain just glitched for a sec. What were you saying?" 
+    });
   }
 });
+
+// Helper function to generate contextual follow-up suggestions
+function generateFollowUpSuggestions(userMessage, aiReply) {
+  const suggestions = [];
+  
+  // Detect emotional keywords and suggest relevant follow-ups
+  const lowerMessage = userMessage.toLowerCase();
+  
+  if (lowerMessage.includes('tired') || lowerMessage.includes('exhausted')) {
+    suggestions.push(
+      "I haven't been sleeping well",
+      "I need a break but can't take one",
+      "Tell me something to cheer me up"
+    );
+  } else if (lowerMessage.includes('anxious') || lowerMessage.includes('worried')) {
+    suggestions.push(
+      "I can't stop overthinking",
+      "What helps you when you're anxious?",
+      "I need a distraction"
+    );
+  } else if (lowerMessage.includes('happy') || lowerMessage.includes('excited')) {
+    suggestions.push(
+      "I want to celebrate this!",
+      "Things are finally looking up",
+      "What should I do to keep this energy?"
+    );
+  } else if (lowerMessage.includes('sad') || lowerMessage.includes('down')) {
+    suggestions.push(
+      "I don't know why I feel this way",
+      "Everything feels heavy right now",
+      "I just need someone to listen"
+    );
+  } else {
+    // Generic follow-ups
+    suggestions.push(
+      "Tell me more",
+      "What else is on your mind?",
+      "How's your day been overall?"
+    );
+  }
+  
+  return suggestions.slice(0, 3);
+}
+
+// UPDATED SIMPLE ENDPOINT (without context):
+router.post("/assistant/reply", verifyToken, async (req, res) => {
+  const { message } = req.body;
+  
+  if (!message || !message.trim()) {
+    return res.status(400).json({ reply: "Hey, what's up? 🌿" });
+  }
+
+  try {
+    const prompt = buildFriendlyPrompt(message);
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            temperature: 0.9,
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 150,
+          }
+        })
+      }
+    );
+
+    const data = await response.json();
+    let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
+                "Hey, I'm here. What's going on?";
+    
+    // Clean up the reply
+    reply = reply.replace(/^["']|["']$/g, '').trim();
+
+    res.json({ reply });
+
+  } catch (err) {
+    console.error("AI Assistant Error:", err);
+    res.json({ 
+      reply: "Sorry, my brain just glitched for a sec. What were you saying?" 
+    });
+  }
+});
+
+// module.exports = { buildFriendlyPrompt, generateFollowUpSuggestions };
+
 // Get list of conversation sessions
 router.get("/assistant/history", verifyToken, async (req, res) => {
   try {
@@ -2904,86 +3049,7 @@ router.get("/quests/all", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch quests" });
   }
 });
-/**
- * POST /journal/quests/progress
- * Update progress for a specific quest
- */
-// router.post("/quests/progress", verifyToken, async (req, res) => {
-//   try {
-//     const userId = req.uid;
-//     const { questId, progress } = req.body;
 
-//     if (!questId || progress === undefined) {
-//       return res.status(400).json({ error: "Missing required fields: questId, progress" });
-//     }
-
-//     const userRef = db.collection("users").doc(userId);
-//     const questRef = userRef.collection("quests").doc(questId);
-//     const questDoc = await questRef.get();
-
-//     if (!questDoc.exists) {
-//       return res.status(404).json({ error: "Quest not found" });
-//     }
-
-//     const quest = questDoc.data();
-
-//     // Check if quest is expired
-//     const expiresAt = quest.expiresAt.toDate ? quest.expiresAt.toDate() : new Date(quest.expiresAt);
-//     if (expiresAt < new Date()) {
-//       return res.status(400).json({ error: "Quest has expired" });
-//     }
-
-//     // Update progress
-//     const newProgress = Math.min(progress, quest.target);
-//     const completed = newProgress >= quest.target;
-
-//     await questRef.update({
-//       progress: newProgress,
-//       status: completed ? "completed" : "active",
-//       completedAt: completed ? new Date() : null
-//     });
-
-//     let newLevel = null;
-
-//     // Award XP if completed
-//     if (completed && quest.status !== "completed") {
-//       const userDoc = await userRef.get();
-//       const userData = userDoc.exists ? userDoc.data() : {
-//         totalXP: 0,
-//         currentLevel: 1,
-//         questsCompleted: 0
-//       };
-
-//       const newTotalXP = (userData.totalXP || 0) + quest.reward.xp;
-//       const currentLevel = calculateLevel(newTotalXP);
-//       const leveledUp = currentLevel > (userData.currentLevel || 1);
-
-//       if (leveledUp) {
-//         newLevel = currentLevel;
-//       }
-
-//       await userRef.set({
-//         totalXP: newTotalXP,
-//         currentLevel,
-//         questsCompleted: (userData.questsCompleted || 0) + 1
-//       }, { merge: true });
-//     }
-
-//     res.json({
-//       completed,
-//       reward: completed ? quest.reward : null,
-//       newLevel
-//     });
-//   } catch (err) {
-//     console.error("Error updating quest progress:", err);
-//     res.status(500).json({ error: "Failed to update quest progress" });
-//   }
-// });
-
-/**
- * POST /journal/quests/complete
- * Mark a quest as completed
- */
 router.post("/quests/complete", verifyToken, async (req, res) => {
   try {
     const userId = req.uid;
