@@ -926,81 +926,48 @@ export default function AIAssistant({ theme }) {
   const speakStreaming = async (text, token) => {
     try {
       setIsSpeaking(true);
-      console.log("🔊 Michelle speaking:", text);
+      console.log("🔊 Speaking:", text.substring(0, 50));
       
-      // Try Michelle (Edge TTS) first
-      try {
-        const edgeRes = await apiPost(`${API_BASE_URL}/assistant/speak-edge`, { 
-          text,
-          voice: "en-US-MichelleNeural", // Michelle's voice
-          rate: "+0%" // Normal speech rate
-        });
-
-        if (edgeRes.ok) {
-          const blob = await edgeRes.blob();
-          const audioURL = URL.createObjectURL(blob);
-          const audio = new Audio(audioURL);
-
-          console.log("✅ Michelle audio ready, playing...");
-
-          audio.onended = () => {
-            console.log("🔇 Michelle finished speaking");
-            setIsSpeaking(false);
-          };
-          audio.onerror = (e) => {
-            console.error("❌ Michelle audio error:", e);
-            setIsSpeaking(false);
-          };
-          
-          await audio.play();
-          return; // Success!
-        }
-      } catch (edgeError) {
-        console.warn("⚠️ Michelle (Edge TTS) failed, trying fallback:", edgeError);
-      }
-
-      // Fallback to ElevenLabs if Michelle fails
-      console.log("🔄 Falling back to premium voice...");
+      // Use browser's built-in voice with female voice selection
+      const utterance = new SpeechSynthesisUtterance(text);
       
-      let res = await apiPost(`${API_BASE_URL}/assistant/speak-stream`, { text });
-
-      if (!res.ok) {
-        console.warn("⚠️ Premium voice streaming failed, trying regular endpoint");
-        res = await apiPost(`${API_BASE_URL}/assistant/speak`, { text });
+      // Get available voices
+      const voices = speechSynthesis.getVoices();
+      
+      // Try to find a good female voice
+      const femaleVoice = voices.find(v => 
+        v.name.includes('Female') || 
+        v.name.includes('Samantha') || 
+        v.name.includes('Victoria') ||
+        v.name.includes('Karen') ||
+        v.name.includes('Moira') ||
+        (v.lang.startsWith('en') && v.name.includes('Google') && v.name.includes('US'))
+      );
+      
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+        console.log("✅ Using voice:", femaleVoice.name);
       }
-
-      if (!res.ok) {
-        throw new Error("Premium voice failed");
-      }
-
-      const blob = await res.blob();
-      const audioURL = URL.createObjectURL(blob);
-      const audio = new Audio(audioURL);
-
-      console.log("✅ Premium voice audio ready, playing...");
-
-      audio.onended = () => {
-        console.log("🔇 Premium voice audio ended");
-        setIsSpeaking(false);
-      };
-      audio.onerror = (e) => {
-        console.error("❌ Premium voice audio error:", e);
+      
+      utterance.rate = 0.85; // Slightly slower for clarity
+      utterance.pitch = 1.1; // Slightly higher pitch
+      utterance.volume = 1.0;
+      
+      utterance.onend = () => {
+        console.log("🔇 Speech finished");
         setIsSpeaking(false);
       };
       
-      await audio.play();
+      utterance.onerror = (e) => {
+        console.error("❌ Speech error:", e);
+        setIsSpeaking(false);
+      };
+      
+      speechSynthesis.speak(utterance);
       
     } catch (err) {
-      console.error("❌ All voice methods failed:", err);
+      console.error("❌ Speech failed:", err);
       setIsSpeaking(false);
-      
-      // Final fallback to browser voice
-      console.log("🔄 Using browser voice as final fallback");
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.8; // Slower rate
-      utterance.pitch = 1.1;
-      utterance.onend = () => setIsSpeaking(false);
-      speechSynthesis.speak(utterance);
     }
   };
 
