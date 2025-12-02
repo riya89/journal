@@ -32,15 +32,26 @@ export default function MoodChart({ data, theme }) {
     );
   }
 
+  // Filter out entries with null or undefined mood values
+  const validData = data.filter(entry => entry.mood != null && entry.mood !== undefined);
+
+  if (validData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        No mood data available
+      </div>
+    );
+  }
+
   const chartData = {
-    labels: data.map(entry => {
+    labels: validData.map(entry => {
       const date = new Date(entry.date);
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }),
     datasets: [
       {
         label: "Mood",
-        data: data.map(entry => entry.mood),
+        data: validData.map(entry => entry.mood),
         borderColor: theme === "dark" ? "#d4a574" : "#7A916C",
         backgroundColor: theme === "dark" ? "rgba(212, 165, 116, 0.1)" : "rgba(122, 145, 108, 0.1)",
         pointBackgroundColor: theme === "dark" ? "#d4a574" : "#7A916C",

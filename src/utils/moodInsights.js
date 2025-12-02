@@ -67,9 +67,10 @@ export function comparePeriods(currentPeriodData, previousPeriodData) {
  * @param {Object} stats - Mood statistics
  * @param {Object} comparison - Period comparison data (optional)
  * @param {Array} moodData - Raw mood data
+ * @param {Object} streakInfo - Actual streak data from backend (optional)
  * @returns {Array} Array of insight objects
  */
-export function generateInsights(stats, comparison = null, moodData = []) {
+export function generateInsights(stats, comparison = null, moodData = [], streakInfo = null) {
   const insights = [];
 
   // Best and worst days with context
@@ -115,16 +116,8 @@ export function generateInsights(stats, comparison = null, moodData = []) {
     });
   }
 
-  if (patterns.hasConsistentHighStreak) {
-    insights.push({
-      type: 'achievement',
-      category: 'streak',
-      icon: '🔥',
-      message: `You had a ${patterns.highStreakLength}-day streak of good moods! What were you doing during that time?`,
-      color: 'orange',
-      actionable: true
-    });
-  }
+  // Use actual streak data from backend if available, otherwise use calculated patterns
+  // Streak insight removed - using backend streak data instead to avoid confusion
 
   if (patterns.hasVolatility) {
     insights.push({
@@ -275,20 +268,38 @@ function detectPatterns(moodData) {
   const hasWeekendPattern = Math.abs(weekendAvg - weekdayAvg) > 0.5;
   const weekendPattern = weekendAvg > weekdayAvg ? 'better' : 'worse';
 
-  // High streak detection
+  // High streak detection - check from most recent backwards
   let currentStreak = 0;
   let maxStreak = 0;
   
+  // Sort by date descending (most recent first) to get current streak
+  const sortedData = [...moodData].sort((a, b) => 
+    new Date(b.date) - new Date(a.date)
+  );
+  
+  // Calculate current active streak from most recent day
+  for (let i = 0; i < sortedData.length; i++) {
+    if (sortedData[i].mood >= 4) {
+      currentStreak++;
+    } else {
+      break; // Stop at first non-good mood
+    }
+  }
+  
+  // Also find max streak in the period
+  let tempStreak = 0;
   moodData.forEach(entry => {
     if (entry.mood >= 4) {
-      currentStreak++;
-      maxStreak = Math.max(maxStreak, currentStreak);
+      tempStreak++;
+      maxStreak = Math.max(maxStreak, tempStreak);
     } else {
-      currentStreak = 0;
+      tempStreak = 0;
     }
   });
 
-  const hasConsistentHighStreak = maxStreak >= 3;
+  // Use current streak if it's active, otherwise use max
+  const streakToShow = currentStreak > 0 ? currentStreak : maxStreak;
+  const hasConsistentHighStreak = streakToShow >= 3;
 
   // Volatility detection
   const moods = moodData.map(d => d.mood);
@@ -299,7 +310,9 @@ function detectPatterns(moodData) {
     hasWeekendPattern,
     weekendPattern,
     hasConsistentHighStreak,
-    highStreakLength: maxStreak,
+    highStreakLength: streakToShow,
+    currentStreak,
+    maxStreak,
     hasVolatility,
     variance
   };
