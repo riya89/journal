@@ -261,8 +261,29 @@ export default function MonthlyPlanner({ theme }) {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebrationData, setCelebrationData] = useState(null);
 
-  const yearMonth = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  // Validate month and year values
+  const validMonth = typeof selectedMonth === 'number' && selectedMonth >= 0 && selectedMonth <= 11 
+    ? selectedMonth 
+    : new Date().getMonth();
+  const validYear = typeof selectedYear === 'number' && selectedYear >= 2020 && selectedYear <= 2100
+    ? selectedYear
+    : new Date().getFullYear();
+  
+  const yearMonth = `${validYear}-${String(validMonth + 1).padStart(2, "0")}`;
+  const daysInMonth = new Date(validYear, validMonth + 1, 0).getDate();
+  
+  // Safety check for daysInMonth
+  const safeDaysInMonth = (daysInMonth > 0 && daysInMonth <= 31) ? daysInMonth : 31;
+  
+  // Debug log
+  console.log('MonthlyPlanner render:', { 
+    selectedMonth, 
+    selectedYear, 
+    validMonth, 
+    validYear, 
+    daysInMonth, 
+    safeDaysInMonth 
+  });
 
   // Set up drag-and-drop sensors
   const sensors = useSensors(
@@ -666,7 +687,7 @@ export default function MonthlyPlanner({ theme }) {
                 >
                   Task
                 </th>
-                {Array.from({ length: daysInMonth }, (_, i) => (
+                {Array.from({ length: safeDaysInMonth }, (_, i) => (
                   <th
                     key={i}
                     className={`p-3 text-center font-semibold ${
@@ -695,7 +716,7 @@ export default function MonthlyPlanner({ theme }) {
                     key={task.id}
                     task={task}
                     theme={theme}
-                    daysInMonth={daysInMonth}
+                    daysInMonth={safeDaysInMonth}
                     yearMonth={yearMonth}
                     completions={completions || {}}
                     exceptions={exceptions || {}}

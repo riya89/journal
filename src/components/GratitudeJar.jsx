@@ -140,8 +140,7 @@ const GratitudeJar = ({ theme }) => {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 pb-6 overflow-hidden min-h-0">
         
         {/* Left Side: Jar Visual */}
-        <div className="jar-visual-container bg-gradient-to-b from-[#EBDDBF]/20 to-[#d4a574]/20 
-                      dark:from-[#3a2e20] dark:to-[#2a1f15] rounded-2xl p-6 shadow-lg flex flex-col min-h-0">
+        <div className="jar-visual-container flex flex-col min-h-0">
           <div className="flex-1 flex items-center justify-center min-h-0">
             <svg 
               viewBox="0 0 200 400" 
@@ -408,8 +407,7 @@ const GratitudeJar = ({ theme }) => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center py-12 bg-gradient-to-b from-[#EBDDBF]/10 to-[#d4a574]/10 
-                            dark:from-[#3a2e20] dark:to-[#2a1f15] rounded-2xl px-8 shadow-lg">
+              <div className="text-center py-12">
                 <div className="text-7xl mb-6">✨</div>
                 <h3 className={`text-2xl font-semibold text-gray-800 dark:text-[#EBDDBF] mb-3 ${theme === 'dark' ? 'font-spooky-header' : ''}`}>
                   No gratitudes yet
