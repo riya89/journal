@@ -3624,34 +3624,107 @@ router.post("/user/update-timezone", verifyToken, async (req, res) => {
  * @param {string} period - 'daily', 'weekly', or 'monthly'
  * @param {string} userTimezone - IANA timezone string (e.g., 'Asia/Kolkata')
  */
-function calculateExpirationDate(period, userTimezone = 'UTC') {
-  const now = new Date();
+// function calculateExpirationDate(period, userTimezone = 'UTC') {
+//   const now = new Date();
   
+//   // Get current time in user's timezone
+//   const userTime = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+  
+//   switch (period) {
+//     case 'daily':
+//       // End of day in user's timezone
+//       const endOfDay = new Date(userTime);
+//       endOfDay.setHours(23, 59, 59, 999);
+//       return endOfDay;
+      
+//     case 'weekly':
+//       const endOfWeek = new Date(userTime);
+//       const daysUntilSaturday = 6 - userTime.getDay();
+//       endOfWeek.setDate(userTime.getDate() + daysUntilSaturday);
+//       endOfWeek.setHours(23, 59, 59, 999);
+//       return endOfWeek;
+      
+//     case 'monthly':
+//       const endOfMonth = new Date(userTime.getFullYear(), userTime.getMonth() + 1, 0);
+//       endOfMonth.setHours(23, 59, 59, 999);
+//       return endOfMonth;
+      
+//     default:
+//       return now;
+//   }
+// }
+
+// /**
+//  * Check if new quests should be generated for a period
+//  */
+// function shouldGenerateNewQuests(lastGeneration, period, userTimezone = 'UTC') {
+//   if (!lastGeneration) return true;
+
+//   const now = new Date();
+//   const lastGen = new Date(lastGeneration);
+  
+//   // Convert both to user's timezone for comparison
+//   const nowInUserTZ = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+//   const lastGenInUserTZ = new Date(lastGen.toLocaleString('en-US', { timeZone: userTimezone }));
+
+//   switch (period) {
+//     case 'daily':
+//       return nowInUserTZ.toDateString() !== lastGenInUserTZ.toDateString();
+      
+//     case 'weekly':
+//       const nowWeekStart = new Date(nowInUserTZ);
+//       nowWeekStart.setDate(nowInUserTZ.getDate() - nowInUserTZ.getDay());
+//       nowWeekStart.setHours(0, 0, 0, 0);
+      
+//       const lastWeekStart = new Date(lastGenInUserTZ);
+//       lastWeekStart.setDate(lastGenInUserTZ.getDate() - lastGenInUserTZ.getDay());
+//       lastWeekStart.setHours(0, 0, 0, 0);
+      
+//       return nowWeekStart.getTime() > lastWeekStart.getTime();
+      
+//     case 'monthly':
+//       return nowInUserTZ.getMonth() !== lastGenInUserTZ.getMonth() || 
+//              nowInUserTZ.getFullYear() !== lastGenInUserTZ.getFullYear();
+      
+//     default:
+//       return false;
+//   }
+// }
+const { zonedTimeToUtc, utcToZonedTime, format } = require('date-fns-tz');
+const { endOfDay, endOfWeek, endOfMonth, startOfDay, startOfWeek, startOfMonth, isSameDay, isSameWeek, isSameMonth } = require('date-fns');
+
+/**
+ * Calculate expiration date for quest period based on user's timezone
+ * Returns UTC timestamp that represents end of period in user's timezone
+ */
+function calculateExpirationDate(period, userTimezone = 'UTC') {
   // Get current time in user's timezone
-  const userTime = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
+  const nowInUserTZ = utcToZonedTime(new Date(), userTimezone);
+  
+  let endTime;
   
   switch (period) {
     case 'daily':
       // End of day in user's timezone
-      const endOfDay = new Date(userTime);
-      endOfDay.setHours(23, 59, 59, 999);
-      return endOfDay;
+      endTime = endOfDay(nowInUserTZ);
+      break;
       
     case 'weekly':
-      const endOfWeek = new Date(userTime);
-      const daysUntilSaturday = 6 - userTime.getDay();
-      endOfWeek.setDate(userTime.getDate() + daysUntilSaturday);
-      endOfWeek.setHours(23, 59, 59, 999);
-      return endOfWeek;
+      // End of week (Saturday) in user's timezone
+      endTime = endOfWeek(nowInUserTZ, { weekStartsOn: 0 }); // Sunday = 0
+      break;
       
     case 'monthly':
-      const endOfMonth = new Date(userTime.getFullYear(), userTime.getMonth() + 1, 0);
-      endOfMonth.setHours(23, 59, 59, 999);
-      return endOfMonth;
+      // End of month in user's timezone
+      endTime = endOfMonth(nowInUserTZ);
+      break;
       
     default:
-      return now;
+      endTime = nowInUserTZ;
   }
+  
+  // Convert back to UTC for storage
+  return zonedTimeToUtc(endTime, userTimezone);
 }
 
 /**
@@ -3659,38 +3732,28 @@ function calculateExpirationDate(period, userTimezone = 'UTC') {
  */
 function shouldGenerateNewQuests(lastGeneration, period, userTimezone = 'UTC') {
   if (!lastGeneration) return true;
-
+  
   const now = new Date();
   const lastGen = new Date(lastGeneration);
   
-  // Convert both to user's timezone for comparison
-  const nowInUserTZ = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
-  const lastGenInUserTZ = new Date(lastGen.toLocaleString('en-US', { timeZone: userTimezone }));
-
+  // Convert both to user's timezone
+  const nowInUserTZ = utcToZonedTime(now, userTimezone);
+  const lastGenInUserTZ = utcToZonedTime(lastGen, userTimezone);
+  
   switch (period) {
     case 'daily':
-      return nowInUserTZ.toDateString() !== lastGenInUserTZ.toDateString();
+      return !isSameDay(nowInUserTZ, lastGenInUserTZ);
       
     case 'weekly':
-      const nowWeekStart = new Date(nowInUserTZ);
-      nowWeekStart.setDate(nowInUserTZ.getDate() - nowInUserTZ.getDay());
-      nowWeekStart.setHours(0, 0, 0, 0);
-      
-      const lastWeekStart = new Date(lastGenInUserTZ);
-      lastWeekStart.setDate(lastGenInUserTZ.getDate() - lastGenInUserTZ.getDay());
-      lastWeekStart.setHours(0, 0, 0, 0);
-      
-      return nowWeekStart.getTime() > lastWeekStart.getTime();
+      return !isSameWeek(nowInUserTZ, lastGenInUserTZ, { weekStartsOn: 0 });
       
     case 'monthly':
-      return nowInUserTZ.getMonth() !== lastGenInUserTZ.getMonth() || 
-             nowInUserTZ.getFullYear() !== lastGenInUserTZ.getFullYear();
+      return !isSameMonth(nowInUserTZ, lastGenInUserTZ);
       
     default:
       return false;
   }
 }
-
 /**
  * Generate quests for a specific period with user timezone
  */
