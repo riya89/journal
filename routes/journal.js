@@ -1506,17 +1506,108 @@ router.get("/planner/templates", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch templates" });
   }
 });
+// router.get("/planner/daily-status", verifyToken, async (req, res) => {
+//   try {
+//     const userId = req.uid;
+//     const dateParam = req.query.date;
+//     const yearMonth = dateParam ? dateParam.substring(0, 7) : new Date().toISOString().substring(0, 7);
+//     const dateStr = dateParam || new Date().toISOString().split('T')[0];
+
+//     const userRef = db.collection("users").doc(userId);
+//     const plannerRef = userRef.collection("planners").doc(yearMonth);
+//     const plannerDoc = await plannerRef.get();
+
+//     if (!plannerDoc.exists) {
+//       return res.json({
+//         allTasksComplete: false,
+//         stats: {
+//           totalTime: "0h 0m",
+//           tasksCompleted: 0,
+//           totalTasks: 0,
+//           streakDays: 0
+//         },
+//         reward: null
+//       });
+//     }
+
+//     const plannerData = plannerDoc.data();
+//     const dayTasks = plannerData.tasks || [];
+//     const dayCompletions = plannerData.completions?.[dateStr] || [];
+
+//     const totalTasks = dayTasks.length;
+//     const completedTasks = dayCompletions.length;
+//     const allTasksComplete = totalTasks > 0 && completedTasks === totalTasks;
+
+//     // Calculate total time
+//     let totalMinutes = 0;
+//     dayTasks.forEach(task => {
+//       if (dayCompletions.includes(task.id)) {
+//         totalMinutes += task.timeEstimate || 0;
+//       }
+//     });
+
+//     const hours = Math.floor(totalMinutes / 60);
+//     const minutes = totalMinutes % 60;
+//     const totalTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+//     // Get streak from user data
+//     const userDoc = await userRef.get();
+//     const userData = userDoc.exists ? userDoc.data() : {};
+//     const streakDays = userData.currentStreak || 0;
+
+//     // Award Perfect Day badge if all tasks complete
+//     let reward = null;
+//     if (allTasksComplete) {
+//       const earnedBadges = userData.earnedBadges || [];
+//       const perfectDayBadgeId = `perfect_day_${dateStr}`;
+      
+//       if (!earnedBadges.includes(perfectDayBadgeId)) {
+//         reward = {
+//           type: "badge",
+//           name: "Perfect Day",
+//           icon: "⭐",
+//           rarity: "rare"
+//         };
+
+//         earnedBadges.push(perfectDayBadgeId);
+//         const currentPerfectDays = userData.stats?.perfectDays || 0;
+
+//         await userRef.set({
+//           earnedBadges,
+//           stats: {
+//             ...userData.stats,
+//             perfectDays: currentPerfectDays + 1
+//           }
+//         }, { merge: true });
+//       }
+//     }
+
+//     res.json({
+//       allTasksComplete,
+//       stats: {
+//         totalTime,
+//         tasksCompleted: completedTasks,
+//         totalTasks,
+//         streakDays
+//       },
+//       reward
+//     });
+//   } catch (err) {
+//     console.error("Error checking daily status:", err);
+//     res.status(500).json({ error: "Failed to check daily status" });
+//   }
+// });
 router.get("/planner/daily-status", verifyToken, async (req, res) => {
   try {
     const userId = req.uid;
     const dateParam = req.query.date;
     const yearMonth = dateParam ? dateParam.substring(0, 7) : new Date().toISOString().substring(0, 7);
     const dateStr = dateParam || new Date().toISOString().split('T')[0];
-
+    
     const userRef = db.collection("users").doc(userId);
     const plannerRef = userRef.collection("planners").doc(yearMonth);
     const plannerDoc = await plannerRef.get();
-
+    
     if (!plannerDoc.exists) {
       return res.json({
         allTasksComplete: false,
@@ -1529,32 +1620,68 @@ router.get("/planner/daily-status", verifyToken, async (req, res) => {
         reward: null
       });
     }
-
+    
     const plannerData = plannerDoc.data();
-    const dayTasks = plannerData.tasks || [];
+    const allTasks = plannerData.tasks || [];
+    
+    // ✅ FILTER: Only get tasks that apply to this specific date
+    const dayTasks = allTasks.filter(task => {
+      // Non-recurring tasks with specific date
+      if (task.specificDate) {
+        return task.specificDate === dateStr;
+      }
+      
+      // Recurring tasks - check if date is in applicableDates
+      if (task.isRecurring && task.applicableDates) {
+        // Check if date is applicable
+        if (!task.applicableDates.includes(dateStr)) {
+          return false;
+        }
+        
+        // Check for exceptions (deleted occurrences)
+        const exception = plannerData.exceptions?.[task.id]?.[dateStr];
+        if (exception && exception.isDeleted) {
+          return false;
+        }
+        
+        return true;
+      }
+      
+      // Regular tasks (no specific date, not recurring) - apply to all days
+      if (!task.isRecurring && !task.specificDate) {
+        return true;
+      }
+      
+      return false;
+    });
+    
     const dayCompletions = plannerData.completions?.[dateStr] || [];
-
+    
     const totalTasks = dayTasks.length;
-    const completedTasks = dayCompletions.length;
+    const completedTasks = dayCompletions.filter(completionId => 
+      dayTasks.some(task => task.id === completionId)
+    ).length;
+    
+    // ✅ Only true if there are tasks AND all are completed
     const allTasksComplete = totalTasks > 0 && completedTasks === totalTasks;
-
-    // Calculate total time
+    
+    // Calculate total time (only for tasks that apply today)
     let totalMinutes = 0;
     dayTasks.forEach(task => {
       if (dayCompletions.includes(task.id)) {
         totalMinutes += task.timeEstimate || 0;
       }
     });
-
+    
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     const totalTime = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-
+    
     // Get streak from user data
     const userDoc = await userRef.get();
     const userData = userDoc.exists ? userDoc.data() : {};
     const streakDays = userData.currentStreak || 0;
-
+    
     // Award Perfect Day badge if all tasks complete
     let reward = null;
     if (allTasksComplete) {
@@ -1568,10 +1695,10 @@ router.get("/planner/daily-status", verifyToken, async (req, res) => {
           icon: "⭐",
           rarity: "rare"
         };
-
+        
         earnedBadges.push(perfectDayBadgeId);
         const currentPerfectDays = userData.stats?.perfectDays || 0;
-
+        
         await userRef.set({
           earnedBadges,
           stats: {
@@ -1581,7 +1708,7 @@ router.get("/planner/daily-status", verifyToken, async (req, res) => {
         }, { merge: true });
       }
     }
-
+    
     res.json({
       allTasksComplete,
       stats: {
@@ -1592,11 +1719,13 @@ router.get("/planner/daily-status", verifyToken, async (req, res) => {
       },
       reward
     });
+    
   } catch (err) {
     console.error("Error checking daily status:", err);
     res.status(500).json({ error: "Failed to check daily status" });
   }
 });
+
 router.get("/planner/stats/:yearMonth", verifyToken, async (req, res) => {
   try {
     const { yearMonth } = req.params;
