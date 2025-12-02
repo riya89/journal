@@ -578,32 +578,24 @@ export default function MoodDashboard({ user, theme }) {
               
               {/* Streak Badges */}
               <div className="mb-3">
-                <p className={`text-xs opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>Streak Badges</p>
-                <div className="grid grid-cols-6 gap-2">
+                <p className={`text-sm opacity-70 mb-2 ${theme === "dark" ? "font-gothic-body" : ""}`}>Streak Badges</p>
+                <div className="grid grid-cols-4 gap-3">
                   {badges.map((b) => (
                     <div key={b.id} className="flex flex-col items-center">
-                      <img src={b.url} className="w-10 h-10" alt={`${b.streak} day badge`} />
-                      <p className={`text-[10px] mt-0.5 opacity-80 ${theme === "dark" ? "font-gothic-body" : ""}`}>
+                      <img src={b.url} className="w-16 h-16" alt={`${b.streak} day badge`} />
+                      <p className={`text-xs mt-1 opacity-80 ${theme === "dark" ? "font-gothic-body" : ""}`}>
                         {b.streak}d
                       </p>
                     </div>
                   ))}
                   {lockedBadges.map((id) => (
                     <div key={id} className="flex flex-col items-center opacity-40">
-                      <div className="w-10 h-10 rounded-lg bg-gray-300/30 flex items-center justify-center text-sm">
+                      <div className="w-16 h-16 rounded-lg bg-gray-300/30 flex items-center justify-center text-lg">
                         🔒
                       </div>
-                      <p className={`text-[10px] mt-0.5 ${theme === "dark" ? "font-gothic-body" : ""}`}>{id}d</p>
+                      <p className={`text-xs mt-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>{id}d</p>
                     </div>
                   ))}
-                </div>
-              </div>
-              
-              {/* Achievement Badges */}
-              <div>
-                <p className={`text-xs opacity-70 mb-1 ${theme === "dark" ? "font-gothic-body" : ""}`}>Achievement Badges</p>
-                <div className="max-h-32 overflow-hidden">
-                  <BadgeGallery earnedBadges={earnedBadges} theme={theme} compact={true} />
                 </div>
               </div>
             </div>

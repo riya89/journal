@@ -104,38 +104,6 @@ export const BADGE_DEFINITIONS = [
     threshold: 20
   },
 
-  // Streak Badges
-  {
-    id: 'streak_7',
-    name: 'Week Streak',
-    description: 'Maintain a 7-day streak',
-    icon: '🔥',
-    rarity: BADGE_RARITIES.COMMON,
-    requirement: 'Journal for 7 consecutive days',
-    category: 'streak',
-    threshold: 7
-  },
-  {
-    id: 'streak_30',
-    name: 'Month Streak',
-    description: 'Maintain a 30-day streak',
-    icon: '💫',
-    rarity: BADGE_RARITIES.RARE,
-    requirement: 'Journal for 30 consecutive days',
-    category: 'streak',
-    threshold: 30
-  },
-  {
-    id: 'streak_100',
-    name: 'Century Streak',
-    description: 'Maintain a 100-day streak',
-    icon: '🌠',
-    rarity: BADGE_RARITIES.LEGENDARY,
-    requirement: 'Journal for 100 consecutive days',
-    category: 'streak',
-    threshold: 100
-  },
-
   // Special Badges
   {
     id: 'perfect_week',

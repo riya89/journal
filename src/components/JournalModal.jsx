@@ -1159,43 +1159,39 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
 // Analyze journal for task suggestions
 const analyzeForTaskSuggestions = async (journalText, moodValue, date) => {
   try {
-    console.log('📋 Task suggestion analysis started');
-    console.log('Content length:', journalText?.length);
-    
-    // Content-based filtering: Only show if content suggests actionable themes
-    
-    // Skip if content is too short (minimum 20 characters for basic validation)
-    if (!journalText || journalText.trim().length < 20) {
-      console.log('⏭️ Skipping task suggestions: Entry too short');
+    // 1️⃣ Check minimum length
+    if (!journalText || journalText.trim().length < 50) {
+      console.log('⏭️ Skipping: Entry too short (need 50+ chars)');
       return;
     }
 
-    // Only analyze if content suggests challenges/goals/stress/plans
-    const triggerWords = [
-      'stress', 'stressed', 'stressful',
-      'overwhelm', 'overwhelmed', 'overwhelming',
-      'anxious', 'anxiety', 'worried', 'worry',
-      'need to', 'should', 'have to', 'must',
-      'goal', 'goals',
-      'want to', 'plan', 'planning', 'planned',
-      'tomorrow', 'next week', 'upcoming',
-      'organize', 'prioritize', 'manage',
-      'improve', 'work on', 'focus on'
+    // 2️⃣ Smart keyword filter - only analyze if user mentions task-related words
+    const taskKeywords = [
+      // Direct task mentions
+      'todo', 'to-do', 'to do', 'task', 'tasks', 'need to', 'have to', 'should', 'must',
+      // Goals and planning
+      'goal', 'goals', 'plan', 'planning', 'want to', 'going to', 'will',
+      // Action words
+      'start', 'finish', 'complete', 'work on', 'focus on', 'get done',
+      // Time-based
+      'today', 'tomorrow', 'this week', 'next week', 'later',
+      // Productivity
+      'productive', 'organize', 'prepare', 'schedule', 'deadline',
+      // Common actions
+      'call', 'email', 'message', 'meet', 'buy', 'fix', 'clean', 'write', 'read', 'study'
     ];
-    
-    const lowerText = journalText.toLowerCase();
-    const foundWords = triggerWords.filter(word => lowerText.includes(word));
-    console.log('Found trigger words:', foundWords);
-    
-    const hasRelevantContent = foundWords.length > 0;
 
-    if (!hasRelevantContent) {
-      console.log('⏭️ Skipping task suggestions: No actionable themes detected');
+    const lowerText = journalText.toLowerCase();
+    const hasTaskKeyword = taskKeywords.some(keyword => lowerText.includes(keyword));
+
+    if (!hasTaskKeyword) {
+      console.log('⏭️ Skipping: No task-related keywords found');
       return;
     }
 
-    console.log('🎯 Analyzing journal for task suggestions...');
+    console.log('📋 Task keywords detected! Analyzing journal for suggestions...');
 
+    // 3️⃣ Call backend to get AI task suggestions
     const response = await apiPost(`${API_BASE_URL}/analyze-for-tasks`, {
       journalText: journalText.trim(),
       mood: moodValue,
@@ -1208,9 +1204,8 @@ const analyzeForTaskSuggestions = async (journalText, moodValue, date) => {
     }
 
     const data = await response.json();
-    console.log('API response:', data);
-
-    // Show modal if we have suggestions
+    
+    // Show modal with suggestions for user to select
     if (data.suggestedTasks && data.suggestedTasks.length > 0) {
       setTaskSuggestions(data.suggestedTasks);
       setShowTaskSuggestions(true);
@@ -1224,52 +1219,28 @@ const analyzeForTaskSuggestions = async (journalText, moodValue, date) => {
   }
 };
 
-// Add suggested tasks to tomorrow's planner
-const handleAddSuggestedTasks = async (selectedTasks, makeRecurring = false, targetDate = null) => {
+// Add selected tasks to daily to-do list
+const handleAddSuggestedTasks = async (selectedTasks) => {
   try {
-    // Use provided date or default to tomorrow
-    const taskDate = targetDate || (() => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
-    })();
-    
-    const yearMonth = taskDate.substring(0, 7); // Extract YYYY-MM
-
-    // Add each selected task
+    // Add each selected task to daily todos
     for (const task of selectedTasks) {
-      if (makeRecurring) {
-        // Create as daily recurring task (counts in dopamine graph)
-        const taskData = {
-          name: task.name,
-          category: task.category,
-          timeEstimate: task.timeEstimate,
-          isRecurring: true,
-          recurrenceType: 'daily',
-          recurrenceDays: [0, 1, 2, 3, 4, 5, 6], // All days
-          yearMonth
-        };
-        await apiPost(`${API_BASE_URL}/planner/task`, taskData);
-      } else {
-        // Create as one-time task for selected date (doesn't count in graph)
-        const taskData = {
-          yearMonth,
-          name: task.name,
-          category: task.category,
-          timeEstimate: task.timeEstimate,
-          isRecurring: false,
-          specificDate: taskDate,  // Only show on this specific date
-          completed: false
-        };
-        await apiPost(`${API_BASE_URL}/planner/task`, taskData);
-      }
+      const todoData = {
+        name: task.name,
+        category: task.category,
+        timeEstimate: task.timeEstimate,
+        reason: task.reason,
+        completed: false
+      };
+      await apiPost(`${API_BASE_URL}/daily-todos/add`, todoData);
     }
 
-    const destination = makeRecurring ? 'daily tasks' : `planner for ${taskDate}`;
-    console.log(`✅ Added ${selectedTasks.length} task(s) to ${destination}`);
+    console.log(`✅ Added ${selectedTasks.length} task(s) to daily to-do list`);
+    
+    // Trigger a custom event to refresh the todo list
+    window.dispatchEvent(new CustomEvent('dailyTodosUpdated'));
   } catch (error) {
-    console.error('Failed to add suggested tasks:', error);
-    alert('Failed to add tasks to planner. Please try again.');
+    console.error('Failed to add tasks to daily todos:', error);
+    alert('Failed to add tasks. Please try again.');
   }
 };
 
@@ -1320,12 +1291,10 @@ const handleSave = async () => {
     // No need to call updateJournalQuests() again!
 
     // 3️⃣ Analyze journal for task suggestions (non-blocking)
-    // ✅ Only show on FIRST save (not when editing existing entry)
-    if (!isExistingEntry && content && content.trim().length > 0) {
-      analyzeForTaskSuggestions(content, mood, selectedDate).catch(err => {
-        console.warn('Task suggestion analysis failed, but journal saved successfully:', err);
-      });
-    }
+    // TEMPORARY: Always show for testing (remove !isExistingEntry check)
+    analyzeForTaskSuggestions(content, mood, selectedDate).catch(err => {
+      console.warn('Task suggestion analysis failed, but journal saved successfully:', err);
+    });
 
     // UI success
     setSaving(false);

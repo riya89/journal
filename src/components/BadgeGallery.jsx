@@ -13,8 +13,16 @@ export default function BadgeGallery({ earnedBadges = [], theme = 'light', compa
     special: 'Special Badges'
   };
 
-  // Group badges by category
+  // Categories to hide from UI (but keep logic working in background)
+  const hiddenCategories = ['quest_completion', 'level', 'special'];
+
+  // Group badges by category (excluding hidden ones)
   const badgesByCategory = BADGE_DEFINITIONS.reduce((acc, badge) => {
+    // Skip hidden categories
+    if (hiddenCategories.includes(badge.category)) {
+      return acc;
+    }
+    
     if (!acc[badge.category]) {
       acc[badge.category] = [];
     }
@@ -69,10 +77,13 @@ export default function BadgeGallery({ earnedBadges = [], theme = 'light', compa
 
   // Compact mode for dashboard
   if (compact) {
+    // Filter out hidden categories for compact view
+    const visibleBadges = BADGE_DEFINITIONS.filter(badge => !hiddenCategories.includes(badge.category));
+    
     return (
       <div className="badge-gallery-compact w-full">
         <div className="grid grid-cols-6 gap-1.5">
-          {BADGE_DEFINITIONS.slice(0, 12).map(badge => {
+          {visibleBadges.slice(0, 12).map(badge => {
             const isEarned = earnedBadges.includes(badge.id);
             return (
               <div
@@ -203,7 +214,10 @@ export default function BadgeGallery({ earnedBadges = [], theme = 'light', compa
         <p className={`text-xs ${
           theme === 'dark' ? 'text-[#EBDDBF]/70' : 'text-gray-600'
         }`}>
-          {earnedBadges.length} of {BADGE_DEFINITIONS.length} badges earned
+          {earnedBadges.filter(id => {
+            const badge = BADGE_DEFINITIONS.find(b => b.id === id);
+            return badge && !hiddenCategories.includes(badge.category);
+          }).length} of {BADGE_DEFINITIONS.filter(b => !hiddenCategories.includes(b.category)).length} badges earned
         </p>
       </div>
 
@@ -221,7 +235,7 @@ export default function BadgeGallery({ earnedBadges = [], theme = 'light', compa
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          All ({BADGE_DEFINITIONS.length})
+          All ({BADGE_DEFINITIONS.filter(b => !hiddenCategories.includes(b.category)).length})
         </button>
         <button
           onClick={() => setFilter('earned')}
@@ -235,7 +249,10 @@ export default function BadgeGallery({ earnedBadges = [], theme = 'light', compa
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          Earned ({earnedBadges.length})
+          Earned ({earnedBadges.filter(id => {
+            const badge = BADGE_DEFINITIONS.find(b => b.id === id);
+            return badge && !hiddenCategories.includes(badge.category);
+          }).length})
         </button>
         <button
           onClick={() => setFilter('locked')}
@@ -249,7 +266,10 @@ export default function BadgeGallery({ earnedBadges = [], theme = 'light', compa
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
           }`}
         >
-          Locked ({BADGE_DEFINITIONS.length - earnedBadges.length})
+          Locked ({BADGE_DEFINITIONS.filter(b => !hiddenCategories.includes(b.category)).length - earnedBadges.filter(id => {
+            const badge = BADGE_DEFINITIONS.find(b => b.id === id);
+            return badge && !hiddenCategories.includes(badge.category);
+          }).length})
         </button>
       </div>
 

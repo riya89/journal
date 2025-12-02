@@ -197,7 +197,7 @@ export default function TemplatesModal({
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-2xl">
-                            {TASK_CATEGORIES[template.category]?.icon || "📌"}
+                            {TASK_CATEGORIES[template.category]?.icon || ""}
                           </span>
                           <h3 className="text-lg font-semibold">{template.name}</h3>
                         </div>

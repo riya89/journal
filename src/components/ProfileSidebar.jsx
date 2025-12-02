@@ -118,6 +118,7 @@
 import { useState, useEffect } from "react";
 import { apiGet } from "../utils/api";
 import { API_BASE_URL } from "../config/api";
+import SuggestedTodoList from "./SuggestedTodoList";
 
 export default function ProfileSidebar({ theme, journalDates = [], selectedMonth, selectedYear, user }) {
   const [affirmation, setAffirmation] = useState("I am grounded, calm, and present. 🌿");
@@ -264,6 +265,9 @@ export default function ProfileSidebar({ theme, journalDates = [], selectedMonth
           )}
         </div>
       </div>
+
+      {/* 📝 Today's Tasks */}
+      <SuggestedTodoList theme={theme} />
     </aside>
   );
 }

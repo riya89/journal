@@ -177,6 +177,40 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, [login]);
 
+  // Send user's timezone to backend on login
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const sendTimezone = async () => {
+      try {
+        // Detect user's timezone
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
+        const token = await getValidToken();
+        if (!token) return;
+        
+        // Send to backend
+        await fetch(`${API_BASE_URL}/user/update-timezone`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ timezone })
+        });
+        
+        console.log('Timezone updated:', timezone);
+      } catch (err) {
+        console.error('Failed to update timezone:', err);
+        // Non-critical error, don't show to user
+      }
+    };
+
+    sendTimezone();
+  }, [user, getValidToken]);
+
   // Set up automatic token refresh every 50 minutes
   useEffect(() => {
     if (!user) {
