@@ -2020,50 +2020,155 @@ router.get("/planner/templates", verifyToken, async (req, res) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-router.post("/assistant/speak-edge", verifyToken, async (req, res) => {
+router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
+  const { message, sessionId, includeHistory } = req.body;
+  
+  if (!message || !message.trim()) {
+    return res.status(400).json({ reply: "Hey, what's up? 🌿" });
+  }
+
   try {
-    const { text, voice = "en-US-MichelleNeural" } = req.body;
+    let context = [];
     
-    if (!text) {
-      return res.status(400).json({ error: "Text is required" });
+    // Load conversation history if requested
+    if (includeHistory && sessionId) {
+      const sessionRef = db
+        .collection("users")
+        .doc(req.uid)
+        .collection("aiSessions")
+        .doc(sessionId);
+      
+      const sessionDoc = await sessionRef.get();
+      
+      if (sessionDoc.exists) {
+        const sessionData = sessionDoc.data();
+        context = sessionData.messages?.slice(-10) || []; // Last 10 messages
+      }
     }
-    
-    // Create temp file path
-    const tempFile = path.join(__dirname, `temp_${Date.now()}.mp3`);
-    
-    // Generate audio with Edge TTS command
-    const command = `edge-tts --voice "${voice}" --text "${text.replace(/"/g, '\\"')}" --write-media "${tempFile}"`;
-    
-    exec(command, (error, stdout, stderr) => {
-      if (error) {
-        console.error("Edge TTS error:", error);
-        return res.status(500).json({ error: "TTS generation failed" });
+
+    // Add current message to context
+    context.push({ 
+      role: "user", 
+      content: message, 
+      timestamp: new Date().toISOString() 
+    });
+
+    // Build the friendly prompt
+    const contextPrompt = buildFriendlyPrompt(message, context.slice(0, -1));
+
+    // Call Gemini AI
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: contextPrompt }]
+          }],
+          generationConfig: {
+            temperature: 0.9,
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 150,
+          }
+        })
       }
-      
-      // Check if file was created
-      if (!fs.existsSync(tempFile)) {
-        return res.status(500).json({ error: "Audio file not generated" });
-      }
-      
-      // Send the audio file
-      res.setHeader('Content-Type', 'audio/mpeg');
-      const audioStream = fs.createReadStream(tempFile);
-      
-      audioStream.pipe(res);
-      
-      // Clean up temp file after sending
-      audioStream.on('end', () => {
-        fs.unlink(tempFile, (err) => {
-          if (err) console.error("Failed to delete temp file:", err);
-        });
-      });
+    );
+
+    const data = await response.json();
+    let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
+                "Hey, I'm here. What's going on?";
+
+    // Clean up the reply
+    reply = reply.replace(/^["']|["']$/g, '').trim();
+
+    // 🔥 FIXED: No follow-up suggestions
+    const followUpSuggestions = [];
+
+    // Save to session (async, don't wait)
+    context.push({ 
+      role: "assistant", 
+      content: reply, 
+      timestamp: new Date().toISOString() 
     });
     
+    const sessionRef = db
+      .collection("users")
+      .doc(req.uid)
+      .collection("aiSessions")
+      .doc(sessionId);
+    
+    sessionRef.set({
+      sessionId,
+      messages: context.slice(-10),
+      updatedAt: new Date(),
+      lastMessage: reply.substring(0, 100)
+    }, { merge: true }).catch(err => {
+      console.error('Error saving session:', err);
+    });
+
+    res.json({
+      reply,
+      followUpSuggestions, // Empty array now
+      sessionId,
+      messageId: `msg_${Date.now()}`,
+      timestamp: new Date().toISOString()
+    });
+
   } catch (err) {
-    console.error("Edge TTS endpoint error:", err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("AI Assistant Error:", err);
+    res.json({ 
+      reply: "Sorry, my brain just glitched for a sec. What were you saying?",
+      followUpSuggestions: [] // Also empty on error
+    });
   }
 });
+
+// router.post("/assistant/speak-edge", verifyToken, async (req, res) => {
+//   try {
+//     const { text, voice = "en-US-MichelleNeural" } = req.body;
+    
+//     if (!text) {
+//       return res.status(400).json({ error: "Text is required" });
+//     }
+    
+//     // Create temp file path
+//     const tempFile = path.join(__dirname, `temp_${Date.now()}.mp3`);
+    
+//     // Generate audio with Edge TTS command
+//     const command = `edge-tts --voice "${voice}" --text "${text.replace(/"/g, '\\"')}" --write-media "${tempFile}"`;
+    
+//     exec(command, (error, stdout, stderr) => {
+//       if (error) {
+//         console.error("Edge TTS error:", error);
+//         return res.status(500).json({ error: "TTS generation failed" });
+//       }
+      
+//       // Check if file was created
+//       if (!fs.existsSync(tempFile)) {
+//         return res.status(500).json({ error: "Audio file not generated" });
+//       }
+      
+//       // Send the audio file
+//       res.setHeader('Content-Type', 'audio/mpeg');
+//       const audioStream = fs.createReadStream(tempFile);
+      
+//       audioStream.pipe(res);
+      
+//       // Clean up temp file after sending
+//       audioStream.on('end', () => {
+//         fs.unlink(tempFile, (err) => {
+//           if (err) console.error("Failed to delete temp file:", err);
+//         });
+//       });
+//     });
+    
+//   } catch (err) {
+//     console.error("Edge TTS endpoint error:", err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
 
 
 router.get("/user/xp", verifyToken, async (req, res) => {
