@@ -928,29 +928,59 @@ export default function AIAssistant({ theme }) {
       setIsSpeaking(true);
       console.log("🔊 Speaking:", text.substring(0, 50));
       
-      // Use browser's built-in voice with female voice selection
+      // Wait for voices to load
+      let voices = speechSynthesis.getVoices();
+      
+      // If voices not loaded yet, wait for them
+      if (voices.length === 0) {
+        await new Promise(resolve => {
+          speechSynthesis.onvoiceschanged = () => {
+            voices = speechSynthesis.getVoices();
+            resolve();
+          };
+        });
+      }
+      
+      console.log("📋 Available voices:", voices.map(v => v.name));
+      
+      // Priority list of female voices for macOS/iOS
+      const femaleVoiceNames = [
+        'Samantha',           // macOS default female
+        'Victoria',           // macOS British female
+        'Karen',              // macOS Australian female  
+        'Moira',              // macOS Irish female
+        'Fiona',              // macOS Scottish female
+        'Google US English Female', // Chrome
+        'Microsoft Zira Desktop',   // Windows
+        'Microsoft Zira',           // Windows
+      ];
+      
+      // Find first available female voice
+      let femaleVoice = null;
+      for (const name of femaleVoiceNames) {
+        femaleVoice = voices.find(v => v.name === name);
+        if (femaleVoice) break;
+      }
+      
+      // Fallback: any voice with "female" in the name
+      if (!femaleVoice) {
+        femaleVoice = voices.find(v => 
+          v.name.toLowerCase().includes('female') ||
+          v.name.toLowerCase().includes('woman')
+        );
+      }
+      
       const utterance = new SpeechSynthesisUtterance(text);
-      
-      // Get available voices
-      const voices = speechSynthesis.getVoices();
-      
-      // Try to find a good female voice
-      const femaleVoice = voices.find(v => 
-        v.name.includes('Female') || 
-        v.name.includes('Samantha') || 
-        v.name.includes('Victoria') ||
-        v.name.includes('Karen') ||
-        v.name.includes('Moira') ||
-        (v.lang.startsWith('en') && v.name.includes('Google') && v.name.includes('US'))
-      );
       
       if (femaleVoice) {
         utterance.voice = femaleVoice;
-        console.log("✅ Using voice:", femaleVoice.name);
+        console.log("✅ Using female voice:", femaleVoice.name);
+      } else {
+        console.warn("⚠️ No female voice found, using default");
       }
       
-      utterance.rate = 0.85; // Slightly slower for clarity
-      utterance.pitch = 1.1; // Slightly higher pitch
+      utterance.rate = 0.9;
+      utterance.pitch = 1.2; // Higher pitch for more feminine sound
       utterance.volume = 1.0;
       
       utterance.onend = () => {
