@@ -3622,6 +3622,118 @@ router.post("/user/update-timezone", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to update timezone" });
   }
 });
+router.get("/suggested-todos", verifyToken, async (req, res) => {
+  try {
+    const userId = req.uid;
+    const userRef = db.collection("users").doc(userId);
+    const todosRef = userRef.collection("suggestedTodos");
+    
+    const snapshot = await todosRef
+      .orderBy("createdAt", "desc")
+      .get();
+    
+    const todos = [];
+    snapshot.forEach(doc => {
+      const todo = { id: doc.id, ...doc.data() };
+      
+      // Convert Firestore Timestamp to ISO string
+      if (todo.createdAt && todo.createdAt.toDate) {
+        todo.createdAt = todo.createdAt.toDate().toISOString();
+      }
+      
+      todos.push(todo);
+    });
+    
+    res.json({ todos });
+  } catch (err) {
+    console.error("Error fetching suggested todos:", err);
+    res.status(500).json({ error: "Failed to fetch todos" });
+  }
+});
+
+/**
+ * POST /journal/suggested-todos
+ * Add a new suggested todo
+ */
+router.post("/suggested-todos", verifyToken, async (req, res) => {
+  try {
+    const userId = req.uid;
+    const { name, category, timeEstimate, reason } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: "Task name is required" });
+    }
+    
+    const userRef = db.collection("users").doc(userId);
+    const todosRef = userRef.collection("suggestedTodos");
+    const todoRef = todosRef.doc();
+    
+    const todo = {
+      name,
+      category: category || 'other',
+      timeEstimate: timeEstimate || 30,
+      reason: reason || '',
+      completed: false,
+      createdAt: new Date()
+    };
+    
+    await todoRef.set(todo);
+    
+    res.json({
+      success: true,
+      todo: { id: todoRef.id, ...todo }
+    });
+  } catch (err) {
+    console.error("Error adding suggested todo:", err);
+    res.status(500).json({ error: "Failed to add todo" });
+  }
+});
+
+/**
+ * POST /journal/suggested-todos/:todoId/toggle
+ * Toggle completion status of a todo
+ */
+router.post("/suggested-todos/:todoId/toggle", verifyToken, async (req, res) => {
+  try {
+    const userId = req.uid;
+    const { todoId } = req.params;
+    const { completed } = req.body;
+    
+    const userRef = db.collection("users").doc(userId);
+    const todoRef = userRef.collection("suggestedTodos").doc(todoId);
+    
+    await todoRef.update({
+      completed,
+      completedAt: completed ? new Date() : null
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error toggling todo:", err);
+    res.status(500).json({ error: "Failed to toggle todo" });
+  }
+});
+
+/**
+ * DELETE /journal/suggested-todos/:todoId
+ * Delete a suggested todo
+ */
+router.delete("/suggested-todos/:todoId", verifyToken, async (req, res) => {
+  try {
+    const userId = req.uid;
+    const { todoId } = req.params;
+    
+    const userRef = db.collection("users").doc(userId);
+    const todoRef = userRef.collection("suggestedTodos").doc(todoId);
+    
+    await todoRef.delete();
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error deleting todo:", err);
+    res.status(500).json({ error: "Failed to delete todo" });
+  }
+});
 /**
  * Calculate expiration date for quest period based on user's timezone
  * @param {string} period - 'daily', 'weekly', or 'monthly'
