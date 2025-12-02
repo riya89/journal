@@ -3428,20 +3428,22 @@ async function generateQuestsForPeriod(userId, period) {
   for (const template of templates) {
     const questRef = questsRef.doc();
     const quest = {
-      userId,
-      type: period,
-      title: template.title,
-      description: template.description,
-      target: template.target,
-      progress: 0,
-      reward: template.reward,
-      status: 'active',
-      trackingType: template.trackingType,
-      createdAt: now,
-      expiresAt,
-      completedAt: null,
-      expiredAt: null
-    };
+  userId,
+  type: period,
+  title: template.title,
+  description: template.description,
+  target: template.target,
+  progress: 0,
+  reward: template.reward,
+  status: 'active',
+  trackingType: template.trackingType,
+  createdAt: now,
+  expiresAt,
+  completedAt: null,
+  expiredAt: null,
+  lastProgressDate: now  // Add this line
+};
+
 
     await questRef.set(quest);
     generatedQuests.push({ id: questRef.id, ...quest });
@@ -3580,14 +3582,41 @@ router.post("/quests/progress", verifyToken, async (req, res) => {
       }
 
       // Update progress
-      const newProgress = Math.min(quest.progress + progress, quest.target);
-      const completed = newProgress >= quest.target;
+      // const newProgress = Math.min(quest.progress + progress, quest.target);
+      // const completed = newProgress >= quest.target;
 
-      await questRef.update({
-        progress: newProgress,
-        status: completed ? "completed" : "active",
-        completedAt: completed ? new Date() : null
-      });
+      // await questRef.update({
+      //   progress: newProgress,
+      //   status: completed ? "completed" : "active",
+      //   completedAt: completed ? new Date() : null
+      // });
+      // For daily quests, check if we need to reset progress for a new day
+let currentProgress = quest.progress;
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+if (quest.type === 'daily' && quest.lastProgressDate) {
+  const lastProgressDate = quest.lastProgressDate.toDate ? 
+    quest.lastProgressDate.toDate() : new Date(quest.lastProgressDate);
+  lastProgressDate.setHours(0, 0, 0, 0);
+  
+  // Reset progress if it's a new day
+  if (lastProgressDate.getTime() < today.getTime()) {
+    currentProgress = 0;
+  }
+}
+
+// Update progress
+const newProgress = Math.min(currentProgress + progress, quest.target);
+const completed = newProgress >= quest.target;
+
+await questRef.update({
+  progress: newProgress,
+  lastProgressDate: new Date(), // Track when progress was last updated
+  status: completed ? "completed" : "active",
+  completedAt: completed ? new Date() : null
+});
+
 
       // Award XP if completed
       if (completed && quest.status !== "completed") {
