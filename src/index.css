@@ -17,10 +17,6 @@ body {
   @apply font-shantell bg-cream text-leaf transition-colors duration-500;
 }
 
-.dark body {
-  @apply bg-darkbg text-darktext;
-}
-
 /* ------- flower & wind (same as your HTML feel) ------- */
 .meadow {
   position: fixed;

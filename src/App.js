@@ -263,7 +263,7 @@
 //     />
 //   );
 // }
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./pages/Login";
@@ -281,17 +281,17 @@ import UserManual from "./pages/UserManual";
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const theme = "dark"; // Always dark theme
+  const theme = "light"; // Always light theme
 
-  // Set dark theme on mount
+  // Set light theme on mount
   useEffect(() => {
-    document.documentElement.classList.add("dark");
-    document.body.dataset.theme = "dark";
+    document.documentElement.classList.remove("dark");
+    document.body.dataset.theme = "light";
   }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFBEA] dark:bg-[#1a1410]">
+      <div className="min-h-screen flex items-center justify-center bg-[#FFFBEA]">
         <div className="animate-spin border-4 border-[#7A916C]/30 border-t-[#7A916C] rounded-full w-12 h-12"></div>
       </div>
     );
