@@ -691,46 +691,100 @@ async function awardQuestXP(userRef, xpAmount) {
 
 
 // 🔹 GET /journal/post-save-check
-// Get recurring task templates
-const templatesRef = userRef.collection("taskTemplates");
-const templatesSnapshot = await templatesRef.get();
-const templates = [];
-templatesSnapshot.forEach(doc => {
-  templates.push({ id: doc.id, ...doc.data() });
-});
-
-// Filter tasks that apply to this specific date
-const todaysTasks = [];
-
-// 1. Check regular tasks (non-recurring, stored in planner)
-tasks.forEach(task => {
-  if (task.specificDate) {
-    // Task with specific date - only applies on that date
-    if (task.specificDate === date) {
-      todaysTasks.push(task);
-    }
-  } else if (!task.isRecurring) {
-    // ❌ REMOVE THIS - non-recurring tasks without specificDate shouldn't apply
-    // They should have a specificDate set when created
-    // Don't add them to todaysTasks
-  }
-});
-
-// 2. Check recurring tasks (templates)
-templates.forEach(template => {
-  if (template.isRecurring) {
-    const applicableDates = getApplicableDates(template, yearMonth);
+router.get('/post-save-check', verifyToken, async (req, res) => {
+  try {
+    const { date } = req.query;
+    const uid = req.uid;
     
-    if (applicableDates.includes(date)) {
-      // Check for exceptions (deleted occurrences)
-      const exception = exceptions[template.id]?.[date];
-      
-      if (!exception || !exception.isDeleted) {
-        todaysTasks.push(template);
-      }
+    if (!date) {
+      return res.status(400).json({ error: 'Missing date parameter' });
     }
+
+    // Extract year-month from date (YYYY-MM-DD -> YYYY-MM)
+    const yearMonth = date.substring(0, 7);
+
+    // Get user and planner references
+    const userRef = db.collection('users').doc(uid);
+    const plannerRef = userRef.collection('planners').doc(yearMonth);
+    const plannerDoc = await plannerRef.get();
+
+    if (!plannerDoc.exists) {
+      return res.json({
+        hasTasks: false,
+        todaysTasks: [],
+        completionStats: { total: 0, completed: 0, percentage: 0 }
+      });
+    }
+
+    const plannerData = plannerDoc.data();
+    const tasks = plannerData.tasks || [];
+    const completions = plannerData.completions || {};
+    const exceptions = plannerData.exceptions || {};
+
+    // Get recurring task templates
+    const templatesRef = userRef.collection("taskTemplates");
+    const templatesSnapshot = await templatesRef.get();
+    const templates = [];
+    templatesSnapshot.forEach(doc => {
+      templates.push({ id: doc.id, ...doc.data() });
+    });
+
+    // Filter tasks that apply to this specific date
+    const todaysTasks = [];
+
+    // 1. Check regular tasks with specificDate
+    tasks.forEach(task => {
+      if (task.specificDate && task.specificDate === date) {
+        todaysTasks.push(task);
+      }
+    });
+
+    // 2. Check recurring tasks (templates)
+    templates.forEach(template => {
+      if (template.isRecurring) {
+        const applicableDates = getApplicableDates(template, yearMonth);
+        
+        if (applicableDates.includes(date)) {
+          // Check for exceptions (deleted occurrences)
+          const exception = exceptions[template.id]?.[date];
+          
+          if (!exception || !exception.isDeleted) {
+            todaysTasks.push(template);
+          }
+        }
+      }
+    });
+
+    // Check completion status for each task
+    const dateCompletions = completions[date] || [];
+    const tasksWithStatus = todaysTasks.map(task => ({
+      id: task.id,
+      name: task.name,
+      category: task.category,
+      timeEstimate: task.timeEstimate,
+      completed: dateCompletions.includes(task.id)
+    }));
+
+    // Calculate statistics
+    const total = tasksWithStatus.length;
+    const completed = tasksWithStatus.filter(t => t.completed).length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    res.json({
+      hasTasks: total > 0,
+      todaysTasks: tasksWithStatus,
+      completionStats: {
+        total,
+        completed,
+        percentage
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching post-save check:', error);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
   }
 });
+
 
 // 🔹 POST /journal/quick-complete-tasks
 // Accept array of task IDs to mark complete
