@@ -3123,28 +3123,54 @@ router.get("/summary/weekly", verifyToken, async (req, res) => {
 // });
 router.post("/timecapsule/create", verifyToken, async (req, res) => {
   try {
-    const { message, unlockDate, currentMood, currentGoals, timezone } = req.body;
+    const { message, unlockDate, currentMood, currentGoals, timezone, durationType, durationValue } = req.body;
     
     if (!message || !unlockDate) {
       return res.status(400).json({ error: "Message and unlock date required" });
     }
 
     const capsuleRef = db.collection("users").doc(req.uid).collection("timeCapsules").doc();
-    
-    // Store unlock date as end of day in user's timezone
-    const unlockTimestamp = new Date(unlockDate);
-    unlockTimestamp.setHours(23, 59, 59, 999); // End of day
-    
     const now = new Date();
-    const daysUntilUnlock = Math.floor((unlockTimestamp - now) / (1000 * 60 * 60 * 24));
+    let unlockTimestamp;
+
+    // ✅ Handle different duration types
+    if (durationType && durationValue) {
+      // Short duration (minutes/hours) - use exact time
+      switch (durationType) {
+        case 'minutes':
+          unlockTimestamp = new Date(now.getTime() + durationValue * 60 * 1000);
+          break;
+        case 'hours':
+          unlockTimestamp = new Date(now.getTime() + durationValue * 60 * 60 * 1000);
+          break;
+        case 'days':
+          unlockTimestamp = new Date(now.getTime() + durationValue * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          // Fallback to date-based
+          unlockTimestamp = new Date(unlockDate);
+          unlockTimestamp.setHours(23, 59, 59, 999);
+      }
+    } else {
+      // Date-based capsule - set to end of day
+      unlockTimestamp = new Date(unlockDate);
+      unlockTimestamp.setHours(23, 59, 59, 999);
+    }
+
+    const msUntilUnlock = unlockTimestamp - now;
+    const minutesUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60));
+    const hoursUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60 * 60));
+    const daysUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60 * 60 * 24));
 
     await capsuleRef.set({
       capsuleId: capsuleRef.id,
       userId: req.uid,
       message,
-      createdAt: new Date(),
+      createdAt: now,
       unlockDate: unlockTimestamp,
-      timezone: timezone || 'UTC', // ✅ Store user's timezone
+      timezone: timezone || 'UTC',
+      durationType: durationType || 'date',
+      durationValue: durationValue || null,
       currentMood: currentMood || null,
       currentGoals: currentGoals || [],
       isUnlocked: false,
@@ -3154,8 +3180,10 @@ router.post("/timecapsule/create", verifyToken, async (req, res) => {
 
     res.json({
       capsuleId: capsuleRef.id,
-      unlockDate,
-      daysUntilUnlock
+      unlockDate: unlockTimestamp.toISOString(),
+      daysUntilUnlock,
+      hoursUntilUnlock,
+      minutesUntilUnlock
     });
   } catch (err) {
     console.error("Error creating time capsule:", err);
@@ -3386,7 +3414,7 @@ router.get("/timecapsule/list", verifyToken, async (req, res) => {
       const unlockDate = capsule.unlockDate.toDate();
       const userTimezone = capsule.timezone || 'UTC';
 
-      // ✅ NEW CODE - Compare raw timestamps
+      // ✅ Compare raw timestamps
       const isUnlocked = now >= unlockDate || capsule.isUnlocked;
 
       if (isUnlocked) {
@@ -3397,7 +3425,6 @@ router.get("/timecapsule/list", verifyToken, async (req, res) => {
           timezone: userTimezone
         });
       } else {
-        // ✅ NEW CODE - Calculate time remaining properly
         const msUntilUnlock = unlockDate - now;
         const minutesUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60));
         const hoursUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60 * 60));
@@ -5528,12 +5555,11 @@ router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
     const unlockDate = capsule.unlockDate.toDate();
     const userTimezone = capsule.timezone || 'UTC';
 
-    // ✅ NEW CODE - Compare raw timestamps
+    // ✅ Compare raw timestamps
     const now = new Date();
     const isLocked = now < unlockDate && !capsule.isUnlocked;
 
     if (isLocked) {
-      // ✅ NEW CODE - Calculate time remaining properly
       const msUntilUnlock = unlockDate - now;
       const minutesUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60));
       const hoursUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60 * 60));
