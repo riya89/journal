@@ -5614,82 +5614,82 @@ router.get("/streak/recovery-message", verifyToken, async (req, res) => {
 // ===========================================
 
 // Create time capsule
-router.post("/timecapsule/create", verifyToken, async (req, res) => {
-  try {
-    const { message, unlockDate, currentMood, currentGoals } = req.body;
+// router.post("/timecapsule/create", verifyToken, async (req, res) => {
+//   try {
+//     const { message, unlockDate, currentMood, currentGoals } = req.body;
     
-    if (!message || !unlockDate) {
-      return res.status(400).json({ error: "Message and unlock date required" });
-    }
+//     if (!message || !unlockDate) {
+//       return res.status(400).json({ error: "Message and unlock date required" });
+//     }
     
-    const capsuleRef = db.collection("users").doc(req.uid).collection("timeCapsules").doc();
-    const unlockTimestamp = new Date(unlockDate);
-    const now = new Date();
-    const daysUntilUnlock = Math.floor((unlockTimestamp - now) / (1000 * 60 * 60 * 24));
+//     const capsuleRef = db.collection("users").doc(req.uid).collection("timeCapsules").doc();
+//     const unlockTimestamp = new Date(unlockDate);
+//     const now = new Date();
+//     const daysUntilUnlock = Math.floor((unlockTimestamp - now) / (1000 * 60 * 60 * 24));
     
-    await capsuleRef.set({
-      capsuleId: capsuleRef.id,
-      userId: req.uid,
-      message,
-      createdAt: new Date(),
-      unlockDate: unlockTimestamp,
-      currentMood: currentMood || null,
-      currentGoals: currentGoals || [],
-      isUnlocked: false,
-      unlockedAt: null,
-      notificationSent: false
-    });
+//     await capsuleRef.set({
+//       capsuleId: capsuleRef.id,
+//       userId: req.uid,
+//       message,
+//       createdAt: new Date(),
+//       unlockDate: unlockTimestamp,
+//       currentMood: currentMood || null,
+//       currentGoals: currentGoals || [],
+//       isUnlocked: false,
+//       unlockedAt: null,
+//       notificationSent: false
+//     });
     
-    res.json({
-      capsuleId: capsuleRef.id,
-      unlockDate,
-      daysUntilUnlock
-    });
-  } catch (err) {
-    console.error("Error creating time capsule:", err);
-    res.status(500).json({ error: "Failed to create time capsule" });
-  }
-});
+//     res.json({
+//       capsuleId: capsuleRef.id,
+//       unlockDate,
+//       daysUntilUnlock
+//     });
+//   } catch (err) {
+//     console.error("Error creating time capsule:", err);
+//     res.status(500).json({ error: "Failed to create time capsule" });
+//   }
+// });
 
 // List time capsules (locked and unlocked)
-router.get("/timecapsule/list", verifyToken, async (req, res) => {
-  try {
-    const capsulesRef = db.collection("users").doc(req.uid).collection("timeCapsules");
-    const snapshot = await capsulesRef.orderBy("createdAt", "desc").get();
+// router.get("/timecapsule/list", verifyToken, async (req, res) => {
+//   try {
+//     const capsulesRef = db.collection("users").doc(req.uid).collection("timeCapsules");
+//     const snapshot = await capsulesRef.orderBy("createdAt", "desc").get();
     
-    const locked = [];
-    const unlocked = [];
-    const now = new Date();
+//     const locked = [];
+//     const unlocked = [];
+//     const now = new Date();
     
-    snapshot.forEach(doc => {
-      const capsule = doc.data();
-      const unlockDate = capsule.unlockDate.toDate();
+//     snapshot.forEach(doc => {
+//       const capsule = doc.data();
+//       const unlockDate = capsule.unlockDate.toDate();
       
-      if (unlockDate <= now || capsule.isUnlocked) {
-        // Capsule is unlocked
-        unlocked.push({
-          ...capsule,
-          unlockDate: unlockDate.toISOString().split('T')[0],
-          createdAt: capsule.createdAt.toDate().toISOString().split('T')[0]
-        });
-      } else {
-        // Capsule is still locked
-        const daysUntilUnlock = Math.floor((unlockDate - now) / (1000 * 60 * 60 * 24));
-        locked.push({
-          capsuleId: capsule.capsuleId,
-          createdAt: capsule.createdAt.toDate().toISOString().split('T')[0],
-          unlockDate: unlockDate.toISOString().split('T')[0],
-          daysUntilUnlock
-        });
-      }
-    });
+//       if (unlockDate <= now || capsule.isUnlocked) {
+//         // Capsule is unlocked
+//         unlocked.push({
+//           ...capsule,
+//           unlockDate: unlockDate.toISOString().split('T')[0],
+//           createdAt: capsule.createdAt.toDate().toISOString().split('T')[0]
+//         });
+//       } else {
+//         // Capsule is still locked
+//         const daysUntilUnlock = Math.floor((unlockDate - now) / (1000 * 60 * 60 * 24));
+//         locked.push({
+//           capsuleId: capsule.capsuleId,
+//           createdAt: capsule.createdAt.toDate().toISOString().split('T')[0],
+//           unlockDate: unlockDate.toISOString().split('T')[0],
+//           daysUntilUnlock
+//         });
+//       }
+//     });
     
-    res.json({ locked, unlocked });
-  } catch (err) {
-    console.error("Error fetching time capsules:", err);
-    res.status(500).json({ error: "Failed to fetch time capsules" });
-  }
-});
+//     res.json({ locked, unlocked });
+//   } catch (err) {
+//     console.error("Error fetching time capsules:", err);
+//     res.status(500).json({ error: "Failed to fetch time capsules" });
+//   }
+// });
 
 // Get specific time capsule (only if unlocked)
 // router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
@@ -6090,6 +6090,57 @@ router.post("/add", verifyToken, async (req, res) => {
       } catch (questErr) {
         console.error("Error updating mood quest:", questErr);
       }
+      // 4. ✅ Track streak days for weekly quest
+if (date) {
+  try {
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const userTimezone = userData.timezone || 'UTC';
+    
+    const streakResponse = await fetch(
+      `${process.env.RAINDROP_URL}/analytics/streaks?uid=${req.uid}&timezone=${encodeURIComponent(userTimezone)}`
+    );
+    
+    if (streakResponse.ok) {
+      const streakData = await streakResponse.json();
+      
+      // Update weekly streak_days quest
+      const streakQuestSnapshot = await userRef.collection("quests")
+        .where("status", "==", "active")
+        .where("trackingType", "==", "streak_days")
+        .where("type", "==", "weekly")
+        .get();
+      
+      for (const doc of streakQuestSnapshot.docs) {
+        const quest = doc.data();
+        const progressMetadata = quest.progressMetadata || { uniqueDays: [] };
+        const todayString = date;
+        
+        // Only increment if this day hasn't been counted yet
+        if (!progressMetadata.uniqueDays.includes(todayString)) {
+          progressMetadata.uniqueDays.push(todayString);
+          const newProgress = progressMetadata.uniqueDays.length;
+          const completed = newProgress >= quest.target;
+          
+          await doc.ref.update({
+            progress: newProgress,
+            progressMetadata,
+            status: completed ? "completed" : "active",
+            completedAt: completed ? new Date() : null
+          });
+          
+          // Award XP if completed
+          if (completed && quest.status !== "completed") {
+            await awardQuestXP(userRef, quest.reward.xp);
+            console.log(`✅ Weekly streak quest completed! ${newProgress} days`);
+          }
+        }
+      }
+    }
+  } catch (streakErr) {
+    console.error("Error updating streak quest:", streakErr);
+  }
+}
     }
 
     // Update user stats
