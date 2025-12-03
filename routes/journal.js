@@ -38,7 +38,6 @@ const fallbackPrompts = [
 
 // 🧠 Helper: Generate fresh prompts using Gemini
 async function generateNewPrompts() {
-  // Check if API key exists
   if (!process.env.GEMINI_API_KEY) {
     throw new Error("❌ GEMINI_API_KEY not found in environment variables!");
   }
@@ -46,33 +45,37 @@ async function generateNewPrompts() {
   try {
     console.log("🔑 Using Gemini API key:", process.env.GEMINI_API_KEY.slice(0, 10) + "...");
     
-const response = await fetch(
-  // **CORRECTED LINE: Changed model name to gemini-2.5-flash**
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: `Generate exactly 2 unique, thoughtful journaling prompts. Format your response as:
-1. [First prompt - under 15 words]
-2. [Second prompt - under 15 words]
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You are a compassionate soul guide. Generate 2 unique, poetic journaling prompts (10-15 words each).
 
-Make them emotionally engaging and different from common prompts. Focus on self-reflection, gratitude, or mindfulness.`,
-            },
-          ],
-        },
-      ],
-      generationConfig: {
-        temperature: 0.9,
-        maxOutputTokens: 1024,
-      },
-    }),
-  }
-);
+Avoid clichés like "What are you grateful for?" or "Describe your day."
+Focus on: inner child healing, sensory memories, quiet joys, unspoken dreams, self-compassion.
+
+Style examples (don't reuse):
+- What small moment today made you feel seen, even briefly?
+- If your younger self could whisper one truth to you now, what would it be?
+- What permission do you need to give yourself that you've been withholding?
+
+Format:
+1. [prompt]
+2. [prompt]`,
+            }],
+          }],
+          generationConfig: {
+            temperature: 1.1,
+            maxOutputTokens: 150,  // Reduced from 1024
+            topP: 0.95,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -83,9 +86,7 @@ Make them emotionally engaging and different from common prompts. Focus on self-
     const data = await response.json();
     console.log("🤖 Full Gemini response:", JSON.stringify(data, null, 2));
 
-    // Extract text from response
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    
     if (!rawText) {
       console.error("❌ No text in Gemini response");
       throw new Error("Empty response from Gemini");
@@ -93,19 +94,16 @@ Make them emotionally engaging and different from common prompts. Focus on self-
 
     console.log("📝 Raw text from Gemini:", rawText);
 
-    // Parse the numbered list (handles various formats)
     const lines = rawText.split('\n').filter(line => line.trim());
     const prompts = [];
 
     for (const line of lines) {
-      // Match patterns like "1. prompt" or "1) prompt" or "- prompt"
       const match = line.match(/^[\d\-\*\•]+[\.\)]\s*(.+)$/);
       if (match && match[1]) {
         prompts.push(match[1].trim());
       }
     }
 
-    // If we couldn't parse numbered list, try splitting by common delimiters
     if (prompts.length < 2) {
       const altPrompts = rawText
         .split(/[\n\r]+/)
@@ -122,17 +120,15 @@ Make them emotionally engaging and different from common prompts. Focus on self-
       return prompts.slice(0, 2);
     }
 
-    console.warn("⚠️ Could not parse prompts properly, using fallback");
+    console.warn("⚠️ Could not parse prompts properly");
     throw new Error("Could not parse prompts from response");
     
   } catch (err) {
     console.error("❌ Gemini generation failed:", err.message);
-    console.error("Stack:", err.stack);
-    
-    // DON'T use fallback - throw error to see what's wrong
     throw new Error(`Gemini API failed: ${err.message}`);
   }
 }
+
 // 🔹 Update Avatar
 router.post("/avatar", verifyToken, async (req, res) => {
   const { avatarURL } = req.body;
