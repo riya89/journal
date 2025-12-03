@@ -3,7 +3,7 @@ import { auth, provider } from "../lib/firebase";
 import { useAuth } from "../contexts/AuthContext";
 import WaterRippleEffect from "../components/WaterRippleEffect";
 import { AUTH_BASE_URL } from "../config/api";
-import logo from "../assets/dark_logo.png";
+import logo from "../assets/light_logo.png";
 
 export default function Login({ onLoginSuccess, theme }) {
   const { login } = useAuth();
@@ -68,7 +68,7 @@ export default function Login({ onLoginSuccess, theme }) {
 
 
       {/* Main Content */}
-      <div className={`relative z-10 text-center px-6 py-10 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] max-w-lg mx-auto ${
+      <div className={`relative z-10 text-center px-6 py-6 backdrop-blur-md rounded-3xl shadow-[0_8px_30px_rgba(0,0,0,0.5)] max-w-lg mx-auto ${
         theme === 'dark'
           ? 'bg-[#2b241c]/60 border border-[#5b4a3d]/30'
           : 'bg-white/70 border border-[#7A916C]/20'
@@ -77,14 +77,18 @@ export default function Login({ onLoginSuccess, theme }) {
         <img 
           src={logo} 
           alt="Echo Logo" 
-          className="w-40 h-40 mx-auto mb-4 object-contain"
+          className="w-64 h-64 mx-auto -mb-4 object-contain"
         />
-        <h1 className="text-6xl mb-4 text-[#EBDDBF] tracking-widest font-['Creepster',cursive]">
-          Echo
+        <h1 className={`text-6xl mb-3 tracking-widest font-['Creepster',cursive] ${
+          theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#7A916C]'
+        }`}>
+          Opal
         </h1>
-        <p className="text-lg mb-8 text-[#EBDDBF]/80 font-['Raleway',sans-serif] font-light leading-relaxed">
-          Your shadows have stories too<br />
-          Hold them gently here
+        <p className={`text-lg mb-6 font-['Raleway',sans-serif] font-light leading-relaxed ${
+          theme === 'dark' ? 'text-[#EBDDBF]/80' : 'text-[#6c7a5b]'
+        }`}>
+           Every page is a soft beginning. 🌿<br />
+          You can start just as you are.
         </p>
 
         {/* Google Sign-In Button */}
@@ -101,14 +105,17 @@ export default function Login({ onLoginSuccess, theme }) {
             alt="Google"
             className="w-6 h-6"
           />
-          <span className="font-['Raleway',sans-serif] font-medium text-lg text-[#EBDDBF] tracking-wide">
+          <span className={`font-['Raleway',sans-serif] font-medium text-lg tracking-wide ${
+            theme === 'dark' ? 'text-[#EBDDBF]' : 'text-white'
+          }`}>
             Continue with Google
           </span>
         </button>
 
         {/* Footer Text */}
-        {/* Footer Text */}
-        <p className="mt-8 text-sm text-[#EBDDBF]/60 font-['Raleway',sans-serif] font-light tracking-wide">
+        <p className={`mt-6 text-sm font-['Raleway',sans-serif] font-light tracking-wide ${
+          theme === 'dark' ? 'text-[#EBDDBF]/60' : 'text-[#6c7a5b]/70'
+        }`}>
           Crafted with 🌙 and calm • Riya’s Journal
         </p>      </div>
 

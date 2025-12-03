@@ -28,7 +28,7 @@ export default function StreakRecoveryModal({ message, onStartJournaling, onClos
           className={`relative w-full max-w-md rounded-2xl shadow-2xl p-8 ${
             theme === 'dark'
               ? 'bg-gradient-to-br from-[#3a2f1f] to-[#2e261f] border-2 border-[#5b4a3d]/40'
-              : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200/50'
+              : 'bg-gradient-to-br from-[#f0f4f0] to-[#e8f0e8] border-2 border-[#a8c5a0]/50'
           }`}
         >
           {/* Close button */}
@@ -59,7 +59,7 @@ export default function StreakRecoveryModal({ message, onStartJournaling, onClos
           {/* Title */}
           <h2
             className={`text-2xl font-bold text-center mb-4 ${
-              theme === 'dark' ? 'text-[#EBDDBF]' : 'text-blue-900'
+              theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#2d5016]'
             }`}
           >
             {message.title}
@@ -68,7 +68,7 @@ export default function StreakRecoveryModal({ message, onStartJournaling, onClos
           {/* Body text */}
           <p
             className={`text-center mb-6 leading-relaxed ${
-              theme === 'dark' ? 'text-[#EBDDBF]/80' : 'text-blue-800/80'
+              theme === 'dark' ? 'text-[#EBDDBF]/80' : 'text-[#3d6b2a]/80'
             }`}
           >
             {message.body}
@@ -83,7 +83,7 @@ export default function StreakRecoveryModal({ message, onStartJournaling, onClos
               className={`mb-6 p-6 rounded-xl text-center ${
                 theme === 'dark'
                   ? 'bg-[#4a3a28]/50 border border-[#5b4a3d]/30'
-                  : 'bg-white/60 border border-blue-200/50'
+                  : 'bg-white/60 border border-[#a8c5a0]/50'
               }`}
             >
               <div className="flex items-center justify-center gap-3 mb-3">
@@ -92,14 +92,14 @@ export default function StreakRecoveryModal({ message, onStartJournaling, onClos
                   className={`text-5xl font-bold ${
                     theme === 'dark'
                       ? 'text-amber-400'
-                      : 'text-blue-600'
+                      : 'text-[#5a8c3f]'
                   }`}
                 >
                   {message.previousStreak}
                 </div>
                 <span
                   className={`text-lg font-semibold ${
-                    theme === 'dark' ? 'text-[#EBDDBF]' : 'text-blue-900'
+                    theme === 'dark' ? 'text-[#EBDDBF]' : 'text-[#2d5016]'
                   }`}
                 >
                   {message.previousStreak === 1 ? 'day' : 'days'}
@@ -107,7 +107,7 @@ export default function StreakRecoveryModal({ message, onStartJournaling, onClos
               </div>
               <p
                 className={`text-sm font-medium ${
-                  theme === 'dark' ? 'text-[#EBDDBF]/70' : 'text-blue-700/70'
+                  theme === 'dark' ? 'text-[#EBDDBF]/70' : 'text-[#4a7a32]/70'
                 }`}
               >
                 {message.encouragement}
@@ -124,7 +124,7 @@ export default function StreakRecoveryModal({ message, onStartJournaling, onClos
               className={`w-full py-3 px-6 rounded-lg font-semibold text-lg shadow-lg transition-all ${
                 theme === 'dark'
                   ? 'bg-[#5b4a3d] text-[#EBDDBF] hover:bg-[#6b5a4d] hover:shadow-[0_0_20px_rgba(235,221,191,0.2)]'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200'
+                  : 'bg-[#5a8c3f] text-white hover:bg-[#4a7a32] hover:shadow-[#a8c5a0]/50'
               }`}
             >
               Start Writing ✨
@@ -135,7 +135,7 @@ export default function StreakRecoveryModal({ message, onStartJournaling, onClos
               className={`w-full py-2 px-6 rounded-lg font-medium transition-colors ${
                 theme === 'dark'
                   ? 'text-[#EBDDBF]/60 hover:text-[#EBDDBF] hover:bg-[#3a2e20]/30'
-                  : 'text-blue-600/60 hover:text-blue-600 hover:bg-blue-100/30'
+                  : 'text-[#5a8c3f]/60 hover:text-[#5a8c3f] hover:bg-[#e8f0e8]/30'
               }`}
             >
               Maybe Later

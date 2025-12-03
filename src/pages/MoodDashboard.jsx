@@ -437,6 +437,7 @@ export default function MoodDashboard({ user, theme }) {
     totalEntries: 0,
   });
   const [earnedBadges, setEarnedBadges] = useState([]);
+  const [moodStats, setMoodStats] = useState({ averageMood: 0, trend: 'stable' });
   const BASE = RAINDROP_BASE_URL;
   
 
@@ -464,7 +465,18 @@ export default function MoodDashboard({ user, theme }) {
       })
       .catch((err) => console.error('Error fetching streaks:', err));
 
-    // Mood data is now handled by ExtendedMoodDashboard component
+    // Fetch mood stats for the summary cards
+    apiGet(`${BASE}/analytics/mood/extended?uid=${user.uid}&days=30`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.stats) {
+          setMoodStats({
+            averageMood: d.stats.averageMood || 0,
+            trend: d.stats.trend || 'stable'
+          });
+        }
+      })
+      .catch((err) => console.error('Error fetching mood stats:', err));
 
     // Insights
     apiGet(`${BASE}/insights?uid=${user.uid}`)
@@ -489,7 +501,7 @@ export default function MoodDashboard({ user, theme }) {
         setEarnedBadges(d.earnedBadges || []);
       })
       .catch((err) => console.error('Error fetching gamification badges:', err));
-  }, [user]);
+  }, [BASE, user]);
 
   const lockedBadges = [7, 14, 21, 30, 60, 90].filter(
     (s) => !badges.find((b) => b.streak === s)
@@ -635,7 +647,7 @@ export default function MoodDashboard({ user, theme }) {
                 Average Mood
               </p>
               <p className={`text-2xl font-bold ${theme === "dark" ? "text-[#fbbf24] font-gothic-body" : "text-[#7A916C]"}`}>
-                4.4/5
+                {moodStats.averageMood > 0 ? `${moodStats.averageMood}/5` : 'N/A'}
               </p>
             </div>
 
@@ -650,7 +662,7 @@ export default function MoodDashboard({ user, theme }) {
                 Trend
               </p>
               <p className={`text-2xl font-bold capitalize ${theme === "dark" ? "text-gray-300 font-gothic-body" : "text-gray-700"}`}>
-                Stable
+                {moodStats.trend === 'improving' ? '📈 Improving' : moodStats.trend === 'declining' ? '📉 Declining' : '➡️ Stable'}
               </p>
             </div>
           </div>

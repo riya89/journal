@@ -3,9 +3,8 @@ import Modal from './Modal';
 
 const CreateCapsuleModal = ({ onSubmit, onClose }) => {
   const [message, setMessage] = useState('');
-  const [unlockPeriod, setUnlockPeriod] = useState(30);
+  const [unlockPeriod, setUnlockPeriod] = useState('30d'); // Changed to string format
   const [goals, setGoals] = useState(['']);
-  const [currentMood, setCurrentMood] = useState(3);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -16,15 +15,49 @@ const CreateCapsuleModal = ({ onSubmit, onClose }) => {
 
     setIsSubmitting(true);
     
-    const unlockDate = new Date();
-    unlockDate.setDate(unlockDate.getDate() + unlockPeriod);
+    // Parse the unlock period
+    const periodMatch = unlockPeriod.match(/^(\d+)([mhd])$/);
+    if (!periodMatch) {
+      alert('Invalid unlock period format');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const [, value, unit] = periodMatch;
+    const durationValue = parseInt(value);
+    let durationType;
+    let unlockDate = new Date();
+
+    // Calculate unlock date based on unit
+    switch (unit) {
+      case 'm': // minutes
+        durationType = 'minutes';
+        unlockDate = new Date(unlockDate.getTime() + durationValue * 60 * 1000);
+        break;
+      case 'h': // hours
+        durationType = 'hours';
+        unlockDate = new Date(unlockDate.getTime() + durationValue * 60 * 60 * 1000);
+        break;
+      case 'd': // days
+        durationType = 'days';
+        unlockDate = new Date(unlockDate.getTime() + durationValue * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        durationType = 'days';
+        unlockDate.setDate(unlockDate.getDate() + durationValue);
+    }
+    
+    // ✅ Get user's timezone
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     
     try {
       await onSubmit({
         message: message.trim(),
-        unlockDate: unlockDate.toISOString().split('T')[0],
-        currentMood,
-        currentGoals: goals.filter(g => g.trim())
+        unlockDate: unlockDate.toISOString(),
+        currentGoals: goals.filter(g => g.trim()),
+        timezone,
+        durationType,
+        durationValue
       });
     } catch (error) {
       console.error('Error creating capsule:', error);
@@ -50,8 +83,30 @@ const CreateCapsuleModal = ({ onSubmit, onClose }) => {
     }
   };
 
-  const moodEmojis = ['😢', '😕', '😐', '🙂', '😊'];
-  const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Great'];
+  // Helper function to display unlock date
+  const getUnlockDateDisplay = (period) => {
+    const match = period.match(/^(\d+)([mhd])$/);
+    if (!match) return 'Invalid period';
+    
+    const [, value, unit] = match;
+    const val = parseInt(value);
+    const now = new Date();
+    let unlockDate;
+
+    switch (unit) {
+      case 'm':
+        unlockDate = new Date(now.getTime() + val * 60 * 1000);
+        return unlockDate.toLocaleString();
+      case 'h':
+        unlockDate = new Date(now.getTime() + val * 60 * 60 * 1000);
+        return unlockDate.toLocaleString();
+      case 'd':
+        unlockDate = new Date(now.getTime() + val * 24 * 60 * 60 * 1000);
+        return unlockDate.toLocaleDateString();
+      default:
+        return 'Unknown';
+    }
+  };
 
   return (
     <Modal onClose={onClose}>
@@ -90,45 +145,24 @@ const CreateCapsuleModal = ({ onSubmit, onClose }) => {
           </label>
           <select
             value={unlockPeriod}
-            onChange={(e) => setUnlockPeriod(Number(e.target.value))}
+            onChange={(e) => setUnlockPeriod(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg
                      bg-white dark:bg-gray-800 text-gray-900 dark:text-white
                      focus:ring-2 focus:ring-[#7A916C] focus:border-transparent"
           >
-            <option value={30}>30 days (1 month)</option>
-            <option value={90}>90 days (3 months)</option>
-            <option value={365}>365 days (1 year)</option>
+            <option value="30d">30 days (1 month)</option>
+            <option value="60d">60 days (2 months)</option>
+            <option value="90d">90 days (3 months)</option>
+            <option value="180d">180 days (6 months)</option>
+            <option value="365d">365 days (1 year)</option>
+            <option value="730d">730 days (2 years)</option>
           </select>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Unlocks on: {new Date(Date.now() + unlockPeriod * 24 * 60 * 60 * 1000).toLocaleDateString()}
+            Unlocks on: {getUnlockDateDisplay(unlockPeriod)}
           </p>
         </div>
 
-        {/* Current Mood */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Current Mood
-          </label>
-          <div className="flex gap-2 justify-between">
-            {[1, 2, 3, 4, 5].map((mood) => (
-              <button
-                key={mood}
-                type="button"
-                onClick={() => setCurrentMood(mood)}
-                className={`flex-1 py-3 px-2 rounded-lg border-2 transition-all
-                  ${currentMood === mood
-                    ? 'border-[#7A916C] dark:border-[#d4a574] bg-[#7A916C]/10 dark:bg-[#5b4a3d]/30 scale-105'
-                    : 'border-gray-300 dark:border-[#5b4a3d] hover:border-[#7A916C]/50 dark:hover:border-[#d4a574]/50'
-                  }`}
-              >
-                <div className="text-2xl mb-1">{moodEmojis[mood - 1]}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {moodLabels[mood - 1]}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Removed Current Mood - Time capsules should be joyful, not tracked */}
 
         {/* Current Goals */}
         <div className="mb-6">

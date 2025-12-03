@@ -277,6 +277,7 @@ import GratitudeJarPage from "./pages/GratitudeJarPage";
 import MoodTrackingHub from "./pages/MoodTrackingHub";
 import Billing from "./pages/Billing";
 import UserManual from "./pages/UserManual";
+import TimeCapsuleUnlockNotification from "./components/TimeCapsuleUnlockNotification";
 // import GamificationDashboard from "./pages/GamificationDashboard";
 
 function AppContent() {
@@ -302,7 +303,11 @@ function AppContent() {
   }
 
   return (
-    <Routes>
+    <>
+      {/* Global Time Capsule Unlock Notification */}
+      <TimeCapsuleUnlockNotification user={user} theme={theme} />
+      
+      <Routes>
       <Route
         path="/"
         element={<Home user={user} theme={theme} />}
@@ -345,6 +350,7 @@ function AppContent() {
         element={<GamificationDashboard theme={theme} setTheme={setTheme} />}
       /> */}
     </Routes>
+    </>
   );
 }
 

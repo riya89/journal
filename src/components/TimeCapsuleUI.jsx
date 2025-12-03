@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { apiGet, apiPost } from '../utils/api';
 import CreateCapsuleModal from './CreateCapsuleModal';
@@ -12,13 +12,7 @@ const TimeCapsuleUI = ({ theme }) => {
   const [selectedCapsule, setSelectedCapsule] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      loadCapsules();
-    }
-  }, [user]);
-
-  const loadCapsules = async () => {
+  const loadCapsules = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -36,7 +30,13 @@ const TimeCapsuleUI = ({ theme }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array - function never changes
+
+  useEffect(() => {
+    if (user) {
+      loadCapsules();
+    }
+  }, [user, loadCapsules]);
 
   const createCapsule = async (capsuleData) => {
     try {
@@ -186,6 +186,7 @@ const TimeCapsuleUI = ({ theme }) => {
         <CapsuleDetailModal
           capsule={selectedCapsule}
           onClose={() => setSelectedCapsule(null)}
+          onUpdateCapsule={setSelectedCapsule}
           theme={theme}
         />
       )}
@@ -290,27 +291,11 @@ const UnlockedCapsuleCard = ({ capsule, onView }) => {
 };
 
 // Capsule Detail Modal Component
-const CapsuleDetailModal = ({ capsule, onClose, theme }) => {
-  const [currentMood, setCurrentMood] = useState(null);
+const CapsuleDetailModal = ({ capsule, onClose, onUpdateCapsule, theme }) => {
+  const [reflection, setReflection] = useState('');
   const [achievedGoals, setAchievedGoals] = useState([]);
-  const [showComparison, setShowComparison] = useState(false);
-  
-  const moodEmojis = ['😢', '😕', '😐', '🙂', '😊'];
-  const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Great'];
-
-  // Calculate mood change
-  const getMoodChange = () => {
-    if (!currentMood || !capsule.currentMood) return null;
-    const change = currentMood - capsule.currentMood;
-    if (change > 0) return { type: 'improved', value: change };
-    if (change < 0) return { type: 'declined', value: Math.abs(change) };
-    return { type: 'stable', value: 0 };
-  };
-
-  const handleSetCurrentMood = (mood) => {
-    setCurrentMood(mood);
-    setShowComparison(true);
-  };
+  const [showReflection, setShowReflection] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const toggleGoalAchieved = (goalIndex) => {
     if (achievedGoals.includes(goalIndex)) {
@@ -319,8 +304,6 @@ const CapsuleDetailModal = ({ capsule, onClose, theme }) => {
       setAchievedGoals([...achievedGoals, goalIndex]);
     }
   };
-
-  const moodChange = getMoodChange();
   
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
@@ -357,100 +340,125 @@ const CapsuleDetailModal = ({ capsule, onClose, theme }) => {
             </p>
           </div>
 
-          {/* Mood Comparison */}
-          {capsule.currentMood && (
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                Mood Comparison
-              </h4>
+          {/* Self-Reflection Section */}
+          <div className="mb-6">
+            <div className="p-4 bg-gradient-to-br from-[#7A916C]/10 to-[#94A786]/10 
+                          dark:from-[#5b4a3d]/20 dark:to-[#3a2e20]/20 rounded-lg 
+                          border-2 border-[#7A916C]/30 dark:border-[#5b4a3d]">
+              <p className={`text-sm text-gray-600 dark:text-[#EBDDBF]/80 mb-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+                💭 <span className="font-semibold">Take a moment to reflect:</span> How have you grown since writing this? What progress have you made on your goals?
+              </p>
               
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                {/* Past Mood */}
-                <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Then</p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{moodEmojis[capsule.currentMood - 1]}</span>
-                    <div>
-                      <div className="text-lg font-semibold text-gray-700 dark:text-gray-300">
-                        {capsule.currentMood}/5
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {moodLabels[capsule.currentMood - 1]}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Current Mood */}
-                <div className="p-4 bg-[#7A916C]/10 dark:bg-[#5b4a3d]/30 rounded-lg border-2 
-                              border-[#7A916C]/30 dark:border-[#5b4a3d]">
-                  <p className="text-xs text-gray-500 dark:text-[#EBDDBF]/60 mb-2">Now</p>
-                  {currentMood ? (
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">{moodEmojis[currentMood - 1]}</span>
-                      <div>
-                        <div className="text-lg font-semibold text-gray-700 dark:text-[#EBDDBF]">
-                          {currentMood}/5
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-[#EBDDBF]/70">
-                          {moodLabels[currentMood - 1]}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 dark:text-[#EBDDBF]/70 italic">
-                      Set your current mood below
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Mood Change Indicator */}
-              {showComparison && moodChange && (
-                <div className={`p-3 rounded-lg border-2 ${
-                  moodChange.type === 'improved' 
-                    ? 'bg-[#7A916C]/10 dark:bg-[#5b4a3d]/30 border-[#7A916C]/30 dark:border-[#5b4a3d]'
-                    : moodChange.type === 'declined'
-                    ? 'bg-[#d4a574]/10 dark:bg-[#5b4a3d]/20 border-[#d4a574]/30 dark:border-[#5b4a3d]/50'
-                    : 'bg-[#cdd6c0]/20 dark:bg-[#3a2e20]/30 border-[#cdd6c0]/40 dark:border-[#5b4a3d]'
-                }`}>
-                  <p className={`text-sm font-medium ${
-                    moodChange.type === 'improved' 
-                      ? 'text-[#7A916C] dark:text-[#d4a574]'
-                      : moodChange.type === 'declined'
-                      ? 'text-[#8b6f47] dark:text-[#EBDDBF]'
-                      : 'text-[#6B7A59] dark:text-[#EBDDBF]'
-                  }`}>
-                    {moodChange.type === 'improved' && `🎉 Your mood has improved by ${moodChange.value} point${moodChange.value > 1 ? 's' : ''}!`}
-                    {moodChange.type === 'declined' && `Your mood has changed by ${moodChange.value} point${moodChange.value > 1 ? 's' : ''}`}
-                    {moodChange.type === 'stable' && `Your mood has remained stable`}
+              {/* Success Message */}
+              {showSuccess && (
+                <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
+                    ✓ Reflection saved! This helps you track your personal growth. 🌱
                   </p>
                 </div>
               )}
-
-              {/* Current Mood Selector */}
-              {!currentMood && (
-                <div className="mt-4">
-                  <p className="text-sm text-gray-600 dark:text-[#EBDDBF]/80 mb-2">
-                    How are you feeling now?
-                  </p>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((mood) => (
-                      <button
-                        key={mood}
-                        onClick={() => handleSetCurrentMood(mood)}
-                        className="flex-1 py-2 px-1 rounded-lg border-2 border-gray-300 
-                                 dark:border-[#5b4a3d] hover:border-[#7A916C] 
-                                 dark:hover:border-[#d4a574] transition-all hover:scale-105"
-                      >
-                        <div className="text-xl">{moodEmojis[mood - 1]}</div>
-                      </button>
-                    ))}
+              
+              {/* Saved Reflection or Write Button */}
+              {capsule.reflection ? (
+                <div className="space-y-3">
+                  <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border-2 border-[#7A916C]/30 dark:border-[#5b4a3d]">
+                    <p className={`text-gray-700 dark:text-[#EBDDBF] whitespace-pre-wrap ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
+                      {capsule.reflection}
+                    </p>
+                    {capsule.reflectedAt && (
+                      <p className="text-xs text-gray-500 dark:text-[#EBDDBF]/60 mt-2">
+                        Reflected on {new Date(capsule.reflectedAt.toDate ? capsule.reflectedAt.toDate() : capsule.reflectedAt).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setReflection(capsule.reflection);
+                      setShowReflection(true);
+                    }}
+                    className="text-sm text-[#7A916C] dark:text-[#d4a574] hover:underline"
+                  >
+                    Edit Reflection
+                  </button>
+                </div>
+              ) : !showReflection ? (
+                <button
+                  onClick={() => setShowReflection(true)}
+                  className="w-full py-2 px-4 bg-[#7A916C] dark:bg-[#5b4a3d] text-white rounded-lg 
+                           hover:bg-[#6c7a5b] dark:hover:bg-[#6d5a4a] transition-colors text-sm font-medium"
+                >
+                  Write Your Reflection
+                </button>
+              ) : null}
+              
+              {/* Textarea for writing/editing */}
+              {showReflection && (
+                <div className="mt-3">
+                  <textarea
+                    value={reflection}
+                    onChange={(e) => setReflection(e.target.value)}
+                    placeholder="Reflect on your journey since writing this capsule..."
+                    rows={6}
+                    className={`w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
+                             bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+                             focus:ring-2 focus:ring-[#7A916C] focus:border-transparent
+                             resize-none ${theme === 'dark' ? 'font-gothic-body' : ''}`}
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={async () => {
+                        if (!reflection.trim()) {
+                          return;
+                        }
+                        
+                        try {
+                          const response = await apiPost(
+                            `${API_BASE_URL}/timecapsule/${capsule.capsuleId}/reflection`,
+                            { reflection: reflection.trim() }
+                          );
+                          
+                          if (!response.ok) {
+                            throw new Error('Failed to save reflection');
+                          }
+                          
+                          // Update capsule with saved reflection
+                          onUpdateCapsule({
+                            ...capsule,
+                            reflection: reflection.trim(),
+                            reflectedAt: new Date()
+                          });
+                          
+                          setShowSuccess(true);
+                          setShowReflection(false);
+                          setTimeout(() => setShowSuccess(false), 3000);
+                          
+                        } catch (err) {
+                          console.error('Error saving reflection:', err);
+                          alert('Failed to save reflection. Please try again.');
+                        }
+                      }}
+                      disabled={!reflection.trim()}
+                      className="flex-1 py-2 px-4 bg-[#7A916C] dark:bg-[#5b4a3d] text-white rounded-lg 
+                               hover:bg-[#6c7a5b] dark:hover:bg-[#6d5a4a] transition-colors text-sm font-medium
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Save Reflection
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowReflection(false);
+                        setReflection('');
+                      }}
+                      className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 
+                               dark:hover:bg-gray-700 rounded-lg transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
               )}
             </div>
-          )}
+          </div>
 
           {/* Goals Comparison */}
           {capsule.currentGoals && capsule.currentGoals.length > 0 && (
@@ -503,15 +511,6 @@ const CapsuleDetailModal = ({ capsule, onClose, theme }) => {
               )}
             </div>
           )}
-
-          {/* Reflection prompt */}
-          <div className="p-4 bg-[#7A916C]/10 dark:bg-[#5b4a3d]/30 rounded-lg border 
-                        border-[#7A916C]/30 dark:border-[#5b4a3d]">
-            <p className="text-sm text-[#6c7a5b] dark:text-[#EBDDBF] italic">
-              💭 Take a moment to reflect: How have you grown since writing this? 
-              What progress have you made on your goals?
-            </p>
-          </div>
 
           {/* Close button */}
           <div className="mt-6 flex justify-end">

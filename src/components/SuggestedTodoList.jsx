@@ -73,16 +73,16 @@ export default function SuggestedTodoList({ theme }) {
 
   return (
     <div className={`
-      rounded-[16px] shadow-soft p-4 transition-all duration-300
+      rounded-[16px] shadow-soft p-3 transition-all duration-300
       ${theme === 'dark' 
         ? 'bg-[#2b241c] text-[#EBDDBF]' 
         : 'bg-white text-[#7A916C]'
-      }
+      } 
     `}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h3 className={`
-          text-base font-semibold
+          text-sm font-semibold
           ${theme === 'dark' 
             ? 'text-[#EBDDBF] font-spooky-header' 
             : 'text-[#7A916C] font-shantell'
@@ -105,8 +105,8 @@ export default function SuggestedTodoList({ theme }) {
 
       {/* Content */}
       {!displayTodos ? (
-        <div className="flex flex-col items-center justify-center py-6 text-center">
-          <div className="text-3xl mb-2 opacity-30">✍️</div>
+        <div className="flex flex-col items-center justify-center py-3 text-center">
+          <div className="text-2xl mb-1 opacity-30">✍️</div>
           <p className={`text-xs ${
             theme === 'dark' ? 'text-[#EBDDBF]/50' : 'text-[#6c7a5b]/70'
           }`}>
@@ -114,7 +114,7 @@ export default function SuggestedTodoList({ theme }) {
           </p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
+        <div className="space-y-1.5 max-h-[80px] overflow-y-auto pr-1 custom-scrollbar">
           {todos.map((todo) => {
             const categoryInfo = getCategoryInfo(todo.category);
             
@@ -122,7 +122,7 @@ export default function SuggestedTodoList({ theme }) {
               <div
                 key={todo.id}
                 className={`
-                  p-2 rounded-lg transition-all duration-200
+                  p-1.5 rounded-lg transition-all duration-200
                   ${todo.completed 
                     ? 'opacity-50'
                     : theme === 'dark'

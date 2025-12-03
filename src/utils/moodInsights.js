@@ -85,10 +85,9 @@ export function generateInsights(stats, comparison = null, moodData = [], streak
     });
   }
 
-  if (stats.worstDay && stats.worstDay.mood > 0) {
-    const encouragement = stats.worstDay.mood <= 2 
-      ? "Remember, difficult days are temporary. You've made it through before, and you will again."
-      : "Even on challenging days, you're tracking your progress. That's a sign of strength.";
+  // ✅ Only show worst day if it's actually challenging (mood <= 2)
+  if (stats.worstDay && stats.worstDay.mood > 0 && stats.worstDay.mood <= 2) {
+    const encouragement = "Remember, difficult days are temporary. You've made it through before, and you will again.";
     
     insights.push({
       type: 'support',
@@ -141,14 +140,27 @@ export function generateInsights(stats, comparison = null, moodData = [], streak
       actionable: false
     });
   } else if (stats.trend === 'declining') {
-    insights.push({
-      type: 'support',
-      category: 'trend',
-      icon: '💜',
-      message: "It looks like things have been tough lately. Remember, it's okay to have difficult days. Consider reaching out to someone you trust.",
-      color: 'purple',
-      actionable: true
-    });
+    // ✅ Different messages based on severity
+    if (stats.averageMood < 3) {
+      insights.push({
+        type: 'support',
+        category: 'trend',
+        icon: '💜',
+        message: "It looks like things have been tough lately. Remember, it's okay to have difficult days. Consider reaching out to someone you trust.",
+        color: 'purple',
+        actionable: true
+      });
+    } else {
+      // Gentler message for declining but still okay mood
+      insights.push({
+        type: 'observation',
+        category: 'trend',
+        icon: '📉',
+        message: "Your mood has been declining slightly. Consider what might be affecting you and practice self-care.",
+        color: 'blue',
+        actionable: true
+      });
+    }
   } else if (stats.trend === 'stable') {
     insights.push({
       type: 'neutral',

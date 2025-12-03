@@ -5,6 +5,7 @@ import DopamineGraph from "../components/DopamineGraph";
 import TaskModal from "../components/TaskModal";
 import TemplatesModal from "../components/TemplatesModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import TodayOnlyModal from "../components/TodayOnlyModal";
 import ErrorBoundary from "../components/ErrorBoundary";
 import {
   DndContext,
@@ -254,6 +255,7 @@ export default function MonthlyPlanner({ theme }) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showTodayOnlyModal, setShowTodayOnlyModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [deletingTask, setDeletingTask] = useState(null);
   const [deleteDate, setDeleteDate] = useState(null);
@@ -401,6 +403,16 @@ export default function MonthlyPlanner({ theme }) {
 
   const handleToggleTask = async (taskId, day) => {
     const date = `${yearMonth}-${String(day).padStart(2, "0")}`;
+    
+    // ✅ Only allow toggling tasks for today
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    
+    if (date !== todayStr) {
+      setShowTodayOnlyModal(true);
+      return;
+    }
+    
     const isCompleted = completions[date]?.includes(taskId);
 
     try {
@@ -779,6 +791,14 @@ export default function MonthlyPlanner({ theme }) {
         isRecurring={deletingTask?.isRecurring || false}
         hasDateContext={deleteDate !== null}
       />
+
+      {/* Today Only Modal */}
+      {showTodayOnlyModal && (
+        <TodayOnlyModal
+          theme={theme}
+          onClose={() => setShowTodayOnlyModal(false)}
+        />
+      )}
 
       {/* Celebration Modal */}
       {showCelebration && celebrationData && (

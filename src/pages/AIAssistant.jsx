@@ -661,11 +661,33 @@ export default function AIAssistant({ theme }) {
   const chatEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const conversationContextRef = useRef(null);
+  const typeSoundsRef = useRef([]);
 
   // 📌 Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // 🔉 Pre-load typing sounds
+  useEffect(() => {
+    const sounds = ["/sounds/type1.mp3", "/sounds/type2.mp3", "/sounds/type3.mp3"];
+    typeSoundsRef.current = sounds.map(src => {
+      const audio = new Audio(src);
+      audio.volume = 0.15; // Subtle typing sound
+      audio.preload = "auto";
+      return audio;
+    });
+  }, []);
+
+  // Play typing sound
+  const playTypeSound = () => {
+    const sounds = typeSoundsRef.current;
+    if (sounds.length === 0) return;
+    
+    const sound = sounds[Math.floor(Math.random() * sounds.length)];
+    sound.currentTime = 0;
+    sound.play().catch(() => {}); // Ignore errors
+  };
 
   // 📌 Initialize session and load context with daily reset
   useEffect(() => {
@@ -849,6 +871,9 @@ export default function AIAssistant({ theme }) {
       for (let i = 1; i < words.length; i++) {
         const currentText = words.slice(0, i + 1).join(' ');
         
+        // Play typing sound
+        playTypeSound();
+        
         setMessages((prev) => {
           const newMessages = [...prev];
           newMessages[aiMessageIndex] = { 
@@ -859,7 +884,7 @@ export default function AIAssistant({ theme }) {
           return newMessages;
         });
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200)); // Slower typing speed
       }
 
       // Mark streaming as complete

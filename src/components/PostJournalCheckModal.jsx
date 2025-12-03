@@ -212,7 +212,7 @@ export default function PostJournalCheckModal({ date, onClose, theme, user }) {
           >
             Mark all done ✓
           </button>
-          <button
+          {/* <button
             onClick={() => navigate("/planner")}
             className={`flex-1 px-4 py-2 rounded-lg font-medium transition ${
               theme === "dark"
@@ -221,7 +221,7 @@ export default function PostJournalCheckModal({ date, onClose, theme, user }) {
             }`}
           >
             Review tasks
-          </button>
+          </button> */}
         </div>
 
         {/* Primary Actions */}
