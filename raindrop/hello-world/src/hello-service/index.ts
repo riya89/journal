@@ -1774,35 +1774,32 @@ export default class extends Service<Env> {
     }
   }
 
-  async getMoodExtended(uid: string, days: number): Promise<Response> {
+async getMoodExtended(uid: string, days: number): Promise<Response> {
   try {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     const cutoffStr = cutoffDate.toISOString().split('T')[0];
-    
+
     const rows = await this.env.JOURNALDB.prepare(`
       SELECT entry_date, mood
       FROM journal_entries
       WHERE uid = ?
-      AND mood IS NOT NULL
-      AND entry_date >= ?
+        AND mood IS NOT NULL
+        AND entry_date >= ?
       ORDER BY entry_date ASC
     `).bind(uid, cutoffStr).all<{ entry_date: string; mood: number }>();
-    
-    const moodData = rows.results.map(r => ({ 
-      date: r.entry_date, 
-      mood: r.mood 
-    }));
-    
+
+    const moodData = rows.results.map(r => ({ date: r.entry_date, mood: r.mood }));
+
     // Calculate stats
     const moods = moodData.map(m => m.mood);
     const avgMood = moods.reduce((a, b) => a + b, 0) / moods.length || 0;
-    
+
     // Calculate variance
     const variance = moods.length > 0 
       ? moods.reduce((sum, m) => sum + Math.pow(m - avgMood, 2), 0) / moods.length
       : 0;
-    
+
     // Calculate trend
     let trend = "stable";
     if (moods.length >= 3) {
@@ -1814,16 +1811,21 @@ export default class extends Service<Env> {
       if (secondAvg > firstAvg + 0.3) trend = "improving";
       else if (secondAvg < firstAvg - 0.3) trend = "declining";
     }
-    
-    const bestDay = moodData.reduce((best, curr) => 
-      curr.mood > best.mood ? curr : best, 
-      { date: "", mood: 0 }
-    );
-    const worstDay = moodData.reduce((worst, curr) => 
-      curr.mood < worst.mood ? curr : worst,
-      { date: "", mood: 5 }
-    );
-    
+
+    // ✅ FIX 1: Best day - pick most recent if tied
+    const bestDay = moodData.reduce((best, curr) => {
+      if (curr.mood > best.mood) return curr;
+      if (curr.mood === best.mood && curr.date > best.date) return curr;
+      return best;
+    }, { date: "", mood: 0 });
+
+    // ✅ FIX 2: Worst day - pick most recent if tied, start with first entry
+    const worstDay = moodData.reduce((worst, curr) => {
+      if (curr.mood < worst.mood) return curr;
+      if (curr.mood === worst.mood && curr.date > worst.date) return curr;
+      return worst;
+    }, moodData[0] || { date: "", mood: 0 });
+
     return this.json({
       uid,
       period: `${days} days`,

@@ -1,4 +1,4 @@
-globalThis.__RAINDROP_GIT_COMMIT_SHA = "f9a0bf7f5b7798cf820984c5fc79cd9223244c1c"; 
+globalThis.__RAINDROP_GIT_COMMIT_SHA = "4f382c88bbde0c8c42e4ca89e018f32d6d442f10"; 
 
 // node_modules/@liquidmetal-ai/raindrop-framework/dist/core/cors.js
 var matchOrigin = (request, env, config) => {
@@ -238,14 +238,11 @@ var hello_service_default = class extends Service {
       SELECT entry_date, mood
       FROM journal_entries
       WHERE uid = ?
-      AND mood IS NOT NULL
-      AND entry_date >= ?
+        AND mood IS NOT NULL
+        AND entry_date >= ?
       ORDER BY entry_date ASC
     `).bind(uid, cutoffStr).all();
-      const moodData = rows.results.map((r) => ({
-        date: r.entry_date,
-        mood: r.mood
-      }));
+      const moodData = rows.results.map((r) => ({ date: r.entry_date, mood: r.mood }));
       const moods = moodData.map((m) => m.mood);
       const avgMood = moods.reduce((a, b) => a + b, 0) / moods.length || 0;
       const variance = moods.length > 0 ? moods.reduce((sum, m) => sum + Math.pow(m - avgMood, 2), 0) / moods.length : 0;
@@ -258,14 +255,16 @@ var hello_service_default = class extends Service {
         if (secondAvg > firstAvg + 0.3) trend = "improving";
         else if (secondAvg < firstAvg - 0.3) trend = "declining";
       }
-      const bestDay = moodData.reduce(
-        (best, curr) => curr.mood > best.mood ? curr : best,
-        { date: "", mood: 0 }
-      );
-      const worstDay = moodData.reduce(
-        (worst, curr) => curr.mood < worst.mood ? curr : worst,
-        { date: "", mood: 5 }
-      );
+      const bestDay = moodData.reduce((best, curr) => {
+        if (curr.mood > best.mood) return curr;
+        if (curr.mood === best.mood && curr.date > best.date) return curr;
+        return best;
+      }, { date: "", mood: 0 });
+      const worstDay = moodData.reduce((worst, curr) => {
+        if (curr.mood < worst.mood) return curr;
+        if (curr.mood === worst.mood && curr.date > worst.date) return curr;
+        return worst;
+      }, moodData[0] || { date: "", mood: 0 });
       return this.json({
         uid,
         period: `${days} days`,
