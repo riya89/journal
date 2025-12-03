@@ -3385,12 +3385,9 @@ router.get("/timecapsule/list", verifyToken, async (req, res) => {
       const capsule = doc.data();
       const unlockDate = capsule.unlockDate.toDate();
       const userTimezone = capsule.timezone || 'UTC';
-      
-      // ✅ Compare in user's timezone
-      const nowInUserTZ = toZonedTime(now, userTimezone);
-      const unlockInUserTZ = toZonedTime(unlockDate, userTimezone);
-      
-      const isUnlocked = nowInUserTZ >= unlockInUserTZ || capsule.isUnlocked;
+
+      // ✅ NEW CODE - Compare raw timestamps
+      const isUnlocked = now >= unlockDate || capsule.isUnlocked;
 
       if (isUnlocked) {
         unlocked.push({
@@ -3400,12 +3397,19 @@ router.get("/timecapsule/list", verifyToken, async (req, res) => {
           timezone: userTimezone
         });
       } else {
-        const daysUntilUnlock = Math.floor((unlockDate - now) / (1000 * 60 * 60 * 24));
+        // ✅ NEW CODE - Calculate time remaining properly
+        const msUntilUnlock = unlockDate - now;
+        const minutesUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60));
+        const hoursUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60 * 60));
+        const daysUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60 * 60 * 24));
+        
         locked.push({
           capsuleId: capsule.capsuleId,
           createdAt: capsule.createdAt.toDate().toISOString().split('T')[0],
           unlockDate: unlockDate.toISOString().split('T')[0],
           daysUntilUnlock,
+          hoursUntilUnlock,
+          minutesUntilUnlock,
           timezone: userTimezone
         });
       }
@@ -5275,60 +5279,7 @@ router.post("/quests/reset-all", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to reset quests" });
   }
 });
-// router.post("/quests/check-expiration", verifyToken, async (req, res) => {
-//   try {
-//     const userId = req.uid;
-//     const now = new Date();
-//     const userRef = db.collection("users").doc(userId);
-//     const questsRef = userRef.collection("quests");
 
-//     // Find all active quests
-//     const activeQuests = await questsRef
-//       .where("status", "==", "active")
-//       .get();
-
-//     const expiredQuests = [];
-
-//     // Check each quest for expiration
-//     for (const doc of activeQuests.docs) {
-//       const quest = doc.data();
-//       const expiresAt = quest.expiresAt.toDate ? quest.expiresAt.toDate() : new Date(quest.expiresAt);
-      
-//       if (now > expiresAt) {
-//         // Mark quest as expired
-//         await questsRef.doc(doc.id).update({
-//           status: 'expired',
-//           expiredAt: now
-//         });
-        
-//         expiredQuests.push({
-//           id: doc.id,
-//           type: quest.type,
-//           title: quest.title,
-//           status: 'expired'
-//         });
-//       }
-//     }
-
-//     // Generate new quests if needed
-//     const newQuests = await checkAndGenerateQuests(userId);
-
-//     res.json({
-//       success: true,
-//       expiredQuests,
-//       newQuests,
-//       message: `Expired ${expiredQuests.length} quest(s) and generated ${newQuests.length} new quest(s)`
-//     });
-//   } catch (err) {
-//     console.error("Error checking quest expiration:", err);
-//     res.status(500).json({ error: "Failed to check quest expiration" });
-//   }
-// });
-
-/**
- * GET /journal/quests/last-generation
- * Get last quest generation timestamps
- */
 router.get("/quests/last-generation", verifyToken, async (req, res) => {
   try {
     const userId = req.uid;
@@ -5530,51 +5481,6 @@ router.post("/user/badge/award", verifyToken, async (req, res) => {
   }
 });
 
-// ==========================================
-// 🎉 CELEBRATION ENDPOINT
-// ==========================================
-
-/**
- * GET /journal/planner/daily-status
- * Check if all tasks are completed for a specific day
- */
-
-// ==========================================
-// 💙 STREAK RECOVERY ENDPOINT
-// ==========================================
-
-/**
- * GET /journal/streak/recovery-message
- * Get compassionate message for broken streak
- */
-// router.get("/streak/recovery-message", verifyToken, async (req, res) => {
-//   try {
-//     // Fetch streak data from Raindrop
-//     const streakResponse = await fetch(`${process.env.RAINDROP_URL}/analytics/streaks?uid=${req.uid}`);
-    
-//     if (!streakResponse.ok) {
-//       throw new Error('Failed to fetch streak data');
-//     }
-
-//     const streakData = await streakResponse.json();
-
-//     if (!streakData.streakBroken) {
-//       return res.json({ message: null });
-//     }
-
-//     const messages = {
-//       title: "Hey, are you okay? 💙",
-//       body: "We noticed you missed yesterday. Life happens, and that's completely okay.",
-//       encouragement: `Your ${streakData.previousStreak}-day streak was amazing! Ready to start fresh today?`,
-//       previousStreak: streakData.previousStreak
-//     };
-
-//     res.json(messages);
-//   } catch (err) {
-//     console.error("Error generating recovery message:", err);
-//     res.status(500).json({ error: "Failed to generate recovery message" });
-//   }
-// });
 router.get("/streak/recovery-message", verifyToken, async (req, res) => {
   try {
     // Get user's timezone (you can get this from user profile or detect it)
@@ -5608,132 +5514,6 @@ router.get("/streak/recovery-message", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to generate recovery message" });
   }
 });
-
-// ===========================================
-// 🕰️ TIME CAPSULE FEATURE
-// ===========================================
-
-// Create time capsule
-// router.post("/timecapsule/create", verifyToken, async (req, res) => {
-//   try {
-//     const { message, unlockDate, currentMood, currentGoals } = req.body;
-    
-//     if (!message || !unlockDate) {
-//       return res.status(400).json({ error: "Message and unlock date required" });
-//     }
-    
-//     const capsuleRef = db.collection("users").doc(req.uid).collection("timeCapsules").doc();
-//     const unlockTimestamp = new Date(unlockDate);
-//     const now = new Date();
-//     const daysUntilUnlock = Math.floor((unlockTimestamp - now) / (1000 * 60 * 60 * 24));
-    
-//     await capsuleRef.set({
-//       capsuleId: capsuleRef.id,
-//       userId: req.uid,
-//       message,
-//       createdAt: new Date(),
-//       unlockDate: unlockTimestamp,
-//       currentMood: currentMood || null,
-//       currentGoals: currentGoals || [],
-//       isUnlocked: false,
-//       unlockedAt: null,
-//       notificationSent: false
-//     });
-    
-//     res.json({
-//       capsuleId: capsuleRef.id,
-//       unlockDate,
-//       daysUntilUnlock
-//     });
-//   } catch (err) {
-//     console.error("Error creating time capsule:", err);
-//     res.status(500).json({ error: "Failed to create time capsule" });
-//   }
-// });
-
-// List time capsules (locked and unlocked)
-// router.get("/timecapsule/list", verifyToken, async (req, res) => {
-//   try {
-//     const capsulesRef = db.collection("users").doc(req.uid).collection("timeCapsules");
-//     const snapshot = await capsulesRef.orderBy("createdAt", "desc").get();
-    
-//     const locked = [];
-//     const unlocked = [];
-//     const now = new Date();
-    
-//     snapshot.forEach(doc => {
-//       const capsule = doc.data();
-//       const unlockDate = capsule.unlockDate.toDate();
-      
-//       if (unlockDate <= now || capsule.isUnlocked) {
-//         // Capsule is unlocked
-//         unlocked.push({
-//           ...capsule,
-//           unlockDate: unlockDate.toISOString().split('T')[0],
-//           createdAt: capsule.createdAt.toDate().toISOString().split('T')[0]
-//         });
-//       } else {
-//         // Capsule is still locked
-//         const daysUntilUnlock = Math.floor((unlockDate - now) / (1000 * 60 * 60 * 24));
-//         locked.push({
-//           capsuleId: capsule.capsuleId,
-//           createdAt: capsule.createdAt.toDate().toISOString().split('T')[0],
-//           unlockDate: unlockDate.toISOString().split('T')[0],
-//           daysUntilUnlock
-//         });
-//       }
-//     });
-    
-//     res.json({ locked, unlocked });
-//   } catch (err) {
-//     console.error("Error fetching time capsules:", err);
-//     res.status(500).json({ error: "Failed to fetch time capsules" });
-//   }
-// });
-
-// Get specific time capsule (only if unlocked)
-// router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
-//   try {
-//     const { capsuleId } = req.params;
-//     const capsuleRef = db.collection("users").doc(req.uid).collection("timeCapsules").doc(capsuleId);
-//     const capsuleDoc = await capsuleRef.get();
-    
-//     if (!capsuleDoc.exists) {
-//       return res.status(404).json({ error: "Time capsule not found" });
-//     }
-    
-//     const capsule = capsuleDoc.data();
-//     const unlockDate = capsule.unlockDate.toDate();
-//     const now = new Date();
-    
-//     // Check if capsule is still locked
-//     if (unlockDate > now && !capsule.isUnlocked) {
-//       return res.status(403).json({ 
-//         error: "Time capsule is still locked",
-//         unlockDate: unlockDate.toISOString().split('T')[0],
-//         daysUntilUnlock: Math.floor((unlockDate - now) / (1000 * 60 * 60 * 24))
-//       });
-//     }
-    
-//     // Mark as unlocked if it wasn't already
-//     if (!capsule.isUnlocked) {
-//       await capsuleRef.update({
-//         isUnlocked: true,
-//         unlockedAt: new Date()
-//       });
-//     }
-    
-//     res.json({
-//       ...capsule,
-//       unlockDate: unlockDate.toISOString().split('T')[0],
-//       createdAt: capsule.createdAt.toDate().toISOString().split('T')[0],
-//       unlockedAt: capsule.unlockedAt ? capsule.unlockedAt.toDate().toISOString().split('T')[0] : null
-//     });
-//   } catch (err) {
-//     console.error("Error fetching time capsule:", err);
-//     res.status(500).json({ error: "Failed to fetch time capsule" });
-//   }
-// });
 router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
   try {
     const { capsuleId } = req.params;
@@ -5747,21 +5527,24 @@ router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
     const capsule = capsuleDoc.data();
     const unlockDate = capsule.unlockDate.toDate();
     const userTimezone = capsule.timezone || 'UTC';
-    
-    // ✅ Get current time in user's timezone
+
+    // ✅ NEW CODE - Compare raw timestamps
     const now = new Date();
-    const nowInUserTZ = toZonedTime(now, userTimezone);
-    const unlockInUserTZ = toZonedTime(unlockDate, userTimezone);
-    
-    // ✅ Compare dates in user's timezone
-    const isLocked = nowInUserTZ < unlockInUserTZ && !capsule.isUnlocked;
+    const isLocked = now < unlockDate && !capsule.isUnlocked;
 
     if (isLocked) {
-      const daysUntilUnlock = Math.floor((unlockDate - now) / (1000 * 60 * 60 * 24));
+      // ✅ NEW CODE - Calculate time remaining properly
+      const msUntilUnlock = unlockDate - now;
+      const minutesUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60));
+      const hoursUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60 * 60));
+      const daysUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60 * 60 * 24));
+      
       return res.status(403).json({ 
         error: "Time capsule is still locked",
         unlockDate: unlockDate.toISOString().split('T')[0],
         daysUntilUnlock,
+        hoursUntilUnlock,
+        minutesUntilUnlock,
         timezone: userTimezone
       });
     }
