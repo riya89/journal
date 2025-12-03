@@ -1172,8 +1172,8 @@ function calculateMoodTrend(moodData) {
   
   const diff = avgRecent - avgOlder;
   
-  if (diff > 0.5) return 'improving';
-  if (diff < -0.5) return 'declining';
+  if (diff > 0.15) return 'improving';
+  if (diff < -0.15) return 'declining';
   return 'stable';
 }
 
@@ -3263,18 +3263,34 @@ router.get("/insights/fresh", verifyToken, async (req, res) => {
       }
     }
     
-    // Calculate trend
-    const recentMoods = moods.slice(0, 7);
-    const olderMoods = moods.slice(7, 14);
-    const recentAvg = recentMoods.reduce((sum, m) => sum + m, 0) / recentMoods.length;
-    const olderAvg = olderMoods.length > 0 
-      ? olderMoods.reduce((sum, m) => sum + m, 0) / olderMoods.length 
-      : recentAvg;
+    // // Calculate trend
+    // const recentMoods = moods.slice(0, 7);
+    // const olderMoods = moods.slice(7, 14);
+    // const recentAvg = recentMoods.reduce((sum, m) => sum + m, 0) / recentMoods.length;
+    // const olderAvg = olderMoods.length > 0 
+    //   ? olderMoods.reduce((sum, m) => sum + m, 0) / olderMoods.length 
+    //   : recentAvg;
     
-    let trend = 'stable';
-    if (recentAvg - olderAvg > 0.15) trend = 'improving';
-    else if (recentAvg - olderAvg < -0.15) trend = 'declining';
+    // let trend = 'stable';
+    // if (recentAvg - olderAvg > 0.15) trend = 'improving';
+    // else if (recentAvg - olderAvg < -0.15) trend = 'declining';
+    // ✅ NEW (CORRECT)
+let trend = 'stable';
+if (journals.length >= 3) {
+  const recentPeriod = journals.slice(0, Math.min(3, journals.length));
+  const previousPeriod = journals.slice(3, Math.min(6, journals.length));
+  
+  if (previousPeriod.length > 0) {
+    const recentAvg = recentPeriod.reduce((sum, j) => sum + j.mood, 0) / recentPeriod.length;
+    const previousAvg = previousPeriod.reduce((sum, j) => sum + j.mood, 0) / previousPeriod.length;
     
+    const difference = recentAvg - previousAvg;
+    
+    if (difference > 0.3) trend = 'improving';
+    else if (difference < -0.3) trend = 'declining';
+  }
+}
+
     // Calculate missed days
     const totalDays = 30;
     const missedDays = totalDays - journals.length;
