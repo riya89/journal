@@ -1141,8 +1141,8 @@ export default function AIAssistant({ theme }) {
           <div className={`text-center py-12 opacity-60 ${
             theme === "dark" ? "text-[#EBDDBF] font-gothic-body" : "text-[#6c7a5b]"
           }`}>
-            <p className={`text-lg mb-2 ${theme === "dark" ? "font-spooky-header" : ""}`}>✨ Welcome to Echo.</p>
-            <p className={`text-sm ${theme === "dark" ? "font-gothic-body" : ""}`}>Let your mind wander; I’ll stay with you.</p>
+            <p className={`text-lg mb-2 ${theme === "dark" ? "font-spooky-header" : ""}`}>✨ Welcome to Opal.</p>
+            <p className={`text-sm ${theme === "dark" ? "font-gothic-body" : ""}`}>Let your heart unfold; I’ll listen in the light.</p>
           </div>
         )}
         

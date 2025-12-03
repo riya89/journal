@@ -80,7 +80,7 @@ Set reminders, create small goals, and finish what feels right.
                  Companion
               </h3>
               <p className={`text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
-                When thoughts get heavy, speak to Echo.
+                When thoughts get heavy, speak to Opal.
 It listens softly, offering calm and clarity when you need it most.
               </p>
             </div>
@@ -160,7 +160,7 @@ Your words will wait until it’s time to return.
             <div className={`flex gap-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
               <span className="text-[#7A916C] dark:text-[#d4a574] font-bold">•</span>
               <p className="text-[#6c7a5b]/80 dark:text-[#EBDDBF]/80">
-                <strong>Use support.</strong> Speak to Echo when thoughts feel heavy.
+                <strong>Use support.</strong> Speak to Opal when thoughts feel heavy.
               </p>
             </div>
             <div className={`flex gap-3 ${theme === 'dark' ? 'font-gothic-body' : ''}`}>
