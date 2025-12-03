@@ -2100,83 +2100,121 @@ router.get("/planner/stats/:yearMonth", verifyToken, async (req, res) => {
   }
 });
 // 4. Toggle task completion
+// router.post("/planner/toggle", verifyToken, async (req, res) => {
+//   try {
+//     const { yearMonth, taskId, date, completed } = req.body;
+    
+//     if (!yearMonth || !taskId || !date) {
+//       return res.status(400).json({ error: "Missing required fields" });
+//     }
+
+//     const userRef = db.collection("users").doc(req.uid);
+//     const plannerRef = userRef.collection("planners").doc(yearMonth);
+//     const doc = await plannerRef.get();
+//     const data = doc.exists ? doc.data() : { yearMonth, tasks: [], completions: {}, exceptions: {} };
+
+//     if (!data.completions[date]) {
+//       data.completions[date] = [];
+//     }
+
+//     const wasCompleted = data.completions[date].includes(taskId);
+
+//     if (completed) {
+//       if (!wasCompleted) {
+//         data.completions[date].push(taskId);
+        
+//         // ✨ UPDATE QUEST PROGRESS (only when completing, not uncompleting)
+//         try {
+//           const questsRef = userRef.collection("quests");
+//           const taskQuestSnapshot = await questsRef
+//             .where("status", "==", "active")
+//             .where("trackingType", "==", "task_completion")
+//             .get();
+
+//           for (const questDoc of taskQuestSnapshot.docs) {
+//             const quest = questDoc.data();
+//             const newProgress = Math.min(quest.progress + 1, quest.target);
+//             const questCompleted = newProgress >= quest.target;
+
+//             await questDoc.ref.update({
+//               progress: newProgress,
+//               status: questCompleted ? "completed" : "active",
+//               completedAt: questCompleted ? new Date() : null
+//             });
+
+//             // Award XP if quest completed
+//             if (questCompleted && quest.status !== "completed") {
+//               const userDoc = await userRef.get();
+//               const userData = userDoc.exists ? userDoc.data() : { totalXP: 0, currentLevel: 1, questsCompleted: 0 };
+//               const newTotalXP = (userData.totalXP || 0) + quest.reward.xp;
+//               const currentLevel = calculateLevel(newTotalXP);
+
+//               await userRef.set({
+//                 totalXP: newTotalXP,
+//                 currentLevel,
+//                 questsCompleted: (userData.questsCompleted || 0) + 1
+//               }, { merge: true });
+//             }
+//           }
+//         } catch (questErr) {
+//           console.error("Error updating task quest:", questErr);
+//         }
+
+//         // Update user stats
+//         const userDoc = await userRef.get();
+//         const userData = userDoc.exists ? userDoc.data() : {};
+        
+//         await userRef.set({
+//           stats: {
+//             ...userData.stats,
+//             totalTasksCompleted: (userData.stats?.totalTasksCompleted || 0) + 1
+//           }
+//         }, { merge: true });
+//       }
+//     } else {
+//       data.completions[date] = data.completions[date].filter(id => id !== taskId);
+//     }
+
+//     await plannerRef.set(data);
+//     res.json({ success: true });
+//   } catch (err) {
+//     console.error("Error toggling task:", err);
+//     res.status(500).json({ error: "Failed to toggle task" });
+//   }
+// });
 router.post("/planner/toggle", verifyToken, async (req, res) => {
   try {
-    const { yearMonth, taskId, date, completed } = req.body;
+    const { taskId, date } = req.body;
+    const uid = req.uid;
     
-    if (!yearMonth || !taskId || !date) {
-      return res.status(400).json({ error: "Missing required fields" });
+    // ✅ NO DATE RESTRICTIONS - Allow everything
+    console.log(`✅ Toggling task ${taskId} for ${date}`);
+    
+    const plannerRef = db.collection("users").doc(uid).collection("planner").doc(date);
+    const plannerDoc = await plannerRef.get();
+    
+    if (!plannerDoc.exists) {
+      return res.status(404).json({ error: "Planner not found for this date" });
     }
-
-    const userRef = db.collection("users").doc(req.uid);
-    const plannerRef = userRef.collection("planners").doc(yearMonth);
-    const doc = await plannerRef.get();
-    const data = doc.exists ? doc.data() : { yearMonth, tasks: [], completions: {}, exceptions: {} };
-
-    if (!data.completions[date]) {
-      data.completions[date] = [];
+    
+    const plannerData = plannerDoc.data();
+    const tasks = plannerData.tasks || [];
+    
+    const taskIndex = tasks.findIndex(t => t.id === taskId);
+    
+    if (taskIndex === -1) {
+      return res.status(404).json({ error: "Task not found" });
     }
-
-    const wasCompleted = data.completions[date].includes(taskId);
-
-    if (completed) {
-      if (!wasCompleted) {
-        data.completions[date].push(taskId);
-        
-        // ✨ UPDATE QUEST PROGRESS (only when completing, not uncompleting)
-        try {
-          const questsRef = userRef.collection("quests");
-          const taskQuestSnapshot = await questsRef
-            .where("status", "==", "active")
-            .where("trackingType", "==", "task_completion")
-            .get();
-
-          for (const questDoc of taskQuestSnapshot.docs) {
-            const quest = questDoc.data();
-            const newProgress = Math.min(quest.progress + 1, quest.target);
-            const questCompleted = newProgress >= quest.target;
-
-            await questDoc.ref.update({
-              progress: newProgress,
-              status: questCompleted ? "completed" : "active",
-              completedAt: questCompleted ? new Date() : null
-            });
-
-            // Award XP if quest completed
-            if (questCompleted && quest.status !== "completed") {
-              const userDoc = await userRef.get();
-              const userData = userDoc.exists ? userDoc.data() : { totalXP: 0, currentLevel: 1, questsCompleted: 0 };
-              const newTotalXP = (userData.totalXP || 0) + quest.reward.xp;
-              const currentLevel = calculateLevel(newTotalXP);
-
-              await userRef.set({
-                totalXP: newTotalXP,
-                currentLevel,
-                questsCompleted: (userData.questsCompleted || 0) + 1
-              }, { merge: true });
-            }
-          }
-        } catch (questErr) {
-          console.error("Error updating task quest:", questErr);
-        }
-
-        // Update user stats
-        const userDoc = await userRef.get();
-        const userData = userDoc.exists ? userDoc.data() : {};
-        
-        await userRef.set({
-          stats: {
-            ...userData.stats,
-            totalTasksCompleted: (userData.stats?.totalTasksCompleted || 0) + 1
-          }
-        }, { merge: true });
-      }
-    } else {
-      data.completions[date] = data.completions[date].filter(id => id !== taskId);
-    }
-
-    await plannerRef.set(data);
-    res.json({ success: true });
+    
+    tasks[taskIndex].completed = !tasks[taskIndex].completed;
+    
+    await plannerRef.update({ tasks });
+    
+    res.json({ 
+      success: true, 
+      task: tasks[taskIndex]
+    });
+    
   } catch (err) {
     console.error("Error toggling task:", err);
     res.status(500).json({ error: "Failed to toggle task" });
