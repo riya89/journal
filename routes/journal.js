@@ -3272,8 +3272,8 @@ router.get("/insights/fresh", verifyToken, async (req, res) => {
       : recentAvg;
     
     let trend = 'stable';
-    if (recentAvg - olderAvg > 0.5) trend = 'improving';
-    else if (recentAvg - olderAvg < -0.5) trend = 'declining';
+    if (recentAvg - olderAvg > 0.15) trend = 'improving';
+    else if (recentAvg - olderAvg < -0.15) trend = 'declining';
     
     // Calculate missed days
     const totalDays = 30;
