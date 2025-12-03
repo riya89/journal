@@ -5595,6 +5595,39 @@ router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch time capsule" });
   }
 });
+router.post("/timecapsule/:capsuleId/reflection", verifyToken, async (req, res) => {
+  try {
+    const { capsuleId } = req.params;
+    const { reflection } = req.body;
+    
+    if (!reflection || !reflection.trim()) {
+      return res.status(400).json({ error: "Reflection text is required" });
+    }
+    
+    const capsuleRef = db.collection("users").doc(req.uid).collection("timeCapsules").doc(capsuleId);
+    const capsuleDoc = await capsuleRef.get();
+    
+    if (!capsuleDoc.exists) {
+      return res.status(404).json({ error: "Time capsule not found" });
+    }
+    
+    if (!capsuleDoc.data().isUnlocked) {
+      return res.status(403).json({ error: "Cannot add reflection to locked capsule" });
+    }
+    
+    await capsuleRef.update({
+      reflection: reflection.trim(),
+      reflectedAt: new Date()
+    });
+    
+    res.json({ success: true, message: "Reflection saved successfully" });
+    
+  } catch (err) {
+    console.error("Error saving reflection:", err);
+    res.status(500).json({ error: "Failed to save reflection" });
+  }
+});
+
 // ===========================================
 // 🙏 GRATITUDE JAR FEATURE
 // ===========================================
