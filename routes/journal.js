@@ -5675,6 +5675,11 @@ router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to load capsule" });
   }
 });
+router.post("/timecapsule/migrate", verifyToken, async (req, res) => {
+  // Only allow admin users or remove after running once
+  await migrateCapsules();
+  res.json({ success: true, message: "Migration complete" });
+});
 // ===========================================
 // 🙏 GRATITUDE JAR FEATURE
 // ===========================================
