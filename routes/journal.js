@@ -5851,27 +5851,59 @@ router.post("/add", verifyToken, async (req, res) => {
       console.error("Error updating journal quest:", questErr);
     }
 
-    // 2. ✅ FIXED: Word count quest
     if (content) {
-      const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+  const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+  
+  if (wordCount > 0) {
+    try {
+      // ✅ CHECK FOR DAILY WORD COUNT QUEST (Write 100 words)
+      const dailyWordQuestSnapshot = await userRef.collection("quests")
+        .where("status", "==", "active")
+        .where("trackingType", "==", "word_count")
+        .where("type", "==", "daily")
+        .get();
       
-      if (wordCount > 0) {
-        try {
-          // ✅ Store daily word count (replaces if exists)
-          await userRef.collection("dailyWordCounts").doc(date).set({
-            date,
-            wordCount,
-            lastUpdated: new Date()
-          }); // No merge - we want to REPLACE
-
-          // ✅ Recalculate monthly total
-          await updateMonthlyWordCountQuest(userRef);
+      for (const doc of dailyWordQuestSnapshot.docs) {
+        const quest = doc.data();
+        
+        // For daily quest, check if TODAY's entry meets the target
+        if (wordCount >= quest.target) {
+          const completed = true;
           
-        } catch (questErr) {
-          console.error("Error updating word count quest:", questErr);
+          await doc.ref.update({
+            progress: quest.target,
+            status: "completed",
+            completedAt: new Date()
+          });
+          
+          // Award XP if just completed
+          if (quest.status !== "completed") {
+            await awardQuestXP(userRef, quest.reward.xp);
+            console.log(`✅ Daily word count quest completed! ${wordCount} words written.`);
+          }
+        } else {
+          // Update progress but don't complete
+          await doc.ref.update({
+            progress: wordCount
+          });
         }
       }
+      
+      // ✅ Store daily word count for monthly tracking
+      await userRef.collection("dailyWordCounts").doc(date).set({
+        date,
+        wordCount,
+        lastUpdated: new Date()
+      });
+      
+      // ✅ Update monthly word count quest
+      await updateMonthlyWordCountQuest(userRef);
+      
+    } catch (questErr) {
+      console.error("Error updating word count quest:", questErr);
     }
+  }
+}
 
     // 3. Mood log quest
     if (mood) {
