@@ -282,18 +282,18 @@ import TimeCapsuleUnlockNotification from "./components/TimeCapsuleUnlockNotific
 
 function AppContent() {
   const { user, loading } = useAuth();
-  const theme = "light"; // Always light theme
+  const theme = "dark"; // Always dark theme
 
-  // Set light theme on mount
+  // Set dark theme on mount
   useEffect(() => {
-    document.documentElement.classList.remove("dark");
-    document.body.dataset.theme = "light";
+    document.documentElement.classList.add("dark");
+    document.body.dataset.theme = "dark";
   }, []);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FFFBEA]">
-        <div className="animate-spin border-4 border-[#7A916C]/30 border-t-[#7A916C] rounded-full w-12 h-12"></div>
+      <div className="min-h-screen flex items-center justify-center bg-[#1a1410]">
+        <div className="animate-spin border-4 border-[#EBDDBF]/30 border-t-[#EBDDBF] rounded-full w-12 h-12"></div>
       </div>
     );
   }

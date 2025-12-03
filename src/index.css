@@ -7,6 +7,8 @@
   --cream:#FFFBEA;
   --leaf:#7A916C;
   --leaf-2:#94A786;
+  --dark-bg: #1a1410;
+  --dark-text: #EBDDBF;
 }
 
 html, body {
@@ -14,7 +16,15 @@ html, body {
 }
 
 body {
-  @apply font-shantell bg-cream text-leaf transition-colors duration-500;
+  @apply font-shantell transition-colors duration-500;
+  background-color: var(--dark-bg);
+  color: var(--dark-text);
+}
+
+/* Light theme override (if needed) */
+body[data-theme="light"] {
+  background-color: var(--cream);
+  color: var(--leaf);
 }
 
 /* ------- flower & wind (same as your HTML feel) ------- */
