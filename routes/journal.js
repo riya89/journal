@@ -3404,19 +3404,18 @@ router.get("/timecapsule/list", verifyToken, async (req, res) => {
   try {
     const capsulesRef = db.collection("users").doc(req.uid).collection("timeCapsules");
     const snapshot = await capsulesRef.orderBy("createdAt", "desc").get();
-
+    
     const locked = [];
     const unlocked = [];
     const now = new Date();
-
+    
     snapshot.forEach(doc => {
       const capsule = doc.data();
       const unlockDate = capsule.unlockDate.toDate();
       const userTimezone = capsule.timezone || 'UTC';
-
-      // ✅ Compare raw timestamps
+      
       const isUnlocked = now >= unlockDate || capsule.isUnlocked;
-
+      
       if (isUnlocked) {
         unlocked.push({
           ...capsule,
@@ -3441,8 +3440,15 @@ router.get("/timecapsule/list", verifyToken, async (req, res) => {
         });
       }
     });
-
-    res.json({ locked, unlocked });
+    
+    // ✅ ADD THIS: Calculate which capsules need notification
+    const needsNotification = unlocked.filter(c => 
+      !c.notificationShown && !c.viewedAt
+    );
+    
+    // ✅ CHANGE THIS LINE: Add needsNotification to response
+    res.json({ locked, unlocked, needsNotification });
+    
   } catch (err) {
     console.error("Error fetching time capsules:", err);
     res.status(500).json({ error: "Failed to fetch time capsules" });
@@ -5546,19 +5552,17 @@ router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
     const { capsuleId } = req.params;
     const capsuleRef = db.collection("users").doc(req.uid).collection("timeCapsules").doc(capsuleId);
     const capsuleDoc = await capsuleRef.get();
-
+    
     if (!capsuleDoc.exists) {
       return res.status(404).json({ error: "Time capsule not found" });
     }
-
+    
     const capsule = capsuleDoc.data();
     const unlockDate = capsule.unlockDate.toDate();
     const userTimezone = capsule.timezone || 'UTC';
-
-    // ✅ Compare raw timestamps
     const now = new Date();
     const isLocked = now < unlockDate && !capsule.isUnlocked;
-
+    
     if (isLocked) {
       const msUntilUnlock = unlockDate - now;
       const minutesUntilUnlock = Math.ceil(msUntilUnlock / (1000 * 60));
@@ -5574,15 +5578,22 @@ router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
         timezone: userTimezone
       });
     }
-
-    // Mark as unlocked if it wasn't already
+    
+    // ✅ CHANGE THIS SECTION: Mark as viewed and notification shown
     if (!capsule.isUnlocked) {
       await capsuleRef.update({
         isUnlocked: true,
-        unlockedAt: new Date()
+        unlockedAt: new Date(),
+        viewedAt: new Date(),
+        notificationShown: true
+      });
+    } else if (!capsule.viewedAt) {
+      await capsuleRef.update({
+        viewedAt: new Date(),
+        notificationShown: true
       });
     }
-
+    
     res.json({
       ...capsule,
       unlockDate: unlockDate.toISOString().split('T')[0],
@@ -5590,6 +5601,7 @@ router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
       unlockedAt: capsule.unlockedAt ? capsule.unlockedAt.toDate().toISOString().split('T')[0] : null,
       timezone: userTimezone
     });
+    
   } catch (err) {
     console.error("Error fetching time capsule:", err);
     res.status(500).json({ error: "Failed to fetch time capsule" });
@@ -5627,7 +5639,42 @@ router.post("/timecapsule/:capsuleId/reflection", verifyToken, async (req, res) 
     res.status(500).json({ error: "Failed to save reflection" });
   }
 });
-
+router.get("/timecapsule/:capsuleId", verifyToken, async (req, res) => {
+  try {
+    const { capsuleId } = req.params;
+    const uid = req.uid;
+    
+    const capsuleRef = db.collection("users").doc(uid)
+      .collection("timeCapsules").doc(capsuleId);
+    const doc = await capsuleRef.get();
+    
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Capsule not found" });
+    }
+    
+    const capsule = doc.data();
+    const unlockDate = new Date(capsule.unlockDate);
+    const now = new Date();
+    
+    if (now < unlockDate) {
+      return res.status(403).json({ 
+        error: "Capsule is still locked",
+        unlockDate: capsule.unlockDate 
+      });
+    }
+    
+    // Mark as viewed
+    await capsuleRef.update({
+      viewedAt: new Date(),
+      notificationShown: true // Also mark notification as shown
+    });
+    
+    res.json({ capsuleId, ...capsule });
+  } catch (err) {
+    console.error("Error viewing capsule:", err);
+    res.status(500).json({ error: "Failed to load capsule" });
+  }
+});
 // ===========================================
 // 🙏 GRATITUDE JAR FEATURE
 // ===========================================
