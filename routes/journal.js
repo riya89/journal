@@ -791,31 +791,42 @@ router.get('/post-save-check', verifyToken, async (req, res) => {
 router.post('/quick-complete-tasks', verifyToken, async (req, res) => {
   try {
     const { date, taskIds } = req.body;
-    const uid = req.uid; // From verifyToken middleware
-
+    const uid = req.uid;
+    
     if (!date || !Array.isArray(taskIds)) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Extract year-month from date
-    const yearMonth = date.substring(0, 7);
-
-    // Get planner reference
-    const plannerRef = db.collection('planners').doc(uid).collection('months').doc(yearMonth);
+    const yearMonth = date.substring(0, 7); // "2025-12"
+    const userRef = db.collection('users').doc(uid);
+    const plannerRef = userRef.collection('planners').doc(yearMonth);
+    
+    // ✅ Get or create planner document
     const plannerDoc = await plannerRef.get();
-
+    let plannerData;
+    
     if (!plannerDoc.exists) {
-      return res.status(404).json({ error: 'Planner not found' });
+      // Create new planner document
+      plannerData = {
+        yearMonth,
+        tasks: [],
+        completions: {},
+        exceptions: {}
+      };
+    } else {
+      plannerData = plannerDoc.data();
     }
 
-    const plannerData = plannerDoc.data();
-    const completions = plannerData.completions || {};
+    // Ensure completions object exists
+    if (!plannerData.completions) {
+      plannerData.completions = {};
+    }
 
     // Update completions for the date
-    completions[date] = taskIds;
+    plannerData.completions[date] = taskIds;
 
-    // Save back to Firestore
-    await plannerRef.update({ completions });
+    // Save to Firestore
+    await plannerRef.set(plannerData);
 
     res.json({
       success: true,
@@ -823,10 +834,11 @@ router.post('/quick-complete-tasks', verifyToken, async (req, res) => {
       message: `Marked ${taskIds.length} task(s) as complete`
     });
   } catch (error) {
-    console.error('Error updating task completions:', error);
-    res.status(500).json({ error: 'Failed to update task completions' });
+    console.error('Error completing tasks:', error);
+    res.status(500).json({ error: 'Failed to complete tasks' });
   }
 });
+
 
 // 🧪 TEST ENDPOINT - Remove after testing
 router.get("/test/gemini", async (req, res) => {
