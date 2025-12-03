@@ -5680,6 +5680,26 @@ router.post("/timecapsule/migrate", verifyToken, async (req, res) => {
   await migrateCapsules();
   res.json({ success: true, message: "Migration complete" });
 });
+router.post("/timecapsule/:capsuleId/notification-shown", verifyToken, async (req, res) => {
+  try {
+    const { capsuleId } = req.params;
+    const uid = req.uid;
+    
+    // Update in Firestore
+    const capsuleRef = db.collection("users").doc(uid)
+      .collection("timeCapsules").doc(capsuleId);
+    
+    await capsuleRef.update({
+      notificationShown: true,
+      notificationShownAt: new Date()
+    });
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error marking notification as shown:", err);
+    res.status(500).json({ error: "Failed to update notification status" });
+  }
+});
 // ===========================================
 // 🙏 GRATITUDE JAR FEATURE
 // ===========================================
