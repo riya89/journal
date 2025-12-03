@@ -1,4 +1,4 @@
-globalThis.__RAINDROP_GIT_COMMIT_SHA = "4f382c88bbde0c8c42e4ca89e018f32d6d442f10"; 
+globalThis.__RAINDROP_GIT_COMMIT_SHA = "ef8a71e81d82b1c10746b9f6d843f37f63176ddd"; 
 
 // node_modules/@liquidmetal-ai/raindrop-framework/dist/core/cors.js
 var matchOrigin = (request, env, config) => {
@@ -322,9 +322,6 @@ var hello_service_default = class extends Service {
       return this.json({ error: "sync failed", details: String(e) }, 500);
     }
   }
-  // -----------------------------------------
-  // 2️⃣ CALCULATE STREAKS + AWARD BADGES (FIXED)
-  // -----------------------------------------
   async getStreaks(uid) {
     try {
       const stmt = this.env.JOURNALDB.prepare(
@@ -337,10 +334,15 @@ var hello_service_default = class extends Service {
           currentStreak: 0,
           longestStreak: 0,
           lastEntryDate: null,
-          totalEntries: 0
+          totalEntries: 0,
+          streakBroken: false,
+          missedDays: 0,
+          previousStreak: 0
         });
       }
-      const uniqueDates = new Set(rows.results.map((r) => r.entry_date));
+      const uniqueDates = new Set(
+        rows.results.map((r) => r.entry_date)
+      );
       const dates = Array.from(uniqueDates).sort().reverse();
       const today = /* @__PURE__ */ new Date();
       today.setHours(0, 0, 0, 0);
@@ -378,6 +380,20 @@ var hello_service_default = class extends Service {
         }
       }
       longestStreak = Math.max(longestStreak, tempStreak, currentStreak);
+      let brokenStreak = 0;
+      if (!isStreakActive && dates.length > 0) {
+        brokenStreak = 1;
+        for (let i = 1; i < dates.length; i++) {
+          const prevDate = new Date(dates[i - 1]);
+          const currDate = new Date(dates[i]);
+          const diffDays = Math.floor((prevDate.getTime() - currDate.getTime()) / 864e5);
+          if (diffDays === 1) {
+            brokenStreak++;
+          } else {
+            break;
+          }
+        }
+      }
       const newlyEarned = await this.awardBadges(uid, currentStreak);
       return this.json({
         uid,
@@ -387,10 +403,11 @@ var hello_service_default = class extends Service {
         totalEntries: dates.length,
         newlyEarned,
         isStreakActive,
-        // ADD THESE NEW FIELDS:
+        // ✅ FIX: These fields are used by the streak recovery modal
         streakBroken: !isStreakActive && dates.length > 0,
         missedDays: !isStreakActive && dates.length > 0 ? Math.floor((today.getTime() - new Date(lastEntryDate).getTime()) / 864e5) - 1 : 0,
-        previousStreak: !isStreakActive ? longestStreak : 0
+        previousStreak: brokenStreak
+        // ✅ THIS IS THE KEY FIX - use broken streak, not longestStreak
       });
     } catch (e) {
       return this.json({ error: "streaks failed", details: String(e) }, 500);
