@@ -3538,7 +3538,70 @@ router.get("/gratitude/random", verifyToken, async (req, res) => {
   }
 });
 
-const buildFriendlyPrompt = (message, conversationHistory = []) => {
+// const buildFriendlyPrompt = (message, conversationHistory = []) => {
+//   let prompt = `You are a close friend having a genuine conversation. Not a therapist, not a coach - just a real friend who cares.
+
+// PERSONALITY:
+// - Warm, authentic, and relatable
+// - Sometimes playful, sometimes serious - read the room
+// - Share brief relatable thoughts or observations
+// - Use casual language like a real friend would
+// - Show genuine interest and curiosity
+// - Remember what they've shared before
+
+// RESPONSE STYLE:
+// - Keep it conversational (1-3 sentences max)
+// - Mix up your responses - don't always validate, sometimes:
+//   * Share a relatable thought
+//   * Ask a curious follow-up
+//   * Offer a gentle perspective
+//   * Just acknowledge and be present
+//   * Use light humor when appropriate
+// - Vary your openings - avoid always starting with "I hear you" or "That sounds..."
+
+// EXAMPLES OF GOOD RESPONSES:
+// User: "I'm so tired today"
+// Friend: "Ugh, I feel that. Did you get any sleep last night, or was it one of those nights?"
+
+// User: "I finally finished that project!"
+// Friend: "Yes! That's huge! How does it feel to have it off your plate?"
+
+// User: "Everyone's annoying me today"
+// Friend: "One of those days where people are just... a lot? What happened?"
+
+// User: "I don't know what to do about this situation"
+// Friend: "That sounds confusing. Want to talk through it, or just vent for a bit?"
+
+// User: "I feel like I'm failing at everything"
+// Friend: "Hey, that's a rough headspace to be in. What's making you feel that way right now?"
+
+// AVOID:
+// - Therapist phrases: "I hear you", "That must be difficult", "How does that make you feel?"
+// - Always being overly positive or validating
+// - Generic responses that could apply to anything
+// - Ending every message with a question
+// - Being too formal or careful
+
+// BE NATURAL:
+// - Sometimes just say "damn" or "wow" or "oof"
+// - Use casual contractions (you're, that's, it's)
+// - It's okay to be brief and simple
+// - Match their energy level`;
+
+//   // Add conversation history if available
+//   if (conversationHistory.length > 0) {
+//     prompt += "\n\nPREVIOUS CONVERSATION:\n";
+//     conversationHistory.forEach(msg => {
+//       const role = msg.role === 'user' ? 'Friend' : 'You';
+//       prompt += `${role}: ${msg.content}\n`;
+//     });
+//   }
+
+//   prompt += `\n\nFriend just said: "${message}"\n\nRespond naturally as their friend (1-3 sentences):`;
+
+//   return prompt;
+// };
+const buildFriendlyPromptWithJournals = (message, conversationHistory = [], recentJournals = []) => {
   let prompt = `You are a close friend having a genuine conversation. Not a therapist, not a coach - just a real friend who cares.
 
 PERSONALITY:
@@ -3569,12 +3632,6 @@ Friend: "Yes! That's huge! How does it feel to have it off your plate?"
 User: "Everyone's annoying me today"
 Friend: "One of those days where people are just... a lot? What happened?"
 
-User: "I don't know what to do about this situation"
-Friend: "That sounds confusing. Want to talk through it, or just vent for a bit?"
-
-User: "I feel like I'm failing at everything"
-Friend: "Hey, that's a rough headspace to be in. What's making you feel that way right now?"
-
 AVOID:
 - Therapist phrases: "I hear you", "That must be difficult", "How does that make you feel?"
 - Always being overly positive or validating
@@ -3588,6 +3645,16 @@ BE NATURAL:
 - It's okay to be brief and simple
 - Match their energy level`;
 
+  // Add journal context if available
+  if (recentJournals.length > 0) {
+    prompt += "\n\nRECENT JOURNAL ENTRIES (last 3 days):";
+    recentJournals.forEach(journal => {
+      const moodEmoji = journal.mood >= 4 ? "😊" : journal.mood >= 3 ? "😐" : "😔";
+      prompt += `\n- ${journal.date} (mood: ${journal.mood}/5 ${moodEmoji}): "${journal.content.substring(0, 200)}..."`;
+    });
+    prompt += "\n\nYou can reference their journal entries naturally if relevant to the conversation.";
+  }
+
   // Add conversation history if available
   if (conversationHistory.length > 0) {
     prompt += "\n\nPREVIOUS CONVERSATION:\n";
@@ -3598,10 +3665,9 @@ BE NATURAL:
   }
 
   prompt += `\n\nFriend just said: "${message}"\n\nRespond naturally as their friend (1-3 sentences):`;
-
+  
   return prompt;
 };
-
 // // UPDATED ENDPOINT CODE:
 // router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
 //   const { message, sessionId, includeHistory } = req.body;
@@ -3706,6 +3772,111 @@ BE NATURAL:
 //     });
 //   }
 // });
+// router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
+//   const { message, sessionId, includeHistory } = req.body;
+  
+//   if (!message || !message.trim()) {
+//     return res.status(400).json({ reply: "Hey, what's up? 🌿" });
+//   }
+
+//   try {
+//     let context = [];
+    
+//     // Load conversation history if requested
+//     if (includeHistory && sessionId) {
+//       const sessionRef = db
+//         .collection("users")
+//         .doc(req.uid)
+//         .collection("aiSessions")
+//         .doc(sessionId);
+      
+//       const sessionDoc = await sessionRef.get();
+      
+//       if (sessionDoc.exists) {
+//         const sessionData = sessionDoc.data();
+//         context = sessionData.messages?.slice(-10) || []; // Last 10 messages
+//       }
+//     }
+
+//     // Add current message to context
+//     context.push({ 
+//       role: "user", 
+//       content: message, 
+//       timestamp: new Date().toISOString() 
+//     });
+
+//     // Build the friendly prompt
+//     const contextPrompt = buildFriendlyPrompt(message, context.slice(0, -1));
+
+//     // Call Gemini AI
+//     const response = await fetch(
+//       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+//       {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           contents: [{
+//             parts: [{ text: contextPrompt }]
+//           }],
+//           generationConfig: {
+//             temperature: 0.9,
+//             topP: 0.95,
+//             topK: 40,
+//             maxOutputTokens: 150,
+//           }
+//         })
+//       }
+//     );
+
+//     const data = await response.json();
+//     let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 
+//                 "Hey, I'm here. What's going on?";
+
+//     // Clean up the reply
+//     reply = reply.replace(/^["']|["']$/g, '').trim();
+
+//     // 🔥 FIXED: No follow-up suggestions
+//     const followUpSuggestions = [];
+
+//     // Save to session (async, don't wait)
+//     context.push({ 
+//       role: "assistant", 
+//       content: reply, 
+//       timestamp: new Date().toISOString() 
+//     });
+    
+//     const sessionRef = db
+//       .collection("users")
+//       .doc(req.uid)
+//       .collection("aiSessions")
+//       .doc(sessionId);
+    
+//     sessionRef.set({
+//       sessionId,
+//       messages: context.slice(-10),
+//       updatedAt: new Date(),
+//       lastMessage: reply.substring(0, 100)
+//     }, { merge: true }).catch(err => {
+//       console.error('Error saving session:', err);
+//     });
+
+//     res.json({
+//       reply,
+//       followUpSuggestions, // Empty array now
+//       sessionId,
+//       messageId: `msg_${Date.now()}`,
+//       timestamp: new Date().toISOString()
+//     });
+
+//   } catch (err) {
+//     console.error("AI Assistant Error:", err);
+//     res.json({ 
+//       reply: "Sorry, my brain just glitched for a sec. What were you saying?",
+//       followUpSuggestions: [] // Also empty on error
+//     });
+//   }
+// });
+// Complete endpoint with journal context
 router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
   const { message, sessionId, includeHistory } = req.body;
   
@@ -3732,6 +3903,33 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
       }
     }
 
+    // ✨ NEW: Fetch recent journal entries for context
+    const userRef = db.collection("users").doc(req.uid);
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
+
+    const journalsSnapshot = await userRef
+      .collection("journals")
+      .where("date", ">=", threeDaysAgoStr)
+      .orderBy("date", "desc")
+      .limit(3)
+      .get();
+
+    const recentJournals = [];
+    journalsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.content || data.mood) {
+        recentJournals.push({
+          date: data.date,
+          content: data.content || "",
+          mood: data.mood || 3
+        });
+      }
+    });
+
+    console.log(`📚 Loaded ${recentJournals.length} recent journal entries for AI context`);
+
     // Add current message to context
     context.push({ 
       role: "user", 
@@ -3739,8 +3937,12 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
       timestamp: new Date().toISOString() 
     });
 
-    // Build the friendly prompt
-    const contextPrompt = buildFriendlyPrompt(message, context.slice(0, -1));
+    // Build the friendly prompt WITH journal context
+    const contextPrompt = buildFriendlyPromptWithJournals(
+      message, 
+      context.slice(0, -1), 
+      recentJournals
+    );
 
     // Call Gemini AI
     const response = await fetch(
@@ -3769,7 +3971,7 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
     // Clean up the reply
     reply = reply.replace(/^["']|["']$/g, '').trim();
 
-    // 🔥 FIXED: No follow-up suggestions
+    // No follow-up suggestions
     const followUpSuggestions = [];
 
     // Save to session (async, don't wait)
@@ -3778,13 +3980,13 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
       content: reply, 
       timestamp: new Date().toISOString() 
     });
-    
+
     const sessionRef = db
       .collection("users")
       .doc(req.uid)
       .collection("aiSessions")
       .doc(sessionId);
-    
+
     sessionRef.set({
       sessionId,
       messages: context.slice(-10),
@@ -3796,21 +3998,21 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
 
     res.json({
       reply,
-      followUpSuggestions, // Empty array now
+      followUpSuggestions,
       sessionId,
       messageId: `msg_${Date.now()}`,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      journalContextUsed: recentJournals.length > 0 // For debugging
     });
 
   } catch (err) {
     console.error("AI Assistant Error:", err);
     res.json({ 
       reply: "Sorry, my brain just glitched for a sec. What were you saying?",
-      followUpSuggestions: [] // Also empty on error
+      followUpSuggestions: []
     });
   }
 });
-
 // Helper function to generate contextual follow-up suggestions
 function generateFollowUpSuggestions(userMessage, aiReply) {
   const suggestions = [];
