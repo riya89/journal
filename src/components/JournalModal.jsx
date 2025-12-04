@@ -810,9 +810,7 @@ import { apiGet, apiPost } from "../utils/api";
 import { updateJournalQuests } from "../utils/questProgress";
 import TaskSuggestionModal from "./TaskSuggestionModal";
 import { API_BASE_URL, RAINDROP_BASE_URL } from "../config/api";
-import PostJournalCheckModal from "./PostJournalCheckModal";
-
-export default function JournalModal({ isOpen, onClose, theme, selectedDate , user}) {
+export default function JournalModal({ isOpen, onClose, theme, selectedDate, user, onSaved }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   // const [mood, setMood] = useState("");
@@ -827,10 +825,6 @@ export default function JournalModal({ isOpen, onClose, theme, selectedDate , us
   // Task suggestion state
   const [showTaskSuggestions, setShowTaskSuggestions] = useState(false);
   const [taskSuggestions, setTaskSuggestions] = useState([]);
-  
-  // Post-journal task check state
-  const [showPostJournalCheck, setShowPostJournalCheck] = useState(false);
-  
   // Track if this is an existing entry (to avoid showing suggestions on edits)
   const [isExistingEntry, setIsExistingEntry] = useState(false);
 
@@ -1290,25 +1284,39 @@ const handleSave = async () => {
     // ✅ Quest progress is already updated by /journal/add endpoint
     // No need to call updateJournalQuests() again!
 
-    // 3️⃣ Analyze journal for task suggestions (non-blocking)
-    // Only show suggestions on FIRST save (not when editing existing entries)
-    if (!isExistingEntry) {
-      analyzeForTaskSuggestions(content, mood, selectedDate).catch(err => {
-        console.warn('Task suggestion analysis failed, but journal saved successfully:', err);
-      });
-    }
-
     // UI success
     setSaving(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
     
-    // 5️⃣ Show post-journal task check modal after successful save
-    // Only show for today's date (not past dates)
-    const today = new Date().toISOString().split('T')[0];
-    if (selectedDate === today) {
-      setShowPostJournalCheck(true);
+    // 3️⃣ Analyze journal for task suggestions and pass to parent
+    let suggestions = [];
+    if (!isExistingEntry) {
+      try {
+        const response = await apiPost(`${API_BASE_URL}/analyze-for-tasks`, {
+          journalText: content.trim(),
+          mood,
+          date: selectedDate
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          suggestions = data.suggestedTasks || [];
+          console.log(`✨ Got ${suggestions.length} task suggestions`);
+        }
+      } catch (err) {
+        console.warn('Task suggestion analysis failed:', err);
+      }
     }
+    
+    // ✨ Call onSaved callback with suggestions
+    if (onSaved) {
+      onSaved(selectedDate, suggestions);
+    }
+    
+    setTimeout(() => {
+      setSaved(false);
+      onClose(); // Close journal modal after showing success
+    }, 1500);
   } catch (err) {
     console.error("❌ Failed to save journal:", err);
     alert("Could not save entry. Please try again.");
@@ -1658,25 +1666,6 @@ const handleSave = async () => {
           />
         </div>
       </div>
-
-      {/* Task Suggestion Modal */}
-      {showTaskSuggestions && (
-        <TaskSuggestionModal
-          suggestions={taskSuggestions}
-          onAddTasks={handleAddSuggestedTasks}
-          onClose={() => setShowTaskSuggestions(false)}
-        />
-      )}
-      
-      {/* Post-Journal Task Check Modal */}
-      {showPostJournalCheck && (
-        <PostJournalCheckModal
-          date={selectedDate}
-          onClose={() => setShowPostJournalCheck(false)}
-          theme={theme}
-          user={user}
-        />
-      )}
     </div>
   );
 }

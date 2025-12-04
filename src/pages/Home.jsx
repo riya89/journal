@@ -220,7 +220,9 @@ import GlowingMushroomIcon from "../components/icons/GlowingMushroomIcon";
 import GratitudeJarIcon from "../components/icons/GratitudeJarIcon";
 import TimeCapsuleIcon from "../components/icons/TimeCapsuleIcon";
 import StreakRecoveryModal from "../components/StreakRecoveryModal";
-import { apiGet } from "../utils/api";
+import PostJournalCheckModal from "../components/PostJournalCheckModal";
+import TaskSuggestionModal from "../components/TaskSuggestionModal";
+import { apiGet, apiPost } from "../utils/api";
 import { checkAndRotateQuests } from "../utils/questExpiration";
 import { API_BASE_URL } from "../config/api";
 
@@ -228,6 +230,10 @@ export default function Home({ user, theme }) {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
+  const [showPostJournalCheck, setShowPostJournalCheck] = useState(false);
+  const [postJournalDate, setPostJournalDate] = useState(null);
+  const [showTaskSuggestions, setShowTaskSuggestions] = useState(false);
+  const [taskSuggestions, setTaskSuggestions] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showStreakRecovery, setShowStreakRecovery] = useState(false);
@@ -310,6 +316,44 @@ export default function Home({ user, theme }) {
 
   const handleCloseStreakRecovery = () => {
     setShowStreakRecovery(false);
+  };
+
+  const handleJournalSaved = (date, suggestions = []) => {
+    console.log("📝 Journal saved for date:", date);
+    setPostJournalDate(date);
+    
+    // Show task suggestions first if available
+    if (suggestions && suggestions.length > 0) {
+      setTaskSuggestions(suggestions);
+      setShowTaskSuggestions(true);
+    } else {
+      // No suggestions, go straight to planner tasks
+      setShowPostJournalCheck(true);
+    }
+  };
+
+  const handleTaskSuggestionsClose = () => {
+    setShowTaskSuggestions(false);
+    setTaskSuggestions([]);
+    // After closing suggestions, show planner tasks
+    setShowPostJournalCheck(true);
+  };
+
+  const handleAddSuggestedTasks = async (selectedTasks) => {
+    try {
+      // Add each selected task to daily todos
+      for (const task of selectedTasks) {
+        await apiPost(`${API_BASE_URL}/daily-todos/add`, {
+          name: task.name,
+          category: task.category,
+          timeEstimate: task.timeEstimate,
+          reason: task.reason
+        });
+      }
+      console.log(`✅ Added ${selectedTasks.length} suggested tasks`);
+    } catch (err) {
+      console.error('Failed to add suggested tasks:', err);
+    }
   };
 
   return (
@@ -499,6 +543,29 @@ export default function Home({ user, theme }) {
           onClose={() => setShowModal(false)}
           theme={theme}
           selectedDate={selectedDate}
+          user={user}
+          onSaved={handleJournalSaved}
+        />
+      )}
+
+      {/* ✨ Task Suggestion Modal (AI-suggested tasks from journal) */}
+      {showTaskSuggestions && taskSuggestions.length > 0 && (
+        <TaskSuggestionModal
+          suggestions={taskSuggestions}
+          onAddTasks={handleAddSuggestedTasks}
+          onClose={handleTaskSuggestionsClose}
+        />
+      )}
+
+      {/* 📋 Post-Journal Task Check Modal (Planner tasks) */}
+      {showPostJournalCheck && postJournalDate && (
+        <PostJournalCheckModal
+          date={postJournalDate}
+          onClose={() => {
+            setShowPostJournalCheck(false);
+            setPostJournalDate(null);
+          }}
+          theme={theme}
           user={user}
         />
       )}
