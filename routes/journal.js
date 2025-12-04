@@ -3876,7 +3876,6 @@ BE NATURAL:
 //     });
 //   }
 // });
-// Complete endpoint with journal context
 router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
   const { message, sessionId, includeHistory } = req.body;
   
@@ -3899,26 +3898,38 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
       
       if (sessionDoc.exists) {
         const sessionData = sessionDoc.data();
-        context = sessionData.messages?.slice(-10) || []; // Last 10 messages
+        context = sessionData.messages?.slice(-10) || [];
       }
     }
 
-    // ✨ NEW: Fetch recent journal entries for context
+    // ✨ FIXED: Fetch recent journal entries (including today!)
     const userRef = db.collection("users").doc(req.uid);
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
+    
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // e.g., "2024-12-05"
+    
+    // Calculate 3 days ago
+    const threeDaysAgo = new Date(today);
+    threeDaysAgo.setDate(today.getDate() - 3);
+    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0]; // e.g., "2024-12-02"
 
+    console.log(`📅 Fetching journals from ${threeDaysAgoStr} to ${todayStr}`);
+
+    // Fetch journals from last 3 days INCLUDING today
     const journalsSnapshot = await userRef
       .collection("journals")
       .where("date", ">=", threeDaysAgoStr)
+      .where("date", "<=", todayStr) // ✅ ADD THIS to include today
       .orderBy("date", "desc")
-      .limit(3)
+      .limit(5) // Increased to 5 to be safe
       .get();
 
     const recentJournals = [];
     journalsSnapshot.forEach(doc => {
       const data = doc.data();
+      console.log(`📖 Found journal: ${data.date} - ${data.content?.substring(0, 50)}...`);
+      
       if (data.content || data.mood) {
         recentJournals.push({
           date: data.date,
@@ -3929,6 +3940,9 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
     });
 
     console.log(`📚 Loaded ${recentJournals.length} recent journal entries for AI context`);
+    if (recentJournals.length > 0) {
+      console.log(`📅 Journal dates: ${recentJournals.map(j => j.date).join(', ')}`);
+    }
 
     // Add current message to context
     context.push({ 
@@ -4002,7 +4016,10 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
       sessionId,
       messageId: `msg_${Date.now()}`,
       timestamp: new Date().toISOString(),
-      journalContextUsed: recentJournals.length > 0 // For debugging
+      // ✅ Debug info
+      journalContextUsed: recentJournals.length > 0,
+      journalDates: recentJournals.map(j => j.date),
+      dateRange: `${threeDaysAgoStr} to ${todayStr}`
     });
 
   } catch (err) {
@@ -4013,6 +4030,7 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
     });
   }
 });
+
 // Helper function to generate contextual follow-up suggestions
 function generateFollowUpSuggestions(userMessage, aiReply) {
   const suggestions = [];
