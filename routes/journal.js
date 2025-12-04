@@ -3902,27 +3902,33 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
       }
     }
 
-    // ✨ FIXED: Fetch recent journal entries (including today!)
+    // ✨ FIXED: Get user's timezone
     const userRef = db.collection("users").doc(req.uid);
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? userDoc.data() : {};
+    const userTimezone = userData.timezone || 'Asia/Kolkata'; // Default to IST
     
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0]; // e.g., "2024-12-05"
+    // Get current date in USER'S timezone
+    const nowInUserTZ = new Date().toLocaleString('en-US', { timeZone: userTimezone });
+    const userDate = new Date(nowInUserTZ);
+    const todayStr = userDate.toISOString().split('T')[0]; // e.g., "2024-12-05"
     
-    // Calculate 3 days ago
-    const threeDaysAgo = new Date(today);
-    threeDaysAgo.setDate(today.getDate() - 3);
-    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0]; // e.g., "2024-12-02"
+    // Calculate 3 days ago in user's timezone
+    const threeDaysAgo = new Date(userDate);
+    threeDaysAgo.setDate(userDate.getDate() - 3);
+    const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
 
+    console.log(`📅 User timezone: ${userTimezone}`);
+    console.log(`📅 User's current date: ${todayStr}`);
     console.log(`📅 Fetching journals from ${threeDaysAgoStr} to ${todayStr}`);
 
-    // Fetch journals from last 3 days INCLUDING today
+    // Fetch journals from last 3 days INCLUDING today (in user's timezone)
     const journalsSnapshot = await userRef
       .collection("journals")
       .where("date", ">=", threeDaysAgoStr)
-      .where("date", "<=", todayStr) // ✅ ADD THIS to include today
+      .where("date", "<=", todayStr)
       .orderBy("date", "desc")
-      .limit(5) // Increased to 5 to be safe
+      .limit(5)
       .get();
 
     const recentJournals = [];
@@ -3988,7 +3994,7 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
     // No follow-up suggestions
     const followUpSuggestions = [];
 
-    // Save to session (async, don't wait)
+    // Save to session
     context.push({ 
       role: "assistant", 
       content: reply, 
@@ -4016,10 +4022,13 @@ router.post("/assistant/reply-with-context", verifyToken, async (req, res) => {
       sessionId,
       messageId: `msg_${Date.now()}`,
       timestamp: new Date().toISOString(),
-      // ✅ Debug info
+      // Debug info
       journalContextUsed: recentJournals.length > 0,
       journalDates: recentJournals.map(j => j.date),
-      dateRange: `${threeDaysAgoStr} to ${todayStr}`
+      dateRange: `${threeDaysAgoStr} to ${todayStr}`,
+      userTimezone: userTimezone,
+      serverTime: new Date().toISOString(),
+      userTime: todayStr
     });
 
   } catch (err) {
