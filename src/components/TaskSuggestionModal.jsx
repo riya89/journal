@@ -89,7 +89,7 @@ export default function TaskSuggestionModal({ suggestions, onAddTasks, onClose }
               onClick={() => setSelectedCategory('all')}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                 selectedCategory === 'all'
-                  ? 'bg-purple-600 text-white'
+                  ? 'bg-teal-600 dark:bg-teal-500 text-white'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
@@ -104,7 +104,7 @@ export default function TaskSuggestionModal({ suggestions, onAddTasks, onClose }
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${
                     selectedCategory === cat
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-teal-600 dark:bg-teal-500 text-white'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -131,8 +131,8 @@ export default function TaskSuggestionModal({ suggestions, onAddTasks, onClose }
                   ${isAdded
                     ? 'border-green-500 bg-green-50 dark:bg-green-900/20 opacity-75 cursor-default'
                     : isSelected 
-                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 cursor-pointer' 
-                      : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 cursor-pointer'
+                      ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 cursor-pointer' 
+                      : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-700 cursor-pointer'
                   }
                 `}
               >
@@ -143,7 +143,7 @@ export default function TaskSuggestionModal({ suggestions, onAddTasks, onClose }
                       checked={isSelected || isAdded}
                       disabled={isAdded}
                       onChange={() => !isAdded && toggleTask(task)}
-                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 disabled:opacity-50"
+                      className="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 disabled:opacity-50"
                       onClick={(e) => e.stopPropagation()}
                     />
                     <h4 className={`font-semibold ${isAdded ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100'}`}>
@@ -184,7 +184,7 @@ export default function TaskSuggestionModal({ suggestions, onAddTasks, onClose }
             className={`
               flex-1 py-2 px-4 rounded-lg font-medium transition-all
               ${selectedTasks.length > 0
-                ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                ? 'bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white'
                 : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
               }
             `}
