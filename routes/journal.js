@@ -9,7 +9,18 @@ import { toZonedTime, fromZonedTime, format } from 'date-fns-tz';
 import { endOfDay, endOfWeek, endOfMonth, isSameDay, isSameWeek, isSameMonth } from 'date-fns';
 
 const router = express.Router();
+router.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
+// OR even simpler:
+router.get("/ping", (req, res) => {
+  res.send("pong");
+});
 // 🔐 Middleware
 async function verifyToken(req, res, next) {
   try {
