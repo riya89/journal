@@ -3663,7 +3663,9 @@ BE NATURAL:
       const moodEmoji = journal.mood >= 4 ? "😊" : journal.mood >= 3 ? "😐" : "😔";
       prompt += `\n- ${journal.date} (mood: ${journal.mood}/5 ${moodEmoji}): "${journal.content.substring(0, 200)}..."`;
     });
-    prompt += "\n\nYou can reference their journal entries naturally if relevant to the conversation.";
+    // 🔥 ADD THIS STRONGER INSTRUCTION
+    prompt += "\n\n⚠️ IMPORTANT: Since they have recent journal entries, you MUST reference something specific from their journals in your response, especially for greetings like 'hi' or 'hello'. Don't give generic responses when you have their personal context.";
+
   }
 
   // Add conversation history if available
